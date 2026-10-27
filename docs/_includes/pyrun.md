@@ -31,9 +31,13 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun .token.keyword, .lc-pyrun .token.boolean, .lc-pyrun .token.null { color: #cf222e; font-weight: 700; }   /* keywords bold (Michel, 2026-10-27) */
 .lc-pyrun .token.string, .lc-pyrun .token.triple-quoted-string { color: #0a3069; }
 .lc-pyrun .token.number { color: #0550ae; }
-.lc-pyrun .token.comment { color: #59636e; font-style: italic; }
-.lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator { color: #8250df; }
-.lc-pyrun .token.operator, .lc-pyrun .token.punctuation { color: #24292f; }
+/* THE PALETTE (Michel, 2026-10-27): comments a lighter grey, punctuation and
+   operators in their own colours, a name the same colour where it is defined
+   and where it is called (Note the class, Note(...) the call) */
+.lc-pyrun .token.comment { color: #8b949e; font-style: italic; }
+.lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator, .lc-pyrun .token.call, .lc-pyrun .token.type-name { color: #8250df; }
+.lc-pyrun .token.operator { color: #b35900; }
+.lc-pyrun .token.punctuation { color: #9aa0a6; }
 /* CODE DOES NOT WRAP (Michel, 2026-10-06/07). An overlay editor can only
    disagree with its caret where a line wraps, so a long line scrolls
    sideways instead; the overlay follows scrollLeft. By CSS alone: the
@@ -65,8 +69,12 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-subs .lc-sub-kw { color: #cf222e; font-weight: 700; }
 .lc-pyrun-subs .lc-sub-string { color: #0a3069; }
 .lc-pyrun-subs .lc-sub-number { color: #0550ae; }
-.lc-pyrun-subs .lc-sub-comment { color: #59636e; font-style: italic; }
-.lc-pyrun-subs .lc-sub-def, .lc-pyrun-subs .lc-sub-builtin { color: #8250df; }
+.lc-pyrun-subs .lc-sub-comment { color: #8b949e; font-style: italic; }
+.lc-pyrun-subs .lc-sub-def, .lc-pyrun-subs .lc-sub-builtin, .lc-pyrun-subs .lc-sub-call, .lc-pyrun-subs .lc-sub-type { color: #8250df; }
+.lc-pyrun-subs .lc-sub-op { color: #b35900; }
+.lc-pyrun-subs .lc-sub-punct { color: #9aa0a6; }
+.lc-pyrun-readonly .lc-pyrun-code, .lc-pyrun-readonly .lc-pyrun-editor { background: #f7f7f9; }
+.lc-pyrun-readonly .lc-pyrun-grip { display: none; }
 .lc-pyrun-subs .lc-sub-line { display: block; min-height: 1.5em; }
 .lc-pyrun-subs .lc-sub-line.lc-sub-hidden { display: none; }
 .lc-pyrun-folds { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
@@ -365,6 +373,29 @@ Auto-included by docs/_layouts/default.html.
     "        from js import lcPlayStop",
     "        lcPlayStop(self._id)",
     "play = _Player('__ID__')",
+    "_lc_player = play",
+    "import sys as _lc_sys",
+    "def _lc_imports(src, top=True):",
+    "    if top:",
+    "        for k in list(_lc_sys.modules):",   /* one interpreter serves every runner: a run rebuilds the modules it imports, with its own player */
+    "            if getattr(_lc_sys.modules[k], '__lc_runner__', False):",
+    "                del _lc_sys.modules[k]",
+    "    for line in str(src).split('\\n'):",
+    "        w = line.strip().split()",
+    "        if len(w) > 1 and w[0] in ('import', 'from'):",
+    "            _lc_module(w[1].split('.')[0].rstrip(','))",
+    "def _lc_module(name):",
+    "    if name in _lc_sys.modules:",
+    "        return _lc_sys.modules[name]",
+    "    from js import lcRunSource",
+    "    src = lcRunSource(name)",
+    "    if src is None:",
+    "        return None",
+    "    d = {'__name__': name, '__lc_runner__': True, 'play': play, '_lc_player': play, 'show': show, 'Object': Object}",
+    "    _lc_imports(src, False)",
+    "    exec(str(src), d)",
+    "    _lc_sys.modules[name] = type(name, (), d)",
+    "    return _lc_sys.modules[name]",
     "class Object:",
     "    def __init__(self, **kw):",
     "        for k, v in kw.items():",
@@ -645,6 +676,11 @@ Auto-included by docs/_layouts/default.html.
       hlTimer = null;
       if (!hlCode || hlText == null) return;
       if (window.Prism && window.Prism.languages && window.Prism.languages.python) {
+        var py = window.Prism.languages.python;
+        if (!py.call) {               /* Prism names a function where it is defined only: calls and CapWords get the same colour */
+          py.call = /\b[A-Za-z_]\w*(?=\s*\()/;
+          py["type-name"] = /\b[A-Z][A-Za-z0-9_]*\b/;
+        }
         hlCode.textContent = hlText;
         try { window.Prism.highlightElement(hlCode); } catch (e) {}
       }
@@ -789,9 +825,35 @@ Auto-included by docs/_layouts/default.html.
       var e = at - 1, b = e; while (b > 0 && /[A-Za-z_0-9]/.test(v.charAt(b - 1))) b--;
       return v.slice(b, e);
     }
+    var SIGS = { play: ["note", "beats"], show: ["obj", "title"] };
+    /* the call the caret sits in: its name, from the unmatched ( before the caret */
+    function callOf(v, at) {
+      var depth = 0;
+      for (var i = at - 1; i >= 0; i--) {
+        var ch = v.charAt(i);
+        if (ch === ")") depth++;
+        else if (ch === "(") { if (depth) depth--; else { var m = /([A-Za-z_][A-Za-z_0-9]*)\s*$/.exec(v.slice(0, i)); return m ? m[1] : null; } }
+        else if (ch === "\n" && !depth) return null;
+      }
+      return null;
+    }
+    /* the parameters of a function: from this program, from every runner on the page, or from the helpers */
+    function paramsOf(fname) {
+      var re = new RegExp("\\bdef\\s+" + fname + "\\s*\\(([^)]*)\\)"), m = re.exec(codeEl.value);
+      if (!m) {
+        var all = document.querySelectorAll(".lc-pyrun-code");
+        for (var i = 0; i < all.length && !m; i++) m = re.exec(all[i].value || "");
+      }
+      if (m) return m[1].split(",").map(function (x) { return x.replace(/[:=].*$/, "").replace(/^\*+/, "").trim(); }).filter(function (x) { return x && x !== "self"; });
+      return SIGS[fname] || [];
+    }
     function candidates(v, w) {
       var seen = {}, out = [];
       function add(label, detail, icon) { if (seen[label]) return; seen[label] = 1; out.push({ label: label, detail: detail || "", icon: icon || "" }); }
+      /* PARAMETERS COMPLETE TOO (Michel, 2026-10-27): inside play( … the call's
+         parameters come first, as name= — positional or named, the reader sees them */
+      var fn = w.dot ? null : callOf(v, w.at);
+      if (fn) paramsOf(fn).forEach(function (pn) { add(pn + "=", "parameter of " + fn, "🏷"); });
       if (w.dot) {
         var owner = ownerBefore(v, w.at);
         (DOTS[owner] || []).forEach(function (x) { add(x, "", "·"); });
@@ -842,7 +904,8 @@ Auto-included by docs/_layouts/default.html.
     }
     function complete(force) {
       var v = codeEl.value, w = wordAt(v, codeEl.selectionStart);
-      if (!force && !w.dot && w.prefix.length < 2) { compClose(); return; }
+      var inCall = !w.dot && !!callOf(v, w.at);
+      if (!force && !w.dot && w.prefix.length < 2 && !(inCall && w.prefix.length === 0 && v.charAt(w.at - 1) === "(")) { compClose(); return; }
       if (!force && w.dot && !w.prefix.length) { /* a dot just typed: offer at once */ }
       var items = candidates(v, w);
       if (!items.length) { compClose(); return; }
@@ -871,7 +934,7 @@ Auto-included by docs/_layouts/default.html.
     }, true);
     codeEl.addEventListener("input", function (e) {
       var d = e && e.data;
-      if (d && /^[A-Za-z_.]$/.test(d)) complete(false); else compClose();
+      if (d && /^[A-Za-z_.(]$/.test(d)) complete(false); else compClose();
     });
     codeEl.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== codeEl) compClose(); }, 150); });
     root.addEventListener("mousedown", function (e) {
@@ -1012,6 +1075,14 @@ Auto-included by docs/_layouts/default.html.
       try { m.runPython(BOOTSTRAP); } catch (e) { }
       try { m.runPython("_lc_load_answers()"); } catch (e) { }
       try { m.runPython(window.LC_FRAMES_ON); } catch (e) { }
+      /* A RUNNER IS A MODULE (Michel, 2026-10-27: "since .run components have
+         pythonic ids (coin, notes, song) I would like to import coin, notes
+         when needed instead of redeclaring stuff"): `import notes` or `from
+         sounds import play` names another runner on the page; its program
+         runs once into a namespace (__name__ = its id, so a main guard keeps
+         its demo quiet) and sys.modules holds it. The bootstrap's _lc_module
+         reads the source through lcRunSource; imports chain. */
+      try { m.runPython("_lc_imports(" + JSON.stringify(codeEl.value) + ")"); } catch (e) { if (window.console) console.warn("[lc import]", e.message || e); }
       try {
         /* the deck's files run as written: doctest, __doc__, help(),
            mypy.api — read from the program's text (pycheck.md) */
@@ -1056,6 +1127,8 @@ Auto-included by docs/_layouts/default.html.
     }
 
     runBtn.addEventListener("click", function(){
+      if (window.lcPlayWarm) window.lcPlayWarm();      /* inside the click: Safari and iOS allow sound from here only */
+      window._lcPlayMuted = null;
       loadMp().then(function(m){
         clearTests();
         status.textContent = "running…";
@@ -1080,8 +1153,8 @@ Auto-included by docs/_layouts/default.html.
              (Michel, 2026-10-27: doctests "used exclusively by the green
              test button"; a test checks what a function returns) */
           window._lcPlayMuted = ID;
-          var ok;
-          try { ok = runUserCode(m); } finally { window._lcPlayMuted = null; }
+          setTimeout(function () { if (window._lcPlayMuted === ID) window._lcPlayMuted = null; }, 0);   /* the whole test pass is synchronous: the doctests' own play() calls stay silent too */
+          var ok = runUserCode(m);
           if (!ok) {
             status.textContent = "error in code";
             return;
@@ -1166,13 +1239,20 @@ Auto-included by docs/_layouts/default.html.
     }
   }
 
+  /* a runner's program, by its id — what `import <id>` reads (null when no runner wears it) */
+  window.lcRunSource = function (id) {
+    var root = document.getElementById("lc-pyrun-" + id), ta = root && root.querySelector(".lc-pyrun-code");
+    if (!ta) return null;
+    return desugarFstrings(ta.value);   /* the program as written; docstrings are for the reader and 🧪, the import needs the code */
+  };
+
   function buildRunner(opts) {
     var id = opts.id;
     var bound = opts.bound || "";
     var folded = opts.folded;
     var rows = opts.rows || 6;
     var div = document.createElement("div");
-    div.className = "lc-pyrun";
+    div.className = "lc-pyrun" + (opts.readonly && opts.readonly !== "false" ? " lc-pyrun-readonly" : "");
     div.id = "lc-pyrun-" + id;
     div.setAttribute("data-lc-id", id);        /* self.page.<id> in a proof (Michel, 2026-10-27) */
     var html = "";
@@ -1180,9 +1260,9 @@ Auto-included by docs/_layouts/default.html.
     if (folded) {
       html += '<details class="lc-pyrun-fold"><summary>🐍 Edit &amp; run Python</summary>';
     } else {
-      html += '<div class="lc-pyrun-title">🐍 <span>Python runner</span><span class="lc-pyrun-lang">python</span></div>';
+      html += '<div class="lc-pyrun-title">🐍 <span>' + (opts.readonly && opts.readonly !== "false" ? "Python module <code>" + id + "</code> — read it, run it, import it" : "Python runner") + '</span><span class="lc-pyrun-lang">' + (opts.readonly && opts.readonly !== "false" ? "read only" : "python") + '</span></div>';
     }
-    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-marks" aria-hidden="true"><code></code></pre><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-marks" aria-hidden="true"><code></code></pre><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"' + (opts.readonly && opts.readonly !== "false" ? ' readonly' : '') + '></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
     /* THE BAR SPEAKS SOFTLY (Michel, 2026-10-27: "make the buttons more
        subtle (icons + tooltips for labels) except for ▶ Run; make the
        subtitles button more an on/off switch so the current state is
@@ -1404,7 +1484,8 @@ Auto-included by docs/_layouts/default.html.
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
       expected: el.getAttribute("expected") || "",
       mypy: el.getAttribute("mypy") || "",    /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
-      subtitles: el.getAttribute("subtitles") || ""   /* "on": the 💬 subtitles start shown */
+      subtitles: el.getAttribute("subtitles") || "",  /* "on": the 💬 subtitles start shown */
+      readonly: el.getAttribute("readonly") || ""      /* "true": a program to read and run, not to edit (the sounds module) */
     };
     var runner = buildRunner(opts);
     el.parentNode.replaceChild(runner, el);

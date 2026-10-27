@@ -137,3 +137,34 @@ Feature: The run editor types like a text field
     Michel, 2026-10-27, a snapshot: blank lines between every captioned line.
     When I wait for the selector "#lc-pyrun-subtitled .lc-pyrun-subs .lc-sub"
     Then the "subtitled" editor's captions count as many lines as the program
+
+  Scenario: A runner imports another by its id; the imported demo stays quiet; parameters complete inside a call
+    Michel, 2026-10-27: "import coin, notes when needed instead of redeclaring
+    stuff"; "code completion should work also for params".
+    When I click Run in the "uses_helpers" editor
+    Then the "uses_helpers" editor's output ends with "twice(4) is 8"
+    And the "uses_helpers" editor's output does not contain "run on its own"
+    And the "helpers" editor is read only
+    When I replace the "first_run" editor's program with:
+      """
+      def greet(name: str, times: int = 1) -> None:
+          pass
+      greet(
+      """
+    And I put the caret at the end of the "first_run" editor
+    And I press Ctrl+Space in the "first_run" editor
+    Then the "first_run" editor offers "name=" and "times="
+
+  Scenario: The palette — comments lighter, punctuation and operators apart, a class the same colour defined and called
+    Michel, 2026-10-27, a snapshot: the contrast between code and comments
+    too low; Note not the same colour at its definition and at Note(...).
+    When I replace the "first_run" editor's program with:
+      """
+      class Note:  # a note
+          pass
+      n = Note()
+      """
+    And I wait for the "first_run" editor's colours
+    Then the "first_run" editor colours "Note" the same where it is defined and where it is called
+    And the "first_run" editor's comment is lighter than its code
+    And the "first_run" editor's punctuation and operators wear their own colours

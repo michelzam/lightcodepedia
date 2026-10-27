@@ -154,10 +154,13 @@ option to add subtitles".
     if (tk.k === "comment") return "lc-sub-comment";
     if (tk.k === "string" || tk.k === "tstring") return "lc-sub-string";
     if (tk.k === "number") return "lc-sub-number";
+    if (tk.k === "op") return /^[.,:;()\[\]{}]$/.test(tk.t) ? "lc-sub-punct" : "lc-sub-op";
     if (tk.k === "name") {
       if (KW[tk.t]) return "lc-sub-kw";
       if (tk.s === SUB.fname || tk.s === SUB.cname || tk.s === SUB.dunder || tk.s === SUB.decorator) return "lc-sub-def";
       if (BUILTIN[tk.t] && (tk.s || "").indexOf(BUILTIN[tk.t]) === 0) return "lc-sub-builtin";
+      if (tk.s === SUB.call || tk.s === SUB.method) return "lc-sub-call";
+      if (/^[A-Z]/.test(tk.t)) return "lc-sub-type";
     }
     return "";
   }

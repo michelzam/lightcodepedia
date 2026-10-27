@@ -163,6 +163,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 | `silent="true"` | No UI at all — runs once on page load, stdout swallowed, errors go to the console |
 | `expected="…"` | After ▶ Run, compare printed output to this string. ✓ if it matches; counts toward the 🏆 score |
 | `mypy="true"` | A 🩺 Dr. mypy (lite) button: the type hints checked, strict, in mypy's words — `"loose"` forgives missing hints |
+| `readonly="true"` | A program to read, run and import, not to edit — a module the page documents (its title says so) |
 | `subtitles="on"` | The 💬 Subtitles start shown: every part of the program says what it is (a parameter, a default value, a type hint, a loop variable, a call, a named argument…) on hover or tap. The button is on every runner; the knob only opens it first |
 
 **Q:** You want the editor to start collapsed so it doesn't intimidate beginners. Which attribute do you add?
@@ -530,6 +531,42 @@ list is read from the program and the runner.
 **Select a word** — a double-click does — and every other occurrence of it
 lights up under the colours: where a variable is used, where a parameter
 goes. Click elsewhere and the light goes out.
+
+## 📦 A runner is a module — `import <id>`
+
+Every runner has a pythonic id, so another runner on the page can import
+it: `import helpers`, `from helpers import twice`. The imported program
+runs once into its own namespace, with `__name__` set to its id — so a
+demo under `if __name__ == "__main__":` stays quiet on import — and
+`sys.modules` keeps it. Imports chain. Nothing is declared twice.
+
+```python
+def twice(x: int) -> int:
+    """
+    >>> twice(21)
+    42
+    """
+    return 2 * x
+
+if __name__ == "__main__":
+    print("helpers, run on its own")
+```
+{: .run #helpers readonly="true" }
+
+```python
+from helpers import twice
+print("twice(4) is", twice(4))
+```
+{: .run #uses_helpers }
+
+Inside a call, the completion offers the function's parameters first —
+`play(` → `note=`, `beats=` — read from its `def` on this page, on any
+runner, or from the helpers.
+
+**The palette**: keywords bold red, strings navy, numbers blue, comments
+a light grey, operators brown, punctuation grey; a name wears the same
+colour where it is defined and where it is called (`Note` the class,
+`Note(...)` the call).
 
 ## 🧪 From a proof — `self.page.<id>`
 

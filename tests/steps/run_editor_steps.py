@@ -394,3 +394,48 @@ def step_caption_lines(context, run_id):
 def step_gutter_numbers(context, run_id, n):
     txt = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-gutter-inner").text_content() or ""
     assert len(txt.split("\n")) == n, "the gutter reads %r" % txt
+
+
+@then('the "{run_id}" editor\'s output does not contain "{text}"')
+def step_output_not(context, run_id, text):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out").text_content() or ""
+    assert text not in out, out
+
+
+@then('the "{run_id}" editor is read only')
+def step_read_only(context, run_id):
+    ta = _ta(context, run_id)
+    assert ta.get_attribute("readonly") is not None, "the editor can be typed in"
+    assert "lc-pyrun-readonly" in (context.page.locator("#lc-pyrun-" + run_id).get_attribute("class") or "")
+
+
+@when('I wait for the "{run_id}" editor\'s colours')
+def step_wait_colours(context, run_id):
+    context.page.wait_for_selector("#lc-pyrun-" + run_id + " .lc-pyrun-hl .token.keyword", timeout=10_000)
+    context.page.wait_for_timeout(400)
+
+
+def _tokens(context, run_id, text):
+    return context.page.evaluate("""([id, t]) => Array.from(document.querySelectorAll('#lc-pyrun-' + id + ' .lc-pyrun-hl .token'))
+        .filter(e => e.textContent === t).map(e => getComputedStyle(e).color)""", [run_id, text])
+
+
+@then('the "{run_id}" editor colours "{name}" the same where it is defined and where it is called')
+def step_same_colour(context, run_id, name):
+    cols = _tokens(context, run_id, name)
+    assert len(cols) >= 2, "found %d coloured %r" % (len(cols), name)
+    assert len(set(cols)) == 1, "colours differ: %s" % cols
+
+
+@then('the "{run_id}" editor\'s comment is lighter than its code')
+def step_comment_lighter(context, run_id):
+    c = context.page.evaluate("""(id) => { const e = document.querySelector('#lc-pyrun-' + id + ' .lc-pyrun-hl .token.comment');
+        const m = getComputedStyle(e).color.match(/\\d+/g).map(Number); return (m[0] + m[1] + m[2]) / 3; }""", run_id)
+    assert c > 120, "the comment is still dark: %s" % c
+
+
+@then('the "{run_id}" editor\'s punctuation and operators wear their own colours')
+def step_punct_ops(context, run_id):
+    cols = context.page.evaluate("""(id) => { const q = s => { const e = document.querySelector('#lc-pyrun-' + id + ' .lc-pyrun-hl ' + s); return e && getComputedStyle(e).color; };
+        return [q('.token.punctuation'), q('.token.operator'), q('.token.keyword')]; }""", run_id)
+    assert cols[0] and cols[1] and len(set(cols)) == 3, cols

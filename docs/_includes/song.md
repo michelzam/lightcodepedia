@@ -59,6 +59,16 @@ in the browser from our micropython examples so we can play a song".
     q.at = start + seconds;
     return seconds;
   };
+  /* SAFARI AND THE IPHONE PLAY NOTHING SCHEDULED OUTSIDE A GESTURE (Michel,
+     2026-10-27: "why the sound doesn't ring anymore in safari or in my
+     iphone?"): the notes are queued after MicroPython ran, past the click's
+     own call stack. The ▶ Run click warms the context first — created and
+     resumed inside the gesture — so what the program queues later plays. */
+  window.lcPlayWarm = function () {
+    var c = context();
+    if (c && c.state === "suspended") { try { c.resume(); } catch (e) {} }
+    return !!c;
+  };
   /* silence the block's queue; a new run starts from now */
   window.lcPlayStop = function (id) {
     var q = queues[id];
