@@ -189,3 +189,10 @@ def step_editor_output_ends(context, run_id, text):
     from playwright.sync_api import expect
     out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
     expect(out).to_contain_text(text, timeout=20_000)
+
+
+@then('the "{run_id}" editor played {n:d} notes')
+def step_editor_played_none(context, run_id, n):
+    """🧪 Test runs the docstrings' examples, never the program: nothing is queued"""
+    el = context.page.locator("#lc-pyrun-" + run_id)
+    assert int(el.get_attribute("data-lc-played") or 0) == n, "notes were queued by the test button"

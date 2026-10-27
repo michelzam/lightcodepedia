@@ -35,6 +35,7 @@ in the browser from our micropython examples so we can play a song".
   }
   /* one note on the block's queue: it starts when the previous one ends */
   window.lcPlayNote = function (id, name, seconds, wave) {
+    if (window._lcPlayMuted === id) return 0;      /* under 🧪 Test the program runs silent */
     mark(id, name);
     var c = context();
     seconds = Math.max(0.02, Number(seconds) || 0.25);

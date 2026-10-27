@@ -813,7 +813,13 @@ Auto-included by docs/_layouts/default.html.
       testBtn.addEventListener("click", function(){
         loadMp().then(function(m){
           status.textContent = "running…";
-          var ok = runUserCode(m);
+          /* 🧪 defines the program's functions by running it — silently: a
+             play() at the top level queues nothing under the test button
+             (Michel, 2026-10-27: doctests "used exclusively by the green
+             test button"; a test checks what a function returns) */
+          window._lcPlayMuted = ID;
+          var ok;
+          try { ok = runUserCode(m); } finally { window._lcPlayMuted = null; }
           if (!ok) {
             status.textContent = "error in code";
             return;
