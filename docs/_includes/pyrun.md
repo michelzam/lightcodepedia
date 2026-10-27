@@ -55,6 +55,20 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-bar .lc-pyrun-test { background: #3d7330; }
 .lc-pyrun-bar .lc-pyrun-test:hover:not(:disabled) { background: #33641f; }
 .lc-pyrun-bar .lc-pyrun-status { margin-left: auto; font-size: 0.78em; color: #666; }
+/* 💬 SUBTITLES (Michel, 2026-10-27): an overlay over the editor where every
+   part of the program says what it is — hover on a laptop, tap on a phone,
+   the line under the bar repeats it. Reading mode: the editor waits below. */
+.lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
+.lc-pyrun-subs[hidden] { display: none; }
+.lc-pyrun-subtitled .lc-pyrun-code { pointer-events: none; }
+.lc-pyrun-subs .lc-sub { border-bottom: 1px dotted #8250df; cursor: help; border-radius: 2px; }
+.lc-pyrun-subs .lc-sub:hover, .lc-pyrun-subs .lc-sub.lc-sub-on { background: #efe6ff; }
+.lc-pyrun-subline { padding: 0.5em 0.9em; font-size: 0.85em; background: #faf5ff; border-top: 1px solid #e9d8ff; color: #3b2a63; }
+.lc-pyrun-subline[hidden] { display: none; }
+.lc-pyrun-subline code { background: #efe6ff; padding: 0 0.3em; border-radius: 3px; }
+.lc-pyrun-bar .lc-pyrun-subs-btn { background: #8250df; }
+.lc-pyrun-bar .lc-pyrun-subs-btn:hover:not(:disabled) { background: #6b3fc4; }
+.lc-pyrun-subtitled .lc-pyrun-subs-btn { background: #3b2a63; }
 .lc-pyrun-out { margin: 0; padding: 0.9em 1em; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 2em; max-height: 300px; overflow-y: auto; }
 .lc-pyrun-out.lc-empty { color: #888; font-style: italic; }
 .lc-pyrun-out .lc-err { color: #ff6b6b; }
@@ -619,6 +633,33 @@ Auto-included by docs/_layouts/default.html.
       codeEl.addEventListener("scroll", syncHlScroll);
     }
 
+    /* 💬 SUBTITLES: the program read, part by part */
+    var subsEl = root.querySelector(".lc-pyrun-subs"), subsBtn = root.querySelector(".lc-pyrun-subs-btn"), subLine = root.querySelector(".lc-pyrun-subline");
+    function paintSubs() {
+      if (!subsEl || !window.lcSubtitles || subsEl.hidden) return;
+      subsEl.innerHTML = window.lcSubtitles.html(codeEl.value);
+    }
+    function setSubtitles(on) {
+      if (!subsEl) return;
+      root.classList.toggle("lc-pyrun-subtitled", on);
+      subsEl.hidden = !on;
+      if (subsBtn) subsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (on) { paintSubs(); if (subLine) { subLine.hidden = false; subLine.textContent = "Hover or tap a part of the program: it says what it is."; } }
+      else if (subLine) { subLine.hidden = true; subLine.textContent = ""; }
+    }
+    if (subsBtn) subsBtn.addEventListener("click", function () { setSubtitles(subsEl.hidden); });
+    if (subsEl) {
+      subsEl.addEventListener("click", function (e) {
+        var t = e.target && e.target.closest ? e.target.closest(".lc-sub") : null;
+        subsEl.querySelectorAll(".lc-sub-on").forEach(function (x) { x.classList.remove("lc-sub-on"); });
+        if (!t || !subLine) return;
+        t.classList.add("lc-sub-on");
+        subLine.innerHTML = "<code>" + t.textContent.replace(/&/g, "&amp;").replace(/</g, "&lt;") + "</code> — " + (t.getAttribute("data-sub") || "").replace(/&/g, "&amp;").replace(/</g, "&lt;");
+      });
+      codeEl.addEventListener("input", paintSubs);
+      if (opts.subtitles === "on" || opts.subtitles === "true") setSubtitles(true);
+    }
+
     /* TAB INDENTS, SHIFT+TAB DEDENTS (Michel, 2026-10-07: "when a text is
        selected, a tab deletes it"). No selection: four spaces at the caret
        (Shift+Tab: up to four off the line's start). A selection: every line
@@ -848,6 +889,7 @@ Auto-included by docs/_layouts/default.html.
             empty.textContent = "No doctests found. Add >>> lines inside a triple-quoted docstring.";
             testsEl.appendChild(empty);
             status.textContent = "no tests";
+            root.setAttribute("data-lc-doctest", "0/0");
             repaintBound();
             return;
           }
@@ -865,6 +907,10 @@ Auto-included by docs/_layouts/default.html.
             testsEl.appendChild(row);
           });
           summary.textContent = passed + " passed, " + (rows.length - passed) + " failed";
+          /* THE TALLY IS ON THE BLOCK (Michel, 2026-10-27: "the doctests could
+             verify stuff, and the proof can verify the doctests are green"):
+             a page's proof reads self.page.<id>.doctests, never a selector */
+          root.setAttribute("data-lc-doctest", passed + "/" + rows.length);
           status.textContent = "tests done";
           repaintBound();
         }).catch(function(e){
@@ -907,6 +953,7 @@ Auto-included by docs/_layouts/default.html.
     var div = document.createElement("div");
     div.className = "lc-pyrun";
     div.id = "lc-pyrun-" + id;
+    div.setAttribute("data-lc-id", id);        /* self.page.<id> in a proof (Michel, 2026-10-27) */
     var html = "";
     if (bound) html += '<div class="lc-pyrun-bound" id="lc-pyrun-' + id + '-bound"></div>';
     if (folded) {
@@ -914,8 +961,9 @@ Auto-included by docs/_layouts/default.html.
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>Python runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
-    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea></div></div>';
-    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button>' + (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy" title="Dr. mypy (lite): type hints checked in the page">🩺 Dr. mypy</button>' : '') + '<button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
+    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button>' + (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy" title="Dr. mypy (lite): type hints checked in the page">🩺 Dr. mypy</button>' : '') + '<button class="lc-pyrun-subs-btn" title="Subtitles: what each part of the program is" aria-pressed="false">💬 Subtitles</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
+    html += '<div class="lc-pyrun-subline" hidden></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
     html += '<div class="lc-pyrun-tests" id="lc-pyrun-' + id + '-tests"></div>';
@@ -1123,7 +1171,8 @@ Auto-included by docs/_layouts/default.html.
       rows: parseInt(el.getAttribute("rows"), 10) || 0,   /* 0: the editor fits its program */
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
       expected: el.getAttribute("expected") || "",
-      mypy: el.getAttribute("mypy") || ""     /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
+      mypy: el.getAttribute("mypy") || "",    /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
+      subtitles: el.getAttribute("subtitles") || ""   /* "on": the 💬 subtitles start shown */
     };
     var runner = buildRunner(opts);
     el.parentNode.replaceChild(runner, el);

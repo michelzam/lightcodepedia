@@ -1,3 +1,4 @@
+import re
 """Steps for run_editor.feature — the run editor as a text field.
 (`I undo in the "<id>" editor` lives in agent_bound_steps.py.)"""
 from behave import when, then
@@ -196,3 +197,49 @@ def step_editor_played_none(context, run_id, n):
     """🧪 Test runs the docstrings' examples, never the program: nothing is queued"""
     el = context.page.locator("#lc-pyrun-" + run_id)
     assert int(el.get_attribute("data-lc-played") or 0) == n, "notes were queued by the test button"
+
+
+def _sub(context, run_id, token):
+    subs = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub")
+    n = subs.count()
+    for i in range(n):
+        el = subs.nth(i)
+        if el.text_content() == token:
+            return el
+    raise AssertionError("no subtitle on %r in %s" % (token, run_id))
+
+
+@then('the "{run_id}" editor subtitles "{token}" as "{kind}"')
+def step_subtitled_as(context, run_id, token, kind):
+    sub = _sub(context, run_id, token).get_attribute("data-sub") or ""
+    assert sub.startswith(kind), "%r reads %r, not %r" % (token, sub, kind)
+
+
+@when('I tap the subtitle "{token}" in the "{run_id}" editor')
+def step_tap_subtitle(context, token, run_id):
+    _sub(context, run_id, token).click()
+
+
+@then('the "{run_id}" editor\'s subtitle line reads "{text}"')
+def step_subline(context, run_id, text):
+    from playwright.sync_api import expect
+    expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subline")).to_contain_text(text)
+
+
+@when('I press 💬 Subtitles in the "{run_id}" editor')
+def step_press_subtitles(context, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs-btn").click()
+
+
+@then('the "{run_id}" editor is back to editing')
+def step_back_to_editing(context, run_id):
+    from playwright.sync_api import expect
+    root = context.page.locator("#lc-pyrun-" + run_id)
+    expect(root.locator(".lc-pyrun-subs")).to_be_hidden()
+    expect(root).not_to_have_class(re.compile(r"lc-pyrun-subtitled"))
+
+
+@then('the "{run_id}" editor shows its subtitles')
+def step_shows_subtitles(context, run_id):
+    from playwright.sync_api import expect
+    expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub").first).to_be_visible()

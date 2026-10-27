@@ -51,3 +51,22 @@ Feature: The run editor types like a text field
     Then the "first_run" editor reads "a = 1\nb = 2\nc = 3"
     When I undo in the "first_run" editor
     Then the "first_run" editor reads "a = 1\n    b = 2\n    c = 3"
+
+  Scenario: Subtitles say what each part of the program is, on hover and on tap
+    Michel, 2026-10-27: "tooltips in that .run component to explicit what code
+    parts are (variable, type, positional or named param, default value,
+    conditionals, etc), based on an on/off option to add subtitles".
+    When I wait for the selector "#lc-pyrun-subtitled .lc-pyrun-subs .lc-sub"
+    Then the "subtitled" editor subtitles "name" as "a parameter"
+    And the "subtitled" editor subtitles "times" as "a parameter with a default value"
+    And the "subtitled" editor subtitles "str" as "a type hint"
+    And the "subtitled" editor subtitles "hello" as "a variable"
+    And the "subtitled" editor subtitles "i" as "the loop variable"
+    And the "subtitled" editor subtitles "greet" as "the function's name"
+    And the "subtitled" editor subtitles "for" as "for — repeats"
+    When I tap the subtitle "times" in the "subtitled" editor
+    Then the "subtitled" editor's subtitle line reads "times — a parameter with a default value"
+    When I press 💬 Subtitles in the "subtitled" editor
+    Then the "subtitled" editor is back to editing
+    When I press 💬 Subtitles in the "first_run" editor
+    Then the "first_run" editor shows its subtitles

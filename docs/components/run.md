@@ -163,6 +163,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 | `silent="true"` | No UI at all — runs once on page load, stdout swallowed, errors go to the console |
 | `expected="…"` | After ▶ Run, compare printed output to this string. ✓ if it matches; counts toward the 🏆 score |
 | `mypy="true"` | A 🩺 Dr. mypy (lite) button: the type hints checked, strict, in mypy's words — `"loose"` forgives missing hints |
+| `subtitles="on"` | The 💬 Subtitles start shown: every part of the program says what it is (a parameter, a default value, a type hint, a loop variable, a call, a named argument…) on hover or tap. The button is on every runner; the knob only opens it first |
 
 **Q:** You want the editor to start collapsed so it doesn't intimidate beginners. Which attribute do you add?
 
@@ -491,6 +492,43 @@ print("ping!")
 Audio needs one gesture from the reader — ▶ Run is one. The block records
 what was queued (`data-lc-played`, `data-lc-last-note`), so a proof can
 check a song without ears.
+
+## 💬 Subtitles — what each part of the program is
+
+Press **💬 Subtitles**: the program is read for you, part by part. Hover a
+word on a laptop, tap it on a phone, and the line under the bar says what it
+is — *a parameter*, *a parameter with a default value*, *a type hint*, *the
+loop variable*, *a function call*, *a named argument*, *a docstring*, *an
+f-string*… in plain words. Press again to edit. `subtitles="on"` opens them
+first, for a page that reads before it runs.
+
+```python
+def greet(name: str, times: int = 1) -> str:
+    """Says hello, as many times as asked.
+
+    >>> greet("Lucky")
+    'Hello, Lucky!'
+    """
+    hello = f"Hello, {name}!"
+    for i in range(times):
+        print(hello)
+    return hello
+
+greet("Lucky", times=2)
+```
+{: .run #subtitled subtitles="on" mypy="true" }
+
+## 🧪 From a proof — `self.page.<id>`
+
+A page's feature reaches a runner by its id, as every component: no
+selector. What the block records is what a step reads.
+
+| On `self.page.<id>` | What it says |
+|---|---|
+| `.output` | The output pane's text |
+| `.played` · `.last_note` | What `play()` queued since the page opened |
+| `.doctests.green` · `.passed` · `.total` | The last 🧪 Test's tally — the doctests verify the functions, the proof verifies the doctests are green |
+| `.run()` · `.test()` | Press ▶ Run or 🧪 Test, as a person would |
 
 ## 🧰 Built-in helpers (always available)
 

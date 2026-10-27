@@ -2066,17 +2066,67 @@ class Text(Block):
     pass
 
 
+class _Doctests:
+    """What the block's 🧪 Test found, last time it was pressed: passed, failed,
+    total — and green, which is what a page's proof asks (Michel, 2026-10-27:
+    "the doctests could verify stuff, and the proof can verify the doctests
+    are green")."""
+    def __init__(self, tally):
+        parts = str(tally or "").split("/")
+        self.passed = int(parts[0]) if len(parts) == 2 and parts[0].isdigit() else 0
+        self.total = int(parts[1]) if len(parts) == 2 and parts[1].isdigit() else 0
+        self.failed = self.total - self.passed
+        self.tested = bool(tally)
+
+    @property
+    def green(self):
+        return self.tested and self.total > 0 and self.failed == 0
+
+    def __repr__(self):
+        return "Doctests(%d/%d)" % (self.passed, self.total) if self.tested else "Doctests(not run)"
+
+
 @component(icon="🐍",
            attrs=[{"n": "rows", "t": "int", "data": True, "d": 6},
                   {"n": "folded", "t": "bool", "data": True, "d": False},
                   {"n": "silent", "t": "bool", "data": True, "d": False},
                   {"n": "init", "t": "long", "data": True, "d": ""},
                   {"n": "bound", "t": "str", "data": True, "d": ""},
-                  {"n": "expected", "t": "str", "data": True, "d": ""}],
-           methods=["run"])
+                  {"n": "expected", "t": "str", "data": True, "d": ""},
+                  {"n": "mypy", "t": "str", "data": True, "d": "", "attr": "mypy"},
+                  {"n": "subtitles", "t": "str", "data": True, "d": "", "attr": "subtitles"},
+                  {"n": "output", "t": "str"},
+                  {"n": "played", "t": "int"},
+                  {"n": "last_note", "t": "str"},
+                  {"n": "doctests", "t": "str"}],
+           methods=["run", "test"])
 class Run(Block):
+    """A Python runner, by its id: self.page.coin.played, .last_note, .output,
+    .doctests.green — what the block itself records; no selector in a step."""
     def run(self):
-        return self._tap(".lc-run-btn, [data-lc-run]")
+        return self._tap(".lc-pyrun-run, .lc-run-btn, [data-lc-run]")
+
+    def test(self):
+        """Press 🧪 Test, as a person would; the tally lands on the block."""
+        return self._tap(".lc-pyrun-test")
+
+    @property
+    def output(self):
+        o = self._q(".lc-pyrun-out")
+        return str(o._el.textContent) if o and o._el is not None else ""
+
+    @property
+    def played(self):
+        """Notes play() queued since the page opened (song.md)."""
+        return int(self._attr("data-lc-played") or 0)
+
+    @property
+    def last_note(self):
+        return str(self._attr("data-lc-last-note") or "")
+
+    @property
+    def doctests(self):
+        return _Doctests(self._attr("data-lc-doctest"))
 
 
 @component(icon="🔬",
