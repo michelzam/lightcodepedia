@@ -184,18 +184,16 @@ option to add subtitles".
       if (/:\s*(#.*)?$/.test(text) && text.trim()) {
         for (var j = i + 1; j < raw.length; j++) { if (!raw[j].trim()) continue; opens = indentOf(raw[j]) > ind; break; }
       }
-      out.push('<span class="lc-sub-line" data-l="' + i + '" data-indent="' + ind + '"' + (text.trim() ? "" : ' data-blank="1"') + ">" +
-        (opens ? '<button type="button" class="lc-sub-fold" aria-expanded="true" title="Fold this block">▾</button>' : "") + lines[i] + "</span>");
+      out.push('<span class="lc-sub-line" data-l="' + i + '" data-indent="' + ind + '"' + (text.trim() ? "" : ' data-blank="1"') + (opens ? ' data-opens="1"' : "") + ">" + lines[i] + "</span>");
     }
-    return out.join("\n");
+    return out.join("");          /* the lines are blocks: a newline between them was a line too (seen 2026-10-27) */
   }
-  /* fold or unfold the block a ▾ opens: the lines below it that are indented deeper */
-  function fold(btn) {
-    var line = btn.closest(".lc-sub-line"); if (!line) return false;
-    var open = btn.getAttribute("aria-expanded") !== "false", ind = parseInt(line.getAttribute("data-indent") || "0", 10);
-    btn.setAttribute("aria-expanded", open ? "false" : "true");
-    btn.textContent = open ? "▸" : "▾";
-    btn.title = open ? "Unfold this block" : "Fold this block";
+  /* fold or unfold the block a line opens: the lines below it that are
+     indented deeper. The sign lives in the gutter (Michel, 2026-10-27) */
+  function fold(line) {
+    if (!line || !line.classList.contains("lc-sub-line")) return false;
+    var open = line.getAttribute("data-folded") !== "1", ind = parseInt(line.getAttribute("data-indent") || "0", 10);
+    if (open) line.setAttribute("data-folded", "1"); else line.removeAttribute("data-folded");
     var el = line.nextElementSibling, n = 0;
     while (el && el.classList.contains("lc-sub-line")) {
       var blank = el.getAttribute("data-blank") === "1", deeper = parseInt(el.getAttribute("data-indent") || "0", 10) > ind;

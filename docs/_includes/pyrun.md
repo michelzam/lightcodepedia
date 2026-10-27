@@ -58,7 +58,7 @@ Auto-included by docs/_layouts/default.html.
 /* 💬 SUBTITLES (Michel, 2026-10-27): an overlay over the editor where every
    part of the program says what it is — hover on a laptop, tap on a phone,
    the line under the bar repeats it. Reading mode: the editor waits below. */
-.lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 1.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
+.lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
 .lc-pyrun-subs[hidden] { display: none; }
 .lc-pyrun-subtitled .lc-pyrun-code { pointer-events: none; }
 .lc-pyrun-subs .lc-sub { border-bottom: 1px dotted #8250df; cursor: help; border-radius: 2px; }
@@ -69,11 +69,19 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-subs .lc-sub-def, .lc-pyrun-subs .lc-sub-builtin { color: #8250df; }
 .lc-pyrun-subs .lc-sub-line { display: block; min-height: 1.5em; }
 .lc-pyrun-subs .lc-sub-line.lc-sub-hidden { display: none; }
-.lc-pyrun-subs .lc-sub-fold { display: inline-block; width: 1em; margin-left: -1em; padding: 0; border: none; background: transparent; color: #8250df; cursor: pointer; font: inherit; line-height: inherit; text-align: center; }
+.lc-pyrun-folds { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+.lc-pyrun-folds[hidden] { display: none; }
+.lc-pyrun-gfold { position: absolute; left: 0.1em; width: 1em; height: 1.5em; padding: 0; border: none; background: transparent; color: #8250df; cursor: pointer; pointer-events: auto; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; }
+.lc-pyrun-subtitled .lc-pyrun-gutter-inner { padding-left: 1.3em; }
 .lc-pyrun-subs .lc-sub:hover, .lc-pyrun-subs .lc-sub.lc-sub-on { background: #efe6ff; }
 .lc-pyrun-subline { padding: 0.5em 0.9em; font-size: 0.85em; background: #faf5ff; border-top: 1px solid #e9d8ff; color: #3b2a63; }
 .lc-pyrun-subline[hidden] { display: none; }
 .lc-pyrun-subline code { background: #efe6ff; padding: 0 0.3em; border-radius: 3px; }
+/* ↕ THE GRIP (Michel, 2026-10-27: "a vertical resizing handle, like mdpad"):
+   a bar under the editor, dragged, sets its height for this visit; a double-click gives the program's own height back */
+.lc-pyrun-grip { height: 0.75em; cursor: ns-resize; touch-action: none; display: flex; align-items: center; justify-content: center; background: #f3f4f6; border-top: 1px solid #e8e8e8; }
+.lc-pyrun-grip::before { content: ""; width: 3.2em; height: 4px; border-radius: 3px; background: #c4c9d4; }
+.lc-pyrun-grip:hover::before, .lc-pyrun[data-lc-resizing] .lc-pyrun-grip::before { background: #0066cc; }
 .lc-pyrun-bar .lc-pyrun-icon { background: transparent; color: #333; padding: 0.25em 0.45em; font-size: 1em; border: 1px solid transparent; }
 .lc-pyrun-bar .lc-pyrun-icon:hover:not(:disabled) { background: #e5e5e5; border-color: #d0d0d0; }
 .lc-pyrun-bar .lc-pyrun-icon:disabled { background: transparent; opacity: 0.5; }
@@ -661,11 +669,61 @@ Auto-included by docs/_layouts/default.html.
       codeEl.addEventListener("scroll", syncHlScroll);
     }
 
+    /* ↕ THE GRIP: drag sets the editor's height for this visit; double-click resets */
+    var grip = root.querySelector(".lc-pyrun-grip");
+    if (grip) {
+      grip.addEventListener("pointerdown", function (ev) {
+        ev.preventDefault();
+        var y0 = ev.clientY, h0 = codeEl.getBoundingClientRect().height;
+        grip.setPointerCapture(ev.pointerId);
+        root.setAttribute("data-lc-resizing", "1");
+        function move(e) { FIT = false; codeEl.style.height = Math.max(60, Math.round(h0 + e.clientY - y0)) + "px"; }
+        function up() {
+          root.removeAttribute("data-lc-resizing");
+          grip.removeEventListener("pointermove", move); grip.removeEventListener("pointerup", up); grip.removeEventListener("pointercancel", up);
+          updateGutter();
+        }
+        grip.addEventListener("pointermove", move); grip.addEventListener("pointerup", up); grip.addEventListener("pointercancel", up);
+      });
+      grip.addEventListener("dblclick", function () { codeEl.style.height = ""; FIT = !opts.rows; fitRows(); updateGutter(); });
+    }
+
     /* 💬 SUBTITLES: the program read, part by part */
     var subsEl = root.querySelector(".lc-pyrun-subs"), subsBtn = root.querySelector(".lc-pyrun-subs-btn"), subLine = root.querySelector(".lc-pyrun-subline");
+    /* ▾ IN THE GUTTER (Michel, 2026-10-27: "the folding sign could be in the
+       gutter"): with the captions on, the gutter numbers only the lines
+       still shown and carries a ▾/▸ beside each line that opens a block */
+    var gutterEl = root.querySelector(".lc-pyrun-gutter"), folds = null;
+    function paintGutterFolds() {
+      if (!gutterEl || !gutterInner) return;
+      if (!folds) { folds = document.createElement("div"); folds.className = "lc-pyrun-folds"; gutterEl.appendChild(folds); }
+      if (subsEl.hidden) { folds.innerHTML = ""; folds.hidden = true; updateGutter(); return; }
+      folds.hidden = false;
+      var shown = Array.prototype.filter.call(subsEl.querySelectorAll(".lc-sub-line"), function (l) { return !l.classList.contains("lc-sub-hidden"); });
+      var nums = [], marks = [];
+      var cs = getComputedStyle(codeEl), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5, top0 = parseFloat(cs.paddingTop) || 0;
+      shown.forEach(function (l, row) {
+        var n = parseInt(l.getAttribute("data-l"), 10) + 1;
+        nums.push(n);
+        if (l.getAttribute("data-opens") === "1") {
+          var folded = l.getAttribute("data-folded") === "1";
+          marks.push('<button type="button" class="lc-pyrun-gfold" data-l="' + (n - 1) + '" aria-expanded="' + (folded ? "false" : "true") + '" title="' + (folded ? "Unfold" : "Fold") + ' this block" style="top:' + (top0 + row * lh) + 'px">' + (folded ? "▸" : "▾") + "</button>");
+        }
+      });
+      setText(gutterInner, nums.join("\n"));
+      folds.innerHTML = marks.join("");
+    }
+    if (gutterEl) gutterEl.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest(".lc-pyrun-gfold") : null;
+      if (!b || !window.lcSubtitles || subsEl.hidden) return;
+      var line = subsEl.querySelector('.lc-sub-line[data-l="' + b.getAttribute("data-l") + '"]');
+      window.lcSubtitles.fold(line);
+      paintGutterFolds();
+    });
     function paintSubs() {
       if (!subsEl || !window.lcSubtitles || subsEl.hidden) return;
       subsEl.innerHTML = window.lcSubtitles.html(codeEl.value);
+      paintGutterFolds();
     }
     function setSubtitles(on) {
       if (!subsEl) return;
@@ -673,13 +731,11 @@ Auto-included by docs/_layouts/default.html.
       subsEl.hidden = !on;
       if (subsBtn) subsBtn.setAttribute("aria-checked", on ? "true" : "false");
       if (on) { paintSubs(); if (subLine) { subLine.hidden = false; subLine.textContent = "Hover or tap a part of the program: it says what it is."; } }
-      else if (subLine) { subLine.hidden = true; subLine.textContent = ""; }
+      else { if (subLine) { subLine.hidden = true; subLine.textContent = ""; } paintGutterFolds(); }
     }
     if (subsBtn) subsBtn.addEventListener("click", function () { setSubtitles(subsEl.hidden); });
     if (subsEl) {
       subsEl.addEventListener("click", function (e) {
-        var f = e.target && e.target.closest ? e.target.closest(".lc-sub-fold") : null;
-        if (f && window.lcSubtitles && window.lcSubtitles.fold) { e.preventDefault(); window.lcSubtitles.fold(f); return; }
         var t = e.target && e.target.closest ? e.target.closest(".lc-sub") : null;
         subsEl.querySelectorAll(".lc-sub-on").forEach(function (x) { x.classList.remove("lc-sub-on"); });
         if (!t || !subLine) return;
@@ -1132,10 +1188,11 @@ Auto-included by docs/_layouts/default.html.
        subtitles button more an on/off switch so the current state is
        visible"): ▶ Run keeps its word; the rest are icons with a tooltip
        and an aria-label; 💬 is a switch that shows its state. */
+    html += '<div class="lc-pyrun-grip" role="separator" aria-orientation="horizontal" title="Drag to make the editor taller or shorter — double-click to reset"></div>';
     html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button>' +
       '<button class="lc-pyrun-test lc-pyrun-icon" title="Test — run the >>> examples in the docstrings" aria-label="Test">🧪</button>' +
       (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy lc-pyrun-icon" title="Dr. mypy (lite) — check the type hints" aria-label="Dr. mypy">🩺</button>' : '') +
-      '<button class="lc-pyrun-clear lc-pyrun-icon" title="Clear the output" aria-label="Clear">🧹</button>' +
+      '<button class="lc-pyrun-clear" title="Clear the output">Clear</button>' +
       '<button class="lc-pyrun-subs-btn lc-pyrun-switch" role="switch" aria-checked="false" title="Subtitles — what each part of the program is" aria-label="Subtitles"><span class="lc-pyrun-track"><span class="lc-pyrun-knob"></span></span>💬</button>' +
       '<span class="lc-pyrun-status"></span></div>';
     html += '<div class="lc-pyrun-subline" hidden></div>';

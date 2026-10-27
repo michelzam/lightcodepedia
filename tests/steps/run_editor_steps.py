@@ -336,11 +336,61 @@ def step_caption_string(context, run_id, token):
 
 @when('I fold the block at "{token}" in the "{run_id}" editor')
 def step_fold(context, token, run_id):
-    el = _sub(context, run_id, token)
-    el.evaluate("e => e.closest('.lc-sub-line').querySelector('.lc-sub-fold').click()")
+    line = _sub(context, run_id, token).evaluate("e => e.closest('.lc-sub-line').getAttribute('data-l')")
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-gutter .lc-pyrun-gfold[data-l='" + line + "']").click()
 
 
 @then('the "{run_id}" editor hides {n:d} captioned lines')
 def step_hidden_lines(context, run_id, n):
     from playwright.sync_api import expect
     expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub-line.lc-sub-hidden")).to_have_count(n)
+
+
+@then('the "{run_id}" editor\'s clear button reads "{text}"')
+def step_clear_reads(context, run_id, text):
+    from playwright.sync_api import expect
+    btn = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-clear")
+    expect(btn).to_have_text(text)
+    assert "lc-pyrun-icon" not in (btn.get_attribute("class") or "")
+
+
+@when('I drag the "{run_id}" editor\'s grip down by {px:d} pixels')
+def step_drag_grip(context, run_id, px):
+    grip = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-grip")
+    context.h0 = _ta(context, run_id).evaluate("el => el.getBoundingClientRect().height")
+    box = grip.bounding_box()
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    context.page.mouse.move(x, y); context.page.mouse.down(); context.page.mouse.move(x, y + px, steps=6); context.page.mouse.up()
+
+
+@then('the "{run_id}" editor grew by about {px:d} pixels')
+def step_grew(context, run_id, px):
+    h1 = _ta(context, run_id).evaluate("el => el.getBoundingClientRect().height")
+    assert abs((h1 - context.h0) - px) <= 8, "grew by %s, not %s" % (h1 - context.h0, px)
+
+
+@when('I double-click the "{run_id}" editor\'s grip')
+def step_dblclick_grip(context, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-grip").dblclick()
+
+
+@then('the "{run_id}" editor is back to its own height')
+def step_own_height(context, run_id):
+    h = _ta(context, run_id).evaluate("el => el.style.height")
+    assert h == "", "a dragged height is still set: %r" % h
+
+
+@then('the "{run_id}" editor\'s captions count as many lines as the program')
+def step_caption_lines(context, run_id):
+    n_prog = _ta(context, run_id).evaluate("el => el.value.split('\\n').length")
+    n_caps = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub-line").count()
+    assert n_caps == n_prog, "%d captioned lines for %d program lines" % (n_caps, n_prog)
+    h_caps = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs").evaluate("el => el.scrollHeight")
+    h_prog = _ta(context, run_id).evaluate("el => el.scrollHeight")
+    assert abs(h_caps - h_prog) <= 24, "captions %dpx tall, the program %dpx" % (h_caps, h_prog)
+
+
+@then('the "{run_id}" editor\'s gutter numbers {n:d} lines')
+def step_gutter_numbers(context, run_id, n):
+    txt = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-gutter-inner").text_content() or ""
+    assert len(txt.split("\n")) == n, "the gutter reads %r" % txt

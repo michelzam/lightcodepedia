@@ -76,7 +76,7 @@ Feature: The run editor types like a text field
     labels) except for ▶ Run; make the subtitles button more an on/off switch".
     Then the "first_run" editor's run button reads "▶ Run"
     And the "first_run" editor's "test" button is an icon with the tooltip "Test"
-    And the "first_run" editor's "clear" button is an icon with the tooltip "Clear"
+    And the "first_run" editor's clear button reads "Clear"
     And the "first_run" editor's subtitles switch is "false"
     When I press 💬 Subtitles in the "first_run" editor
     Then the "first_run" editor's subtitles switch is "true"
@@ -121,5 +121,19 @@ Feature: The run editor types like a text field
     And the "subtitled" editor's captions colour "Lucky" as a string
     When I fold the block at "def" in the "subtitled" editor
     Then the "subtitled" editor hides 10 captioned lines
+    And the "subtitled" editor's gutter numbers 2 lines
     When I fold the block at "def" in the "subtitled" editor
     Then the "subtitled" editor hides 0 captioned lines
+    And the "subtitled" editor's gutter numbers 12 lines
+
+  Scenario: The grip under the editor sets its height; a double-click gives it back
+    Michel, 2026-10-27: "we also need a vertical resizing handle (like mdpad)".
+    When I drag the "first_run" editor's grip down by 120 pixels
+    Then the "first_run" editor grew by about 120 pixels
+    When I double-click the "first_run" editor's grip
+    Then the "first_run" editor is back to its own height
+
+  Scenario: Captions add no lines of their own
+    Michel, 2026-10-27, a snapshot: blank lines between every captioned line.
+    When I wait for the selector "#lc-pyrun-subtitled .lc-pyrun-subs .lc-sub"
+    Then the "subtitled" editor's captions count as many lines as the program
