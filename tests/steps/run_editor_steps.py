@@ -243,3 +243,104 @@ def step_back_to_editing(context, run_id):
 def step_shows_subtitles(context, run_id):
     from playwright.sync_api import expect
     expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub").first).to_be_visible()
+
+
+@then('the "{run_id}" editor\'s run button reads "{text}"')
+def step_run_button_reads(context, run_id, text):
+    from playwright.sync_api import expect
+    expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-run")).to_have_text(text)
+
+
+@then('the "{run_id}" editor\'s "{which}" button is an icon with the tooltip "{tip}"')
+def step_icon_button(context, run_id, which, tip):
+    btn = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-" + which)
+    assert "lc-pyrun-icon" in (btn.get_attribute("class") or ""), "not an icon button"
+    assert (btn.get_attribute("title") or "").startswith(tip), btn.get_attribute("title")
+    assert len((btn.text_content() or "").strip()) <= 2, "the button still carries a word: %r" % btn.text_content()
+
+
+@then('the "{run_id}" editor\'s subtitles switch is "{state}"')
+def step_switch_state(context, run_id, state):
+    from playwright.sync_api import expect
+    sw = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs-btn")
+    expect(sw).to_have_attribute("role", "switch")
+    expect(sw).to_have_attribute("aria-checked", state)
+
+
+@when('I put the caret at the end of the "{run_id}" editor')
+def step_caret_end(context, run_id):
+    ta = _ta(context, run_id)
+    ta.focus()
+    ta.evaluate("el => { const n = el.value.replace(/\\n$/, '').length; el.setSelectionRange(n, n); }")
+
+
+@when('I press Ctrl+Space in the "{run_id}" editor')
+def step_ctrl_space(context, run_id):
+    _ta(context, run_id).press("Control+Space")
+
+
+@when('I press Escape in the "{run_id}" editor')
+def step_escape(context, run_id):
+    _ta(context, run_id).press("Escape")
+
+
+@then('the "{run_id}" editor offers "{a}" and "{b}"')
+def step_offers(context, run_id, a, b=None):
+    from playwright.sync_api import expect
+    root = context.page.locator("#lc-pyrun-" + run_id)
+    expect(root).to_have_attribute("data-lc-comp", re.compile(r"(^|,)" + re.escape(a) + r"(,|$)"), timeout=5_000)
+    if b:
+        expect(root).to_have_attribute("data-lc-comp", re.compile(r"(^|,)" + re.escape(b) + r"(,|$)"))
+
+
+@when('I accept the completion in the "{run_id}" editor')
+def step_accept_completion(context, run_id):
+    _ta(context, run_id).press("Enter")
+
+
+@when('I select the word "{word}" in the "{run_id}" editor')
+def step_select_word(context, word, run_id):
+    ta = _ta(context, run_id)
+    ta.focus()
+    ta.evaluate("""(el, w) => { const i = el.value.indexOf(w); el.setSelectionRange(i, i + w.length);
+      el.dispatchEvent(new Event('select')); }""", word)
+
+
+@then('the "{run_id}" editor lights {n:d} other occurrences of "{word}"')
+def step_lights(context, run_id, n, word):
+    from playwright.sync_api import expect
+    root = context.page.locator("#lc-pyrun-" + run_id)
+    expect(root).to_have_attribute("data-lc-lit", word + ":" + str(n), timeout=5_000)
+    expect(root.locator(".lc-pyrun-marks mark")).to_have_count(n)
+
+
+@then('the "{run_id}" editor offers the name "{a}"')
+def step_offers_one(context, run_id, a):
+    step_offers(context, run_id, a)
+
+
+@then('the "{run_id}" editor\'s captions colour "{token}" as a bold keyword')
+def step_caption_kw(context, run_id, token):
+    el = _sub(context, run_id, token)
+    assert "lc-sub-kw" in (el.get_attribute("class") or ""), el.get_attribute("class")
+    weight = el.evaluate("e => getComputedStyle(e).fontWeight")
+    assert weight in ("700", "bold"), weight
+
+
+@then('the "{run_id}" editor\'s captions colour "{token}" as a string')
+def step_caption_string(context, run_id, token):
+    subs = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub-string")
+    texts = [subs.nth(i).text_content() for i in range(subs.count())]
+    assert any(token in t for t in texts), texts
+
+
+@when('I fold the block at "{token}" in the "{run_id}" editor')
+def step_fold(context, token, run_id):
+    el = _sub(context, run_id, token)
+    el.evaluate("e => e.closest('.lc-sub-line').querySelector('.lc-sub-fold').click()")
+
+
+@then('the "{run_id}" editor hides {n:d} captioned lines')
+def step_hidden_lines(context, run_id, n):
+    from playwright.sync_api import expect
+    expect(context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-subs .lc-sub-line.lc-sub-hidden")).to_have_count(n)

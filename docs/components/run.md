@@ -495,12 +495,12 @@ check a song without ears.
 
 ## 💬 Subtitles — what each part of the program is
 
-Press **💬 Subtitles**: the program is read for you, part by part. Hover a
+Flip the **💬 switch** on the bar: the program is read for you, part by part. Hover a
 word on a laptop, tap it on a phone, and the line under the bar says what it
 is — *a parameter*, *a parameter with a default value*, *a type hint*, *the
 loop variable*, *a function call*, *a named argument*, *a docstring*, *an
 f-string*… in plain words. Press again to edit. `subtitles="on"` opens them
-first, for a page that reads before it runs.
+first, for a page that reads before it runs. The bar itself speaks softly: ▶ Run keeps its word, the rest are icons with a tooltip (🧪 Test, 🩺 Dr. mypy, 🧹 Clear), and 💬 shows its state.
 
 ```python
 def greet(name: str, times: int = 1) -> str:
@@ -517,6 +517,19 @@ def greet(name: str, times: int = 1) -> str:
 greet("Lucky", times=2)
 ```
 {: .run #subtitled subtitles="on" mypy="true" }
+
+## 💡 Completion, and the same symbol lit
+
+**Ctrl+Space** — or two letters of a word — lists what fits: keywords, the
+helpers (`play`, `show`), the program's own names (its functions, classes,
+variables, loop variables), and after a dot the attributes the program
+already uses on that name (`play.` → `tempo`, `wave`, `stop()`). ↑ ↓ to
+choose, Enter or Tab to take it, Esc to close. Nothing is invented: the
+list is read from the program and the runner.
+
+**Select a word** — a double-click does — and every other occurrence of it
+lights up under the colours: where a variable is used, where a parameter
+goes. Click elsewhere and the light goes out.
 
 ## 🧪 From a proof — `self.page.<id>`
 

@@ -147,16 +147,64 @@ option to add subtitles".
     }
     return toks;
   }
-  function html(code) {
-    var out = [];
-    tag(tokens(code)).forEach(function (tk) {
-      if (tk.k === "nl") { out.push("\n"); return; }
-      if (!tk.s || tk.k === "ws") { out.push(esc(tk.t)); return; }
-      var kind = tk.s.split(" — ")[0].replace(/^(a|an|the) /, "");
-      out.push('<span class="lc-sub" data-sub="' + esc(tk.s) + '" title="' + esc(tk.s) + '">' + esc(tk.t) + "</span>");
-    });
-    return out.join("");
+  /* THE COLOURS STAY UNDER THE CAPTIONS (Michel, 2026-10-27: "when the
+     captions are on, the syntax should remain colored; bold for python
+     keywords") — the same palette as the editor's, keywords bold */
+  function colour(tk) {
+    if (tk.k === "comment") return "lc-sub-comment";
+    if (tk.k === "string" || tk.k === "tstring") return "lc-sub-string";
+    if (tk.k === "number") return "lc-sub-number";
+    if (tk.k === "name") {
+      if (KW[tk.t]) return "lc-sub-kw";
+      if (tk.s === SUB.fname || tk.s === SUB.cname || tk.s === SUB.dunder || tk.s === SUB.decorator) return "lc-sub-def";
+      if (BUILTIN[tk.t] && (tk.s || "").indexOf(BUILTIN[tk.t]) === 0) return "lc-sub-builtin";
+    }
+    return "";
   }
-  window.lcSubtitles = { html: html, tokens: function (c) { return tag(tokens(c)); } };
+  /* one <span class="lc-sub-line"> per line, its indent kept, a ▾ on a line
+     that opens a block (def, class, for, if…) so the captioned program folds
+     (Michel, 2026-10-27: "make the code foldable in caption_on mode") */
+  function html(code) {
+    var lines = [], cur = [];
+    tag(tokens(code)).forEach(function (tk) {
+      if (tk.k === "nl") { lines.push(cur.join("")); cur = []; return; }
+      if (!tk.s || tk.k === "ws") { cur.push(esc(tk.t)); return; }
+      var cls = colour(tk);
+      /* a docstring spans lines: one span per line, so the lines stay in step with the program */
+      tk.t.split("\n").forEach(function (piece, k) {
+        if (k) { lines.push(cur.join("")); cur = []; }
+        cur.push('<span class="lc-sub' + (cls ? " " + cls : "") + '" data-sub="' + esc(tk.s) + '" title="' + esc(tk.s) + '">' + esc(piece) + "</span>");
+      });
+    });
+    lines.push(cur.join(""));
+    var raw = code.split("\n"), out = [];
+    function indentOf(l) { var m = /^[ \t]*/.exec(l); return m ? m[0].replace(/\t/g, "    ").length : 0; }
+    for (var i = 0; i < lines.length; i++) {
+      var text = raw[i] || "", ind = indentOf(text), opens = false;
+      if (/:\s*(#.*)?$/.test(text) && text.trim()) {
+        for (var j = i + 1; j < raw.length; j++) { if (!raw[j].trim()) continue; opens = indentOf(raw[j]) > ind; break; }
+      }
+      out.push('<span class="lc-sub-line" data-l="' + i + '" data-indent="' + ind + '"' + (text.trim() ? "" : ' data-blank="1"') + ">" +
+        (opens ? '<button type="button" class="lc-sub-fold" aria-expanded="true" title="Fold this block">▾</button>' : "") + lines[i] + "</span>");
+    }
+    return out.join("\n");
+  }
+  /* fold or unfold the block a ▾ opens: the lines below it that are indented deeper */
+  function fold(btn) {
+    var line = btn.closest(".lc-sub-line"); if (!line) return false;
+    var open = btn.getAttribute("aria-expanded") !== "false", ind = parseInt(line.getAttribute("data-indent") || "0", 10);
+    btn.setAttribute("aria-expanded", open ? "false" : "true");
+    btn.textContent = open ? "▸" : "▾";
+    btn.title = open ? "Unfold this block" : "Fold this block";
+    var el = line.nextElementSibling, n = 0;
+    while (el && el.classList.contains("lc-sub-line")) {
+      var blank = el.getAttribute("data-blank") === "1", deeper = parseInt(el.getAttribute("data-indent") || "0", 10) > ind;
+      if (!blank && !deeper) break;
+      el.classList.toggle("lc-sub-hidden", open); n++;
+      el = el.nextElementSibling;
+    }
+    return n;
+  }
+  window.lcSubtitles = { html: html, fold: fold, tokens: function (c) { return tag(tokens(c)); } };
 })();
 </script>

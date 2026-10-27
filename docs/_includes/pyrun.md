@@ -28,7 +28,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-hl code { font: inherit; background: transparent; padding: 0; color: inherit; display: block; will-change: transform; }
 .lc-pyrun-codewrap .lc-pyrun-code { position: relative; background: transparent !important; color: transparent !important; caret-color: #111; }
 .lc-pyrun-codewrap .lc-pyrun-code::selection { background: rgba(0, 102, 204, 0.18); color: transparent; }
-.lc-pyrun .token.keyword, .lc-pyrun .token.boolean, .lc-pyrun .token.null { color: #cf222e; font-weight: 500; }
+.lc-pyrun .token.keyword, .lc-pyrun .token.boolean, .lc-pyrun .token.null { color: #cf222e; font-weight: 700; }   /* keywords bold (Michel, 2026-10-27) */
 .lc-pyrun .token.string, .lc-pyrun .token.triple-quoted-string { color: #0a3069; }
 .lc-pyrun .token.number { color: #0550ae; }
 .lc-pyrun .token.comment { color: #59636e; font-style: italic; }
@@ -58,17 +58,45 @@ Auto-included by docs/_layouts/default.html.
 /* 💬 SUBTITLES (Michel, 2026-10-27): an overlay over the editor where every
    part of the program says what it is — hover on a laptop, tap on a phone,
    the line under the bar repeats it. Reading mode: the editor waits below. */
-.lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
+.lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 1.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
 .lc-pyrun-subs[hidden] { display: none; }
 .lc-pyrun-subtitled .lc-pyrun-code { pointer-events: none; }
 .lc-pyrun-subs .lc-sub { border-bottom: 1px dotted #8250df; cursor: help; border-radius: 2px; }
+.lc-pyrun-subs .lc-sub-kw { color: #cf222e; font-weight: 700; }
+.lc-pyrun-subs .lc-sub-string { color: #0a3069; }
+.lc-pyrun-subs .lc-sub-number { color: #0550ae; }
+.lc-pyrun-subs .lc-sub-comment { color: #59636e; font-style: italic; }
+.lc-pyrun-subs .lc-sub-def, .lc-pyrun-subs .lc-sub-builtin { color: #8250df; }
+.lc-pyrun-subs .lc-sub-line { display: block; min-height: 1.5em; }
+.lc-pyrun-subs .lc-sub-line.lc-sub-hidden { display: none; }
+.lc-pyrun-subs .lc-sub-fold { display: inline-block; width: 1em; margin-left: -1em; padding: 0; border: none; background: transparent; color: #8250df; cursor: pointer; font: inherit; line-height: inherit; text-align: center; }
 .lc-pyrun-subs .lc-sub:hover, .lc-pyrun-subs .lc-sub.lc-sub-on { background: #efe6ff; }
 .lc-pyrun-subline { padding: 0.5em 0.9em; font-size: 0.85em; background: #faf5ff; border-top: 1px solid #e9d8ff; color: #3b2a63; }
 .lc-pyrun-subline[hidden] { display: none; }
 .lc-pyrun-subline code { background: #efe6ff; padding: 0 0.3em; border-radius: 3px; }
-.lc-pyrun-bar .lc-pyrun-subs-btn { background: #8250df; }
-.lc-pyrun-bar .lc-pyrun-subs-btn:hover:not(:disabled) { background: #6b3fc4; }
-.lc-pyrun-subtitled .lc-pyrun-subs-btn { background: #3b2a63; }
+.lc-pyrun-bar .lc-pyrun-icon { background: transparent; color: #333; padding: 0.25em 0.45em; font-size: 1em; border: 1px solid transparent; }
+.lc-pyrun-bar .lc-pyrun-icon:hover:not(:disabled) { background: #e5e5e5; border-color: #d0d0d0; }
+.lc-pyrun-bar .lc-pyrun-icon:disabled { background: transparent; opacity: 0.5; }
+.lc-pyrun-bar .lc-pyrun-switch { background: transparent; color: #333; display: inline-flex; align-items: center; gap: 0.35em; padding: 0.25em 0.45em; font-size: 1em; border: 1px solid transparent; }
+.lc-pyrun-bar .lc-pyrun-switch:hover:not(:disabled) { background: #e5e5e5; border-color: #d0d0d0; }
+.lc-pyrun-track { display: inline-block; width: 26px; height: 14px; border-radius: 7px; background: #c9c9c9; position: relative; transition: background 0.15s; }
+.lc-pyrun-knob { position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #fff; transition: left 0.15s; }
+.lc-pyrun-switch[aria-checked="true"] .lc-pyrun-track { background: #8250df; }
+.lc-pyrun-switch[aria-checked="true"] .lc-pyrun-knob { left: 14px; }
+/* 💡 COMPLETION (Michel, 2026-10-27: "code completion, a bit like in mdpad"):
+   Ctrl+Space, or a word of two letters, lists what fits — keywords, the
+   helpers, the program's own names, an object's attributes after a dot */
+.lc-pyrun-comp { position: absolute; z-index: 6; min-width: 14em; max-width: 24em; max-height: 13em; overflow: auto; background: #fff; border: 1px solid #c8c8c8; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.12); font-size: 0.85em; }
+.lc-pyrun-comp .o { display: flex; gap: 0.5em; align-items: baseline; padding: 0.2em 0.6em; cursor: pointer; white-space: nowrap; }
+.lc-pyrun-comp .o.on { background: #dbeafe; }
+.lc-pyrun-comp .l { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 600; }
+.lc-pyrun-comp .d { color: #777; overflow: hidden; text-overflow: ellipsis; }
+/* ✨ THE SAME SYMBOL, LIT (Michel, 2026-10-27: "flash the other occurrences
+   of a given symbol when selected"): a layer under the colours marks every
+   other occurrence of the selected word */
+.lc-pyrun-marks { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; pointer-events: none; overflow: hidden; background: transparent; color: transparent; white-space: pre; word-wrap: normal; box-sizing: border-box; }
+.lc-pyrun-marks code { font: inherit; background: transparent; padding: 0; color: inherit; display: block; will-change: transform; }
+.lc-pyrun-marks mark { background: #fff2a8; color: transparent; border-radius: 2px; box-shadow: 0 0 0 1px #f5d76e; }
 .lc-pyrun-out { margin: 0; padding: 0.9em 1em; background: #1e1e1e; color: #d4d4d4; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; white-space: pre-wrap; min-height: 2em; max-height: 300px; overflow-y: auto; }
 .lc-pyrun-out.lc-empty { color: #888; font-style: italic; }
 .lc-pyrun-out .lc-err { color: #ff6b6b; }
@@ -308,7 +336,7 @@ Auto-included by docs/_layouts/default.html.
     "class _Player:",
     "    def __init__(self, run_id):",
     "        self._id = run_id",
-    "        self.tempo = 120",
+    "        self.tempo = 160",
     "        self.wave = 'square'",
     "    def _one(self, note, beats):",
     "        from js import lcPlayNote",
@@ -643,13 +671,15 @@ Auto-included by docs/_layouts/default.html.
       if (!subsEl) return;
       root.classList.toggle("lc-pyrun-subtitled", on);
       subsEl.hidden = !on;
-      if (subsBtn) subsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+      if (subsBtn) subsBtn.setAttribute("aria-checked", on ? "true" : "false");
       if (on) { paintSubs(); if (subLine) { subLine.hidden = false; subLine.textContent = "Hover or tap a part of the program: it says what it is."; } }
       else if (subLine) { subLine.hidden = true; subLine.textContent = ""; }
     }
     if (subsBtn) subsBtn.addEventListener("click", function () { setSubtitles(subsEl.hidden); });
     if (subsEl) {
       subsEl.addEventListener("click", function (e) {
+        var f = e.target && e.target.closest ? e.target.closest(".lc-sub-fold") : null;
+        if (f && window.lcSubtitles && window.lcSubtitles.fold) { e.preventDefault(); window.lcSubtitles.fold(f); return; }
         var t = e.target && e.target.closest ? e.target.closest(".lc-sub") : null;
         subsEl.querySelectorAll(".lc-sub-on").forEach(function (x) { x.classList.remove("lc-sub-on"); });
         if (!t || !subLine) return;
@@ -659,6 +689,141 @@ Auto-included by docs/_layouts/default.html.
       codeEl.addEventListener("input", paintSubs);
       if (opts.subtitles === "on" || opts.subtitles === "true") setSubtitles(true);
     }
+
+    /* ✨ THE SAME SYMBOL, LIT: select a word (a double-click does), and every
+       other occurrence of it lights up under the colours */
+    var marksCode = root.querySelector(".lc-pyrun-marks code"), marksTimer = null;
+    function escHtml(x) { return String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
+    function paintMarks() {
+      marksTimer = null;
+      if (!marksCode) return;
+      var v = codeEl.value, a = codeEl.selectionStart, b = codeEl.selectionEnd, word = v.slice(a, b);
+      if (!word || !/^[A-Za-z_][A-Za-z_0-9]*$/.test(word) || document.activeElement !== codeEl) { marksCode.innerHTML = ""; root.removeAttribute("data-lc-lit"); return; }
+      var re = new RegExp("\\b" + word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "g"), out = "", last = 0, m, n = 0;
+      while ((m = re.exec(v))) {
+        if (m.index === a) continue;                      /* the selected one is already lit by the selection */
+        out += escHtml(v.slice(last, m.index)) + "<mark>" + escHtml(m[0]) + "</mark>";
+        last = m.index + m[0].length; n++;
+      }
+      marksCode.innerHTML = out + escHtml(v.slice(last)) + (v.slice(-1) === "\n" ? " " : "");
+      marksCode.style.transform = hlCode ? hlCode.style.transform : "";
+      root.setAttribute("data-lc-lit", n ? word + ":" + n : "");
+    }
+    function marksSoon() { clearTimeout(marksTimer); marksTimer = setTimeout(paintMarks, 80); }
+    if (marksCode) {
+      ["select", "mouseup", "keyup", "blur"].forEach(function (ev) { codeEl.addEventListener(ev, marksSoon); });
+      codeEl.addEventListener("scroll", function () { if (hlCode) marksCode.style.transform = hlCode.style.transform; });
+      codeEl.addEventListener("input", function () { if (marksCode.innerHTML) marksSoon(); });
+    }
+
+    /* 💡 COMPLETION: Ctrl+Space, or two letters of a word, lists what fits
+       — keywords, the helpers, the program's own names, and after a dot the
+       attributes the program itself uses on that name. Nothing invented. */
+    var KEYWORDS = ["def", "class", "return", "for", "in", "while", "if", "elif", "else", "import", "from", "as", "True", "False", "None", "and", "or", "not", "is", "lambda", "with", "pass", "break", "continue", "try", "except", "finally", "raise", "yield", "global", "assert"];
+    var BUILTINS = ["print", "len", "range", "str", "int", "float", "list", "dict", "tuple", "bool", "input", "type", "isinstance", "sorted", "max", "min", "sum", "abs", "round", "enumerate", "zip", "reversed", "any", "all", "open", "help", "repr", "format"];
+    var HELPERS = { play: "play(note, beats) — a note, or a list of notes", show: "show(obj) — draw it as a card", Object: "Object(**kw) — a simple attribute holder", yaml: "yaml.load(text)" };
+    var DOTS = { play: ["tempo", "wave", "stop()"], show: ["clear()", "grid(rows)", "form(obj)"], yaml: ["load(text)"] };
+    var comp = { el: null, items: [], i: 0, at: 0 };
+    function compClose() { if (comp.el) { comp.el.remove(); comp.el = null; } comp.items = []; root.removeAttribute("data-lc-comp"); }
+    function wordAt(v, pos) {
+      var a = pos; while (a > 0 && /[A-Za-z_0-9]/.test(v.charAt(a - 1))) a--;
+      return { at: a, prefix: v.slice(a, pos), dot: v.charAt(a - 1) === "." };
+    }
+    function ownerBefore(v, at) {
+      var e = at - 1, b = e; while (b > 0 && /[A-Za-z_0-9]/.test(v.charAt(b - 1))) b--;
+      return v.slice(b, e);
+    }
+    function candidates(v, w) {
+      var seen = {}, out = [];
+      function add(label, detail, icon) { if (seen[label]) return; seen[label] = 1; out.push({ label: label, detail: detail || "", icon: icon || "" }); }
+      if (w.dot) {
+        var owner = ownerBefore(v, w.at);
+        (DOTS[owner] || []).forEach(function (x) { add(x, "", "·"); });
+        var re = new RegExp("\\b" + owner + "\\.([A-Za-z_][A-Za-z_0-9]*)", "g"), m;
+        while ((m = re.exec(v))) add(m[1], "used in the program", "·");
+        var re2 = /self\.([A-Za-z_][A-Za-z_0-9]*)/g;
+        while ((m = re2.exec(v))) add(m[1], "an attribute", "·");
+      } else {
+        Object.keys(HELPERS).forEach(function (h) { add(h, HELPERS[h], "🧰"); });
+        var re3 = /\b(?:def|class)\s+([A-Za-z_][A-Za-z_0-9]*)/g, m3;
+        while ((m3 = re3.exec(v))) add(m3[1], "defined here", "📌");
+        var re4 = /^\s*([A-Za-z_][A-Za-z_0-9]*)\s*(?::[^=\n]+)?=(?!=)/gm;
+        while ((m3 = re4.exec(v))) add(m3[1], "a variable", "📌");
+        var re5 = /\bfor\s+([A-Za-z_][A-Za-z_0-9]*)/g;
+        while ((m3 = re5.exec(v))) add(m3[1], "a loop variable", "📌");
+        KEYWORDS.forEach(function (k) { add(k, "keyword", "🔑"); });
+        BUILTINS.forEach(function (k) { add(k, "built-in", "⚙️"); });
+        var re6 = /[A-Za-z_][A-Za-z_0-9]{2,}/g;
+        while ((m3 = re6.exec(v))) add(m3[0], "in the program", "");
+      }
+      var pre = w.prefix.toLowerCase();
+      return out.filter(function (it) { return it.label.toLowerCase().indexOf(pre) === 0 && it.label !== w.prefix; }).slice(0, 12);
+    }
+    function caretRect() {
+      var wrapEl = codeEl.parentNode, cs = getComputedStyle(codeEl);
+      var m = document.createElement("div");
+      m.style.cssText = "position:absolute;visibility:hidden;white-space:pre;top:0;left:0;";
+      ["fontFamily", "fontSize", "fontWeight", "lineHeight", "letterSpacing", "tabSize", "paddingTop", "paddingRight", "paddingBottom", "paddingLeft", "boxSizing"].forEach(function (k) { m.style[k] = cs[k]; });
+      m.style.width = codeEl.clientWidth + "px";
+      var before = codeEl.value.slice(0, codeEl.selectionStart);
+      m.textContent = before;
+      var sp = document.createElement("span"); sp.textContent = "\u200b"; m.appendChild(sp);
+      wrapEl.appendChild(m);
+      var r = sp.getBoundingClientRect(), h = wrapEl.getBoundingClientRect();
+      wrapEl.removeChild(m);
+      return { left: r.left - h.left - codeEl.scrollLeft, bottom: r.bottom - h.top - codeEl.scrollTop };
+    }
+    function compShow() {
+      var wrapEl = codeEl.parentNode;
+      if (!comp.el) { comp.el = document.createElement("div"); comp.el.className = "lc-pyrun-comp"; comp.el.setAttribute("role", "listbox"); wrapEl.appendChild(comp.el); }
+      comp.el.innerHTML = comp.items.map(function (it, k) {
+        return "<div class='o" + (k === comp.i ? " on" : "") + "' role='option' data-k='" + k + "'><span class='i'>" + escHtml(it.icon) + "</span><span class='l'>" + escHtml(it.label) + "</span><span class='d'>" + escHtml(it.detail) + "</span></div>";
+      }).join("");
+      var r = caretRect(), hw = wrapEl.getBoundingClientRect();
+      comp.el.style.left = Math.max(0, Math.min(r.left, hw.width - 220)) + "px";
+      comp.el.style.top = (r.bottom + 2) + "px";
+      root.setAttribute("data-lc-comp", comp.items.map(function (x) { return x.label; }).join(","));
+    }
+    function complete(force) {
+      var v = codeEl.value, w = wordAt(v, codeEl.selectionStart);
+      if (!force && !w.dot && w.prefix.length < 2) { compClose(); return; }
+      if (!force && w.dot && !w.prefix.length) { /* a dot just typed: offer at once */ }
+      var items = candidates(v, w);
+      if (!items.length) { compClose(); return; }
+      comp.items = items; comp.i = 0; comp.at = w.at; compShow();
+    }
+    function compAccept() {
+      var it = comp.items[comp.i]; if (!it) return;
+      var v = codeEl.value, a = comp.at, b = codeEl.selectionStart, ins = it.label;
+      var back = ins.slice(-2) === "()" ? 1 : 0;
+      codeEl.focus();
+      codeEl.setSelectionRange(a, b);
+      if (!document.execCommand || !document.execCommand("insertText", false, ins)) {
+        codeEl.value = v.slice(0, a) + ins + v.slice(b);
+        codeEl.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+      var c = a + ins.length - back; codeEl.setSelectionRange(c, c);
+      compClose();
+    }
+    codeEl.addEventListener("keydown", function (e) {
+      if ((e.ctrlKey || e.metaKey) && e.code === "Space") { e.preventDefault(); complete(true); return; }
+      if (!comp.el) return;
+      if (e.key === "Escape") { e.preventDefault(); compClose(); }
+      else if (e.key === "ArrowDown") { e.preventDefault(); comp.i = (comp.i + 1) % comp.items.length; compShow(); }
+      else if (e.key === "ArrowUp") { e.preventDefault(); comp.i = (comp.i + comp.items.length - 1) % comp.items.length; compShow(); }
+      else if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); compAccept(); }
+    }, true);
+    codeEl.addEventListener("input", function (e) {
+      var d = e && e.data;
+      if (d && /^[A-Za-z_.]$/.test(d)) complete(false); else compClose();
+    });
+    codeEl.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== codeEl) compClose(); }, 150); });
+    root.addEventListener("mousedown", function (e) {
+      var o = e.target && e.target.closest ? e.target.closest(".lc-pyrun-comp .o") : null;
+      if (!o) return;
+      e.preventDefault(); comp.i = parseInt(o.getAttribute("data-k"), 10) || 0; compAccept();
+    });
+    root._lcComplete = function () { complete(true); return comp.items.map(function (x) { return x.label; }); };
 
     /* TAB INDENTS, SHIFT+TAB DEDENTS (Michel, 2026-10-07: "when a text is
        selected, a tab deletes it"). No selection: four spaces at the caret
@@ -961,8 +1126,18 @@ Auto-included by docs/_layouts/default.html.
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>Python runner</span><span class="lc-pyrun-lang">python</span></div>';
     }
-    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
-    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button><button class="lc-pyrun-test">🧪 Test</button>' + (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy" title="Dr. mypy (lite): type hints checked in the page">🩺 Dr. mypy</button>' : '') + '<button class="lc-pyrun-subs-btn" title="Subtitles: what each part of the program is" aria-pressed="false">💬 Subtitles</button><button class="lc-pyrun-clear">Clear</button><span class="lc-pyrun-status"></span></div>';
+    html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-marks" aria-hidden="true"><code></code></pre><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
+    /* THE BAR SPEAKS SOFTLY (Michel, 2026-10-27: "make the buttons more
+       subtle (icons + tooltips for labels) except for ▶ Run; make the
+       subtitles button more an on/off switch so the current state is
+       visible"): ▶ Run keeps its word; the rest are icons with a tooltip
+       and an aria-label; 💬 is a switch that shows its state. */
+    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button>' +
+      '<button class="lc-pyrun-test lc-pyrun-icon" title="Test — run the >>> examples in the docstrings" aria-label="Test">🧪</button>' +
+      (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy lc-pyrun-icon" title="Dr. mypy (lite) — check the type hints" aria-label="Dr. mypy">🩺</button>' : '') +
+      '<button class="lc-pyrun-clear lc-pyrun-icon" title="Clear the output" aria-label="Clear">🧹</button>' +
+      '<button class="lc-pyrun-subs-btn lc-pyrun-switch" role="switch" aria-checked="false" title="Subtitles — what each part of the program is" aria-label="Subtitles"><span class="lc-pyrun-track"><span class="lc-pyrun-knob"></span></span>💬</button>' +
+      '<span class="lc-pyrun-status"></span></div>';
     html += '<div class="lc-pyrun-subline" hidden></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
