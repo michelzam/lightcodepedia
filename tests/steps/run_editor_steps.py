@@ -173,3 +173,19 @@ def step_pad_clean(context, pad_id):
     context.page.wait_for_function(
         "p => { const e = document.querySelector(\"[data-lc-id='\" + p + \"']\"); return e && !e.hasAttribute('data-lc-errors'); }",
         arg=pad_id, timeout=30_000)
+
+
+@then('the "{run_id}" editor played {n:d} notes, the last "{note}"')
+def step_editor_played(context, run_id, n, note):
+    """what play() queued, as the block records it (song.md): a count and the last note"""
+    from playwright.sync_api import expect
+    el = context.page.locator("#lc-pyrun-" + run_id)
+    expect(el).to_have_attribute("data-lc-played", str(n), timeout=20_000)
+    expect(el).to_have_attribute("data-lc-last-note", note)
+
+
+@then('the "{run_id}" editor\'s output ends with "{text}"')
+def step_editor_output_ends(context, run_id, text):
+    from playwright.sync_api import expect
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    expect(out).to_contain_text(text, timeout=20_000)

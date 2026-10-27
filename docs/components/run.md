@@ -471,6 +471,27 @@ Pauses are capped at 2 s each, so a slip like `sleep(60)` never freezes a
 lesson. The same frames play in an [inspector](/components/examples/model)'s
 console when a verb animates.
 
+## 🎵 Sound — `play()`
+
+The browser has a synthesizer; every runner has `play`. A note is a name
+(`"C5"`, `"F#4"`, `"Bb3"`, `"R"` for a rest) and a length in beats; calls queue
+one after the other, so a loop is a melody. Any object with `note` and
+`duration` works — a tuple, a dict, your own class, a dataset row.
+
+```python
+play.tempo = 180
+play.wave = "square"            # sine, square, triangle, sawtooth
+coin = [("B5", 1), ("E6", 3)]
+for note, beats in coin:
+    play(note, beats)
+print("ping!")
+```
+{: .run #play_coin }
+
+Audio needs one gesture from the reader — ▶ Run is one. The block records
+what was queued (`data-lc-played`, `data-lc-last-note`), so a proof can
+check a song without ears.
+
 ## 🧰 Built-in helpers (always available)
 
 | Symbol | What it does |
@@ -483,6 +504,7 @@ console when a verb animates.
 | `show.clear()` | Removes all cards |
 | `show.grid(rows, title=None, height=300)` | Renders a sortable/filterable [📊 Datagrid](/components/datagrid) |
 | `show.form(obj, title=None)` | Renders a [☷ Form](/components/form) |
+| `play(note, beats=1)` · `play(notes)` | Plays a note (`"C5"`), or a list of notes, tuples, dicts or objects with `note` and `duration`, one after the other — `play.tempo`, `play.wave`, `play.stop()` |
 | `yaml.load(s)` | Parses a YAML string into Python objects |
 
 ## ⚠️ Limits worth knowing
