@@ -59,6 +59,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-bar .lc-pyrun-test { background: #3d7330; }
 .lc-pyrun-bar .lc-pyrun-test:hover:not(:disabled) { background: #33641f; }
 .lc-pyrun-bar .lc-pyrun-status { margin-left: auto; font-size: 0.78em; color: #666; }
+.lc-pyrun-bar .lc-pyrun-sound { font-size: 0.78em; }
+.lc-pyrun-bar .lc-pyrun-sound[hidden] { display: none; }
 /* 💬 SUBTITLES (Michel, 2026-10-27): an overlay over the editor where every
    part of the program says what it is — hover on a laptop, tap on a phone,
    the line under the bar repeats it. Reading mode: the editor waits below. */
@@ -1126,10 +1128,31 @@ Auto-included by docs/_layouts/default.html.
       }
     }
 
+    /* 🔈 THE SOUND CHECK (Michel, 2026-10-27: "Still no sound!" on Mac
+       Safari and the iPhone, which this rig cannot run): after a run that
+       queued notes, the bar says how many and whether the audio context runs
+       — "🔈 2" or "🔇 suspended" — and a tap on it plays one note inside the
+       tap itself, past nothing. The reader's report, not a console. */
+    var soundBtn = root.querySelector(".lc-pyrun-sound");
+    function soundCheck(before) {
+      if (!soundBtn || !window.lcPlayState) return;
+      var played = (parseInt(root.getAttribute("data-lc-played") || "0", 10) || 0) - before;
+      if (played <= 0) return;
+      var st = window.lcPlayState().state;
+      soundBtn.hidden = false;
+      soundBtn.setAttribute("data-lc-sound", st);
+      soundBtn.textContent = st === "running" ? "🔈 " + played : "🔇 " + st;
+    }
+    if (soundBtn) soundBtn.addEventListener("click", function () {
+      var st = window.lcPlayBeep ? window.lcPlayBeep(ID) : "none";
+      soundBtn.setAttribute("data-lc-sound", st);
+      soundBtn.textContent = (st === "running" ? "🔈" : "🔇") + " " + st;
+    });
     runBtn.addEventListener("pointerdown", function () { if (window.lcPlayWarm) window.lcPlayWarm(); });
     runBtn.addEventListener("click", function(){
       if (window.lcPlayWarm) window.lcPlayWarm();      /* inside the gesture: Safari and iOS allow sound from here only */
       window._lcPlayMuted = null;
+      var playedBefore = parseInt(root.getAttribute("data-lc-played") || "0", 10) || 0;
       loadMp().then(function(m){
         clearTests();
         status.textContent = "running…";
@@ -1137,6 +1160,7 @@ Auto-included by docs/_layouts/default.html.
         return runAsking(m).then(function (ok) {
           status.textContent = ok ? "done" : "error";
           status.style.color = "";
+          soundCheck(playedBefore);
           repaintBound();
           checkExpected(ok);
         });
@@ -1275,6 +1299,7 @@ Auto-included by docs/_layouts/default.html.
       (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy lc-pyrun-icon" title="Dr. mypy (lite) — check the type hints" aria-label="Dr. mypy">🩺</button>' : '') +
       '<button class="lc-pyrun-clear" title="Clear the output">Clear</button>' +
       '<button class="lc-pyrun-subs-btn lc-pyrun-switch" role="switch" aria-checked="false" title="Subtitles — what each part of the program is" aria-label="Subtitles"><span class="lc-pyrun-track"><span class="lc-pyrun-knob"></span></span>💬</button>' +
+      '<button class="lc-pyrun-sound lc-pyrun-icon" hidden title="Sound check — the notes this run queued, and the audio state; tap to hear one note at once" aria-label="Sound check"></button>' +
       '<span class="lc-pyrun-status"></span></div>';
     html += '<div class="lc-pyrun-subline" hidden></div>';
     html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';

@@ -449,3 +449,17 @@ def step_audio_state(context, n, run_id):
     assert st, "song.md exposes no state"
     assert st["state"] == "running", "the audio context is %s" % st["state"]
     assert st["queued"].get(run_id) == n, st
+
+
+@then('the "{run_id}" editor\'s sound check reads "{text}"')
+def step_sound_check(context, run_id, text):
+    """the bar's 🔈 after a run: the notes queued and the audio state (2026-10-27, Safari silent — the reader's report)"""
+    sel = "#lc-pyrun-%s .lc-pyrun-sound" % run_id
+    context.page.wait_for_selector(sel, state="visible", timeout=5000)
+    got = context.page.inner_text(sel).strip()
+    assert got == text, "sound check reads %r, expected %r" % (got, text)
+
+
+@when('I tap the "{run_id}" editor\'s sound check')
+def step_tap_sound_check(context, run_id):
+    context.page.click("#lc-pyrun-%s .lc-pyrun-sound" % run_id)

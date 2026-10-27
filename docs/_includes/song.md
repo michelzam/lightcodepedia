@@ -92,6 +92,20 @@ in the browser from our micropython examples so we can play a song".
     } catch (e) {}
     return true;
   };
+  /* 🔈 THE SOUND CHECK (Michel, 2026-10-27, Mac Safari and the iPhone:
+     "Still no sound!" — not reproducible here, no WebKit): one note played
+     inside the tap itself, no MicroPython, no queue. If this rings and the
+     program does not, the fault is in what is scheduled after the gesture;
+     if this is silent too, the page is not allowed to sound (tab, site or
+     the phone's switch). Marks nothing: it is not the program's note. */
+  window.lcPlayBeep = function (id) {
+    window.lcPlayWarm();
+    var c = context();
+    if (!c) return "none";
+    queues[id] = { at: 0 };
+    schedule(id, "C5", 0.3, "square");
+    return c.state;
+  };
   /* silence the block's queue; a new run starts from now */
   window.lcPlayStop = function (id) {
     var q = queues[id];
