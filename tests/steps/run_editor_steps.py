@@ -451,6 +451,19 @@ def step_audio_state(context, n, run_id):
     assert st["queued"].get(run_id) == n, st
 
 
+@given('the page is told it is an iPhone')
+def step_say_iphone(context):
+    context.page.evaluate("() => { window.lcPlayCarrier = true; }")
+
+
+@then('the silent carrier is playing')
+def step_carrier(context):
+    """the iPhone's switch (2026-10-28): a silent <audio> plays with the notes, so iOS is in playback mode"""
+    st = context.page.evaluate("() => window.lcPlayState()")
+    assert st.get("carrier") == "playing", st
+    assert context.page.evaluate("() => { const a = document.querySelector('audio.lc-play-carrier'); return a && a.loop && !a.paused; }"), "no looping carrier"
+
+
 @then('the "{run_id}" editor\'s sound check reads "{text}"')
 def step_sound_check(context, run_id, text):
     """the bar's 🔈 after a run: the notes queued and the audio state (2026-10-27, Safari silent — the reader's report)"""

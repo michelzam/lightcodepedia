@@ -68,19 +68,65 @@ in the browser from our micropython examples so we can play a song".
        jingles' path, the one that rang. */
     if (c.state !== "running") { try { c.resume(); } catch (e) {} }
     schedule(id, name, seconds, wave);
+    carryUntil(1.5);
     return seconds;
   };
   /* what the page's suite and a curious author may ask: the context's state and what was queued */
   window.lcPlayState = function () {
     var q = {}; Object.keys(queues).forEach(function (k) { q[k] = (queues[k].nodes || []).length; });
-    return { state: ctx ? ctx.state : "none", queued: q };
+    return { state: ctx ? ctx.state : "none", queued: q, carrier: carrier ? (carrier.paused ? "paused" : "playing") : "none" };
   };
   /* SAFARI AND THE IPHONE PLAY NOTHING SCHEDULED OUTSIDE A GESTURE (Michel,
      2026-10-27: "why the sound doesn't ring anymore in safari or in my
      iphone?"): the notes are queued after MicroPython ran, past the click's
      own call stack. The ▶ Run click warms the context first — created and
      resumed inside the gesture — so what the program queues later plays. */
+  /* THE IPHONE'S SWITCH (Michel, 2026-10-28: the Mac rings — Safari, Chrome,
+     Canvas — "but still not on my iPhone"): iOS mutes Web Audio under the
+     ring/silent switch, unless a media element is playing — then the page is
+     in playback mode and the switch no longer applies. So the ▶ Run tap also
+     plays a silent <audio> (a WAV built here, inline), looped while notes
+     are queued and stopped a moment after the last one ends. */
+  var carrier = null, carrierOff = null;
+  /* iOS only (Michel, 2026-10-28: "do not break what works already" — the
+     Mac rings as is): an iPhone or iPad, the iPad that calls itself a Mac
+     included; the suite may say so to the page */
+  window.lcPlayCarrier = /iP(hone|od|ad)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  function silentWav(seconds) {
+    var rate = 8000, n = Math.round(rate * seconds), b = new Uint8Array(44 + n), v = new DataView(b.buffer);
+    function str(o, t) { for (var i = 0; i < t.length; i++) b[o + i] = t.charCodeAt(i); }
+    str(0, "RIFF"); v.setUint32(4, 36 + n, true); str(8, "WAVE"); str(12, "fmt "); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, rate, true); v.setUint32(28, rate, true);
+    v.setUint16(32, 1, true); v.setUint16(34, 8, true); str(36, "data"); v.setUint32(40, n, true);
+    for (var i = 0; i < n; i++) b[44 + i] = 128;
+    var s = ""; for (var j = 0; j < b.length; j++) s += String.fromCharCode(b[j]);
+    return "data:audio/wav;base64," + btoa(s);
+  }
+  function carry() {
+    if (!window.lcPlayCarrier) return;
+    try {
+      if (!carrier) {
+        carrier = document.createElement("audio");
+        carrier.setAttribute("playsinline", ""); carrier.setAttribute("aria-hidden", "true");
+        carrier.className = "lc-play-carrier"; carrier.loop = true; carrier.preload = "auto";
+        carrier.src = silentWav(0.5);
+        document.body.appendChild(carrier);
+      }
+      var p = carrier.play(); if (p && p.catch) p.catch(function () {});
+    } catch (e) {}
+    carryUntil(1.5);
+  }
+  /* stop the carrier `seconds` after the last queued note ends */
+  function carryUntil(seconds) {
+    if (!carrier) return;
+    var c = ctx, last = 0;
+    Object.keys(queues).forEach(function (k) { last = Math.max(last, queues[k].at || 0); });
+    var wait = Math.max(seconds, c ? last - c.currentTime + 1 : seconds);
+    if (carrierOff) clearTimeout(carrierOff);
+    carrierOff = setTimeout(function () { try { carrier.pause(); } catch (e) {} }, wait * 1000);
+  }
   window.lcPlayWarm = function () {
+    carry();
     var c = context();
     if (!c) return false;
     try { c.resume(); } catch (e) {}

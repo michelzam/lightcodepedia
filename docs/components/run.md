@@ -495,7 +495,10 @@ what was queued (`data-lc-played`, `data-lc-last-note`), so a proof can
 check a song without ears. After a run that played, the bar shows a **sound
 check**: `🔈 2` — two notes queued, the audio running — or `🔇 suspended`
 when the browser has not allowed sound yet. Tap it: one note plays inside
-the tap itself. Silence there is the page's, not the program's.
+the tap itself. Silence there is the page's, not the program's. On an
+iPhone or iPad the ring/silent switch would mute Web Audio; there, and
+only there, the ▶ Run tap also plays a silent track, which puts the page in
+playback mode, and the notes pass.
 
 ## 💬 Subtitles — what each part of the program is
 
