@@ -926,7 +926,17 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                 var doorUrl = (window.lcHref ? window.lcHref("/courses/join") : "/courses/join") + "?go=bench" + (pairedHub ? "&hub=" + encodeURIComponent(pairedHub) : "");
                 fetch("https://api.github.com/repos/" + barSt.repo, { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github+json", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
                   .then(function (r2) {
-                    if (r2.ok)
+                    if (r2.ok && /-vault$/.test(barSt.repo || ""))
+                      /* THE VAULT IS NOT A BENCH (Michel, 2026-10-28: Assignment
+                         07's frame said "nothing in your bench yet" about a
+                         recap the vault had never received — the page was
+                         written after the last courses publish). A vault
+                         404 is the teacher's: the course has no such page
+                         yet; neither 💾 nor a Refresh on the learner's side
+                         can bring it. */
+                      status.innerHTML = "📄 Not in the course yet: <code>" + (barSt.repo || "") + "</code> has no <code>" + esc(barSt.path || "") +
+                        "</code>. Nothing to do on your side — the page reaches the course when the teacher publishes it.";
+                    else if (r2.ok)
                       /* TWO CAUSES, ONE 404, AND THE RUNNER CANNOT TELL THEM
                          APART: a lesson page the hub has not delivered yet
                          (Refresh fixes it), or a page the learner builds and

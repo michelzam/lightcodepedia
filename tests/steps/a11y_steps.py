@@ -359,3 +359,28 @@ def step_grid_cells_decided(context, rule):
             raise AssertionError("a grid cell still waits for a human: " + row.inner_text()[:200])
         if "overlapped" in (row.locator("i").text_content() or ""):
             assert rule in row.locator(".ed-a11y-byrule").text_content(), row.inner_text()
+
+
+@given('a classic course key that reads "{repo}" is in the browser')
+def step_classic_key(context, repo):
+    """a key the runner probes live: /user answers with the repo scope, the repo answers 200"""
+    context.page.add_init_script("localStorage.setItem('lc_ed_pat','ghp_reader');")
+    context.page.route("**/api.github.com/user",
+                       lambda r: r.fulfill(status=200, headers={"X-OAuth-Scopes": "repo", "Access-Control-Expose-Headers": "X-OAuth-Scopes"},
+                                           json={"login": "reader"}))
+    context.page.route("**/api.github.com/repos/" + repo,
+                       lambda r: r.fulfill(status=200, json={"full_name": repo}))
+
+
+@then('the runner\'s status says "{text}" and names "{repo}"')
+def step_status_says(context, text, repo):
+    context.page.wait_for_function(
+        "(t) => (document.querySelector('.lc-run-status') || {}).textContent?.indexOf(t) >= 0", arg=text, timeout=10_000)
+    got = context.page.inner_text(".lc-run-status")
+    assert repo in got, got
+
+
+@then("the runner's status does not mention the bench")
+def step_status_no_bench(context):
+    got = context.page.inner_text(".lc-run-status")
+    assert "bench" not in got.lower(), got

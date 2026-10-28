@@ -55,6 +55,19 @@ Feature: What we paint ourselves reads, and names itself
     And I wait for the page to be interactive
     Then the text in ".lc-run-status code" reads at AA contrast
 
+  Scenario: A page the vault never received is the teacher's, not the learner's bench
+    Michel, 2026-10-28: Assignment 07's frame said "nothing in your bench
+    yet" about a recap written after the last courses publish. With a key
+    that reads the vault fine, a vault 404 names the course, not the bench.
+
+    Given the GitHub API answers 404 for anything else
+    And a marked shim is preinstalled
+    And a classic course key that reads "acme/demo-vault" is in the browser
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/missing.md"
+    And I wait for the page to be interactive
+    Then the runner's status says "Not in the course yet" and names "acme/demo-vault"
+    And the runner's status does not mention the bench
+
 
   Scenario: Every map marker has a role and says what it marks
     The map library stamps each dot "Map marker" on a box with no role — a

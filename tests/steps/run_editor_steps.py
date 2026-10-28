@@ -429,9 +429,21 @@ def step_same_colour(context, run_id, name):
 
 @then('the "{run_id}" editor\'s comment is lighter than its code')
 def step_comment_lighter(context, run_id):
-    c = context.page.evaluate("""(id) => { const e = document.querySelector('#lc-pyrun-' + id + ' .lc-pyrun-hl .token.comment');
-        const m = getComputedStyle(e).color.match(/\\d+/g).map(Number); return (m[0] + m[1] + m[2]) / 3; }""", run_id)
-    assert c > 120, "the comment is still dark: %s" % c
+    # lighter than the code, yet readable: AA contrast (4.5:1) on the editor's own background —
+    # the a11y suite holds that line (2026-10-28, the first grey chosen was too light for it)
+    got = context.page.evaluate("""(id) => {
+        const root = document.querySelector('#lc-pyrun-' + id);
+        const rgb = (el, prop) => getComputedStyle(el)[prop].match(/\\d+/g).slice(0, 3).map(Number);
+        const lum = (c) => { const f = (v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+                             return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]); };
+        const com = rgb(root.querySelector('.lc-pyrun-hl .token.comment'), 'color');
+        const code = rgb(root.querySelector('.lc-pyrun-hl code'), 'color');
+        const bg = rgb(root.querySelector('.lc-pyrun-editor'), 'backgroundColor');
+        const avg = (c) => (c[0] + c[1] + c[2]) / 3;
+        const cr = (lum(bg) + 0.05) / (lum(com) + 0.05);
+        return { lighter: avg(com) > avg(code) + 60, contrast: Math.round(cr * 100) / 100 }; }""", run_id)
+    assert got["lighter"], "the comment is still dark: %s" % got
+    assert got["contrast"] >= 4.5, "the comment is too light to read (AA wants 4.5:1): %s" % got
 
 
 @then('the "{run_id}" editor\'s punctuation and operators wear their own colours')

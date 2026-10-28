@@ -34,7 +34,7 @@ Auto-included by docs/_layouts/default.html.
 /* THE PALETTE (Michel, 2026-10-27): comments a lighter grey, punctuation and
    operators in their own colours, a name the same colour where it is defined
    and where it is called (Note the class, Note(...) the call) */
-.lc-pyrun .token.comment { color: #8b949e; font-style: italic; }
+.lc-pyrun .token.comment { color: #6a737d; font-style: italic; }
 .lc-pyrun .token.function, .lc-pyrun .token.class-name, .lc-pyrun .token.builtin, .lc-pyrun .token.decorator, .lc-pyrun .token.call, .lc-pyrun .token.type-name { color: #8250df; }
 .lc-pyrun .token.operator { color: #b35900; }
 .lc-pyrun .token.punctuation { color: #9aa0a6; }
@@ -71,7 +71,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-subs .lc-sub-kw { color: #cf222e; font-weight: 700; }
 .lc-pyrun-subs .lc-sub-string { color: #0a3069; }
 .lc-pyrun-subs .lc-sub-number { color: #0550ae; }
-.lc-pyrun-subs .lc-sub-comment { color: #8b949e; font-style: italic; }
+.lc-pyrun-subs .lc-sub-comment { color: #6a737d; font-style: italic; }
 .lc-pyrun-subs .lc-sub-def, .lc-pyrun-subs .lc-sub-builtin, .lc-pyrun-subs .lc-sub-call, .lc-pyrun-subs .lc-sub-type { color: #8250df; }
 .lc-pyrun-subs .lc-sub-op { color: #b35900; }
 .lc-pyrun-subs .lc-sub-punct { color: #9aa0a6; }
