@@ -376,6 +376,26 @@ Auto-included by docs/_layouts/default.html.
     "        lcPlayStop(self._id)",
     "play = _Player('__ID__')",
     "_lc_player = play",
+    /* 📄 A FENCE IS A FILE (Michel, 2026-10-28: "make/fake an open file from
+       the micropython script who will in fact embed a csv file"): open(name)
+       reads a {: .file name="…" } block of this page, or a dataset's
+       "<id>.csv" / "<id>.json", as a file — with, readline, iteration, read.
+       Reading only: a page is not a disk. A missing name raises what Python
+       raises. The runner keeps regular Python; the data keeps its own block. */
+    "import io as _lc_io",
+    "try:",
+    "    FileNotFoundError",
+    "except NameError:",
+    "    class FileNotFoundError(OSError):",
+    "        pass",
+    "def open(name, mode='r', *args, **kwargs):",
+    "    from js import lcFileText",
+    "    if 'w' in mode or 'a' in mode or '+' in mode or 'x' in mode:",
+    "        raise OSError('a page is read only: ' + str(name))",
+    "    text = lcFileText(str(name))",
+    "    if text is None:",
+    "        raise FileNotFoundError('No such file on this page: ' + str(name))",
+    "    return _lc_io.StringIO(str(text))",
     "import sys as _lc_sys",
     "def _lc_imports(src, top=True):",
     "    if top:",
@@ -393,7 +413,7 @@ Auto-included by docs/_layouts/default.html.
     "    src = lcRunSource(name)",
     "    if src is None:",
     "        return None",
-    "    d = {'__name__': name, '__lc_runner__': True, 'play': play, '_lc_player': play, 'show': show, 'Object': Object}",
+    "    d = {'__name__': name, '__lc_runner__': True, 'play': play, '_lc_player': play, 'show': show, 'Object': Object, 'open': open}",
     "    _lc_imports(src, False)",
     "    exec(str(src), d)",
     "    _lc_sys.modules[name] = type(name, (), d)",
@@ -815,7 +835,7 @@ Auto-included by docs/_layouts/default.html.
        attributes the program itself uses on that name. Nothing invented. */
     var KEYWORDS = ["def", "class", "return", "for", "in", "while", "if", "elif", "else", "import", "from", "as", "True", "False", "None", "and", "or", "not", "is", "lambda", "with", "pass", "break", "continue", "try", "except", "finally", "raise", "yield", "global", "assert"];
     var BUILTINS = ["print", "len", "range", "str", "int", "float", "list", "dict", "tuple", "bool", "input", "type", "isinstance", "sorted", "max", "min", "sum", "abs", "round", "enumerate", "zip", "reversed", "any", "all", "open", "help", "repr", "format"];
-    var HELPERS = { play: "play(note, beats) — a note, or a list of notes", show: "show(obj) — draw it as a card", Object: "Object(**kw) — a simple attribute holder", yaml: "yaml.load(text)" };
+    var HELPERS = { play: "play(note, beats) — a note, or a list of notes", show: "show(obj) — draw it as a card", Object: "Object(**kw) — a simple attribute holder", open: "open(name) — a .file block of this page, read like a file", yaml: "yaml.load(text)" };
     var DOTS = { play: ["tempo", "wave", "stop()"], show: ["clear()", "grid(rows)", "form(obj)"], yaml: ["load(text)"] };
     var comp = { el: null, items: [], i: 0, at: 0 };
     function compClose() { if (comp.el) { comp.el.remove(); comp.el = null; } comp.items = []; root.removeAttribute("data-lc-comp"); }
@@ -827,7 +847,7 @@ Auto-included by docs/_layouts/default.html.
       var e = at - 1, b = e; while (b > 0 && /[A-Za-z_0-9]/.test(v.charAt(b - 1))) b--;
       return v.slice(b, e);
     }
-    var SIGS = { play: ["note", "beats"], show: ["obj", "title"] };
+    var SIGS = { play: ["note", "beats"], show: ["obj", "title"], open: ["name"] };
     /* the call the caret sits in: its name, from the unmatched ( before the caret */
     function callOf(v, at) {
       var depth = 0;

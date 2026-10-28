@@ -168,3 +168,24 @@ Feature: The run editor types like a text field
     Then the "first_run" editor colours "Note" the same where it is defined and where it is called
     And the "first_run" editor's comment is lighter than its code
     And the "first_run" editor's punctuation and operators wear their own colours
+
+  Scenario: A fence is a file: open() reads it as Python would, and a missing name raises
+    Given I have a clean browser page
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-reads_file .lc-pyrun-code"
+    Then the file "notes.csv" is on the page, titled
+    When I click Run in the "reads_file" editor
+    Then the "reads_file" editor played 3 notes, the last "G5"
+    And the "reads_file" editor's output ends with "G5 for 2"
+    When I replace the "reads_file" editor's program with
+      """
+      try:
+          open("nowhere.csv")
+      except FileNotFoundError as e:
+          print("caught:", e)
+      with open("notes.csv") as f:
+          print(len(f.read().split("\n")) - 1, "lines")
+      """
+    And I click Run in the "reads_file" editor
+    Then the "reads_file" editor's output reads "caught: No such file on this page: nowhere.csv" then "4 lines"

@@ -476,3 +476,13 @@ def step_sound_check(context, run_id, text):
 @when('I tap the "{run_id}" editor\'s sound check')
 def step_tap_sound_check(context, run_id):
     context.page.click("#lc-pyrun-%s .lc-pyrun-sound" % run_id)
+
+
+@then('the file "{name}" is on the page, titled')
+def step_file_block(context, name):
+    """a {: .file name="…" } fence (file.md): kept under its name, shown with a title"""
+    sel = '[data-lc-file="%s"] .lc-file-title' % name
+    context.page.wait_for_selector(sel, timeout=5000)
+    assert context.page.inner_text(sel).strip() == "📄 " + name
+    text = context.page.evaluate("(n) => window.lcFileText(n)", name)
+    assert text and text.startswith("note,beats"), text

@@ -538,6 +538,34 @@ list is read from the program and the runner.
 lights up under the colours: where a variable is used, where a parameter
 goes. Click elsewhere and the light goes out.
 
+## 📄 A fence is a file — `open()`
+
+A code block with `{: .file name="notes.csv" }` keeps its text under that
+name, shown with a title like a file. A runner's `open("notes.csv")` reads
+it as regular Python reads a file: `with`, `readline`, a `for` over the
+lines, `read()`. The data keeps its own block; the program stays the one a
+laptop would run. Reading only — a page is not a disk — and a missing name
+raises `FileNotFoundError`. A `.dataset` block answers too, as `<id>.csv`
+or `<id>.json`. `hidden="true"` keeps the file out of sight.
+
+```csv
+note,beats
+C5,1
+E5,1
+G5,2
+```
+{: .file name="notes.csv" }
+
+```python
+with open("notes.csv") as f:
+    header = f.readline()
+    for line in f:
+        note, beats = line.strip().split(",")
+        play(note, int(beats))
+        print(note, "for", beats)
+```
+{: .run #reads_file }
+
 ## 📦 A runner is a module — `import <id>`
 
 Every runner has a pythonic id, so another runner on the page can import
@@ -594,6 +622,7 @@ selector. What the block records is what a step reads.
 | `input(prompt)` | Asks in the console, then re-runs the script with the answer |
 | `time.sleep(s)` · `os.system('clear')` | Animation: a pause and a new frame, played back after the run |
 | `Object(**kw)` | Simple attribute holder. Pair with `bound=` to show a live card |
+| `open(name)` | A `.file` block of this page (or `<dataset id>.csv`), read like a file |
 | `show(obj, title=None)` | Renders `obj` as a card below the output |
 | `show.clear()` | Removes all cards |
 | `show.grid(rows, title=None, height=300)` | Renders a sortable/filterable [📊 Datagrid](/components/datagrid) |
