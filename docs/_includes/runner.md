@@ -359,12 +359,20 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      kept for the page's life and handed to every later render; a fetch in
      flight is shared, not repeated. */
   var IMG_CACHE = {};
-  function healImages(root, repo, path) {
-    var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
+  function healImages(root, repo0, path0) {
     var pat = edKey();
     root.querySelectorAll("img[src]").forEach(function (img) {
       var s = img.getAttribute("src") || "";
       if (!s || /^([a-z][a-z0-9+.-]*:|\/)/i.test(s)) return;   // external, data:, site-absolute
+      /* A PICTURE INSIDE A PAD LIVES WHERE THE PAD'S TEXT LIVES (Michel,
+         2026-10-29, Fern.jpg beside cv.md: the pad healed it from the bench,
+         then this page-level pass healed it again against the vault and
+         won — a 404). A preview declares its own repo and path on its
+         body; every pass, whoever runs it, reads them there. */
+      var host = img.closest ? img.closest("[data-lc-heal-repo]") : null;
+      var repo = host && host.dataset.lcHealRepo ? host.dataset.lcHealRepo : repo0;
+      var path = host && host.dataset.lcHealRepo ? (host.dataset.lcHealPath || "") : path0;
+      var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
       var parts = dir ? dir.split("/") : [];
       s.split("#")[0].split("?")[0].split("/").forEach(function (seg) {
         if (!seg || seg === ".") return;

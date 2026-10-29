@@ -1457,7 +1457,10 @@ Auto-included by docs/_layouts/default.html.
         if (benchPath && window.lcBench) { var tg = window.lcBench.target(wrap); if (tg && tg.repo && !tg.here) hr = { repo: tg.repo, path: window.lcBench.resolve(benchPath, wrap) }; }
         if (!hr) { var hostEl = wrap.closest && wrap.closest("[data-lc-src-path]"); if (hostEl && hostEl.dataset.lcSrcRepo) hr = { repo: hostEl.dataset.lcSrcRepo, path: hostEl.dataset.lcSrcPath }; }
       } catch (x) { hr = null; }
-      if (hr) window.lcHealImages(body, hr.repo, hr.path);
+      if (!hr) return;
+      /* said on the body: the page-level pass that follows heals these pictures from here too */
+      body.setAttribute("data-lc-heal-repo", hr.repo); body.setAttribute("data-lc-heal-path", hr.path);
+      window.lcHealImages(body, hr.repo, hr.path);
     }
     function render(text) {
       var v = typeof text === "string" ? text : ta.value;   /* a replay frame, else the editor */

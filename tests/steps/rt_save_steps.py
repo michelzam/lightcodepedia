@@ -1379,3 +1379,18 @@ def step_picture_once(context, name):
     """a render on every keystroke must not fetch the picture again (2.5 MB on Michel's CV)"""
     n = context.page.evaluate("(n) => performance.getEntriesByType('resource').filter(r => r.name.indexOf('/contents/') > 0 && r.name.indexOf(n) > 0).length", name)
     assert n == 1, "the picture was read %d times" % n
+
+
+@when("the page-level pass heals the whole page against the vault")
+def step_runner_heals_again(context):
+    """what the runner does after a render, and again on a late subtree: Michel's Fern took the vault's address from it"""
+    context.page.evaluate("() => window.lcHealImages(document.getElementById('lc-run') || document.body, 'acme/demo-vault', 'courses/demo/mod/work.md')")
+    context.page.wait_for_timeout(800)
+
+
+@then('the picture "{name}" was never asked from the vault')
+def step_picture_not_vault(context, name):
+    got = context.page.evaluate("(n) => performance.getEntriesByType('resource').map(r => r.name).filter(u => u.indexOf(n) > 0 && u.indexOf('demo-vault') > 0)", name)
+    assert not got, got
+    src = context.page.evaluate("() => (document.querySelector('.lc-mdpad-out img') || {}).src || ''")
+    assert src.startswith("blob:"), src

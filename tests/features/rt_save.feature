@@ -1129,3 +1129,6 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And the "cv" pad's preview has caught up
     Then the pad's preview shows the picture "Fern" from the bench
     And the picture "Fern.png" was read from the bench once
+    When the page-level pass heals the whole page against the vault
+    Then the pad's preview shows the picture "Fern" from the bench
+    And the picture "Fern.png" was never asked from the vault
