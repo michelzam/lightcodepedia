@@ -495,7 +495,7 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the recap row "The Broken Wire" reads "chart, datagrid · quiz 1/2, 1 missed · proof 1/1" and offers "finish"
     And the recap row "The Essentials" reads "quiz 0/3 · proofs 0/2" and offers "start"
     And the recap row "The Volunteer" reads "quiz 3/3 · proof 1/1" and offers "open"
-    And the recap cheers "Two pages down. 6 points left on two pages."
+    And the recap cheers "Two pages down: 50%. 6 points left on two pages."
     When a proof on "The Essentials" turns green on this device
     Then the recap row "The Essentials" reads "quiz 0/3 · proofs 1/2" and offers "finish"
     And the recap head reads "2 of 4 pages done · 🏆 14 of 19 points"
@@ -525,6 +525,37 @@ Feature: Folder shelf — read posture and X-ray workbench
     And I wait for the page to be interactive
     Then the recap head reads "0 of 2 pages done · 🏆 0 of 11 points"
     And the recap names the module "📦 01 · Outside-in"
+
+  Scenario: A course score above the recaps counts every module's pages done, as a share
+    Michel, 2026-10-29: "a global score of done pages, all modules
+    considered, as a % — so everyone sees their own score on the first
+    page of the module in Canvas". The score block sums the recaps below it.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags             |
+      | 01_first.md  | 📝 The Volunteer   | 3       | 1      | markdown         |
+      | 02_second.md | 🔥 North Burns     | 3       | 4      | agent, prompt    |
+    And the GitHub contents API serves "courses/demo/_progress.md" with the document:
+      """
+      # Where you are
+
+      [the course](#)
+      {: .folder view="score" #course_score }
+
+      [Module 01](mod)
+      {: .folder view="recap" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/_progress.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 2 pages done · 🏆 0 of 11 points"
+    And the course score reads "0 of 2 pages done · 0%"
+    When the bench's records arrive:
+      | page             | won | answered | green |
+      | 📝 The Volunteer | 3   | 3        | 1     |
+    Then the course score reads "1 of 2 pages done · 50%"
 
   Scenario: The teacher's shelf reads a vault the author key cannot
     An author key is owner-scoped; the vault is the org's. The runner

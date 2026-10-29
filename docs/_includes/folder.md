@@ -38,7 +38,8 @@ Auto-included by docs/_layouts/default.html.
    the module without competing with the page's own heading. */
 /* view="recap": one factual line per page, module-scoped */
 .lc-recap { display: block !important; }
-.lc-recap-head { font-weight: 600; margin: 0 0 0.5em; }
+.lc-recap-head, .lc-recap-score-head { font-weight: 600; margin: 0 0 0.5em; }
+.lc-recap-score-head { font-size: 1.05em; }
 .lc-recap-row { padding: 0.25em 0; border-top: 1px solid #f0f0f0; font-size: 0.92em; }
 .lc-recap-row a { color: inherit; text-decoration: none; font-weight: 600; }
 /* a page already opened is not a different colour of page — the topbar's
@@ -284,6 +285,28 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
        — what the reader earned there, what they missed, what is left, and a
        link to finish it. Same items, same records, module-scoped. */
     var recapView = (el.getAttribute("view") || "") === "recap";
+    /* view="score": ONE NUMBER OVER EVERY RECAP ON THE PAGE (Michel,
+       2026-10-29: "a global score of done pages, all modules considered, as
+       a % — so everyone sees their own score on the first page of the
+       module in Canvas"). Each recap block says its tally; this block sums
+       them: pages done over pages with something to collect, as a share.
+       The same formula the night's read gives the teacher (tools/score.py). */
+    if ((el.getAttribute("view") || "") === "score") {
+      var box = document.createElement("div");
+      box.className = "lc-recap lc-recap-score";
+      if (el.id) box.setAttribute("data-lc-id", el.id);
+      el.parentNode.replaceChild(box, el);
+      var drawScore = function () {
+        var all = window._lcRecapTallies || {}, done = 0, n = 0;
+        Object.keys(all).forEach(function (k) { done += all[k].done; n += all[k].n; });
+        var pct = n ? Math.round(100 * done / n) : 0;
+        box.setAttribute("data-lc-done", String(done)); box.setAttribute("data-lc-total", String(n)); box.setAttribute("data-lc-pct", String(pct));
+        box.innerHTML = "<div class='lc-recap-score-head'>🎯 Course — " + done + " of " + n + " pages done · <b>" + pct + "%</b></div>";
+      };
+      drawScore();
+      document.addEventListener("lc-recap-drawn", drawScore);
+      return;
+    }
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
        root)? Then scan THAT repo, not the site — a bench's index.md lists its
        own course/ folder, per viewer, regardless of where the page lives. */
@@ -1062,13 +1085,20 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       return ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"][n] || String(n);
     }
     function pagesWord(n) { return numWord(n) + " page" + (n === 1 ? "" : "s"); }
+    /* A PAGE IS DONE OR NOT (Michel, 2026-10-29: "as in Agile user stories:
+       done 100% or 0%"): the module's share is pages complete over pages;
+       the points stay as the measure of the effort — and of the waste while
+       a page is not fully complete. "Collect the check" is gone: it named
+       nothing the page delivers. */
+    function pointsWord(n) { return n + " point" + (n === 1 ? "" : "s"); }
     function recapCheer(t) {
       if (!t.max) return "Nothing to collect here.";
+      var pct = t.n ? Math.round(100 * t.done / t.n) : 0;
       if (!t.pts) return "Nothing yet. " + t.max + " points on " + pagesWord(t.n) + ".";
-      if (t.pts >= t.max) return "Module complete. " + t.max + " points. Collect the check.";
-      var tail = t.left + " points left on " + pagesWord(t.open) + ".";
-      if (t.pts * 2 < t.max) return "Under way. " + tail;
-      return pagesWord(t.done).replace(/^./, function (c) { return c.toUpperCase(); }) + " down. " + tail;
+      if (t.done >= t.n && t.pts >= t.max) return "Module complete: 100%. " + t.max + " points.";
+      var tail = pointsWord(t.left) + " left on " + pagesWord(t.open) + ".";
+      if (!t.done) return "Under way: 0%. " + tail;
+      return pagesWord(t.done).replace(/^./, function (c) { return c.toUpperCase(); }) + " down: " + pct + "%. " + tail;
     }
     function moduleTitle(rp) {
       var dir = String(rp || "").replace(/\/+$/, "");
@@ -1102,6 +1132,10 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         if (r.state === "done") t.done++; else t.open++;
       });
       t.left = t.max - t.pts;
+      /* said to the page: a score block above the recaps sums every tally */
+      window._lcRecapTallies = window._lcRecapTallies || {};
+      window._lcRecapTallies[wrap.getAttribute("data-lc-id") || path || String(Math.random())] = t;
+      try { document.dispatchEvent(new CustomEvent("lc-recap-drawn")); } catch (e) {}
       var h = "<div class='lc-recap-head'>🏁 <span class='lc-recap-module'></span> — "
         + t.done + " of " + t.n + " pages done · 🏆 " + t.pts + " of " + t.max + " points</div>";
       /* the key's life, where a learner checks their points (Michel, 2026-09-07) */

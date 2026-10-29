@@ -642,3 +642,8 @@ def step_proof_green_here_card(context, fid):
 def step_here_passing(context, n):
     card = context.page.locator(".lc-card-here").first
     expect(card.locator(".lc-feat-passing")).to_contain_text(n, timeout=10_000)
+
+
+@then('the course score reads "{text}"')
+def step_course_score(context, text):
+    expect(context.page.locator(".lc-recap-score").first).to_contain_text(text, timeout=20_000)
