@@ -210,7 +210,26 @@ Auto-included by docs/_layouts/default.html.
       });
       return found;
     };
-    var skipped = [], unchanged = [], entryText = null;
+    var skipped = [], unchanged = [], entryText = null, pictures = [];
+    /* A PICTURE SHIPS WITH ITS PAGE (Michel, 2026-10-29: Fern.jpg beside
+       cv.md): a relative image in a shipped file is copied, bytes as they
+       are, to the same place beside the copy — the bay is public, the
+       bench is not, and a copy that shows a broken picture is no copy */
+    var picturesOf = function (text, f, dest) {
+      var dir = f.split("/").slice(0, -1), ddir = dest.split("/").slice(0, -1);
+      String(text || "").replace(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g, function (m, src) {
+        src = src.trim();
+        if (!src || /^[a-z]+:/i.test(src) || src.charAt(0) === "/" || src.charAt(0) === "#") return m;
+        var up = dir.slice(), to = ddir.slice();
+        src.split("/").forEach(function (g) {
+          if (!g || g === ".") return;
+          if (g === "..") { if (up.length) up.pop(); if (to.length) to.pop(); } else { up.push(g); to.push(g); }
+        });
+        var from = up.join("/"), into = to.join("/");
+        if (!pictures.some(function (x) { return x.from === from; })) pictures.push({ from: from, into: into });
+        return m;
+      });
+    };
     var shaRepo = (tgt && tgt.repo && !tgt.here) ? tgt.repo : ctx.repo;
     function fromBench(f) {
       if (!bench || !tgt || !tgt.repo || tgt.here) return Promise.resolve(null);
@@ -279,6 +298,7 @@ Auto-included by docs/_layouts/default.html.
               })
               .then(function (text) {
                 if (text == null) return;
+                picturesOf(text, f, dest);
                 function put() {
                   return fetch(API + bay.repo + "/contents/" + folder + "/" + dest, {
                     method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
@@ -314,6 +334,30 @@ Auto-included by docs/_layouts/default.html.
                     });
                   });
                 });
+              });
+          });
+        }, Promise.resolve());
+      })
+      .then(function () {
+        /* the pictures, after the pages: read as base64 from where the pages
+           came (the bench first, the page's repo after), written as they are;
+           a picture that is nowhere is left out, the page still ships */
+        return pictures.reduce(function (chain, pic) {
+          return chain.then(function () {
+            var srcPath = (ctx.dir ? ctx.dir + "/" : "") + pic.from;
+            var read = function (repo) {
+              return fetch(API + repo + "/contents/" + srcPath, { headers: hdrs(), cache: "no-store" })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (env) { return env && env.content ? env.content.replace(/\n/g, "") : null; })
+                .catch(function () { return null; });
+            };
+            return read(shaRepo).then(function (b64) { return b64 != null || shaRepo === ctx.repo ? b64 : read(ctx.repo); })
+              .then(function (b64) {
+                if (b64 == null) { skipped.push(pic.from); return; }
+                return fetch(API + bay.repo + "/contents/" + folder + "/" + pic.into, {
+                  method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
+                  body: JSON.stringify({ message: "🖼 " + app + " @ " + sha.slice(0, 7) + " — " + pic.into.split("/").pop(), content: b64 })
+                }).then(function (r) { if (!r.ok && r.status !== 422) skipped.push(pic.from); });
               });
           });
         }, Promise.resolve());
@@ -408,6 +452,7 @@ Auto-included by docs/_layouts/default.html.
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (man) {
         var e = man && man[app];
+        box._lcLastShipAt = e && e.at ? e.at : "";   /* the saves since then suggest the next line */
         var panel = box.querySelector(".lc-ship-versions");
         if (!e || !e.sha) { if (panel) panel.remove(); return; }
         var list = e.history && e.history.length ? e.history : [{ sha: e.sha, at: e.at, entry: e.entry }];
@@ -523,6 +568,27 @@ Auto-included by docs/_layouts/default.html.
       });
       go.addEventListener("click", ship); no.addEventListener("click", close);
       inp.focus();
+      /* THE SAVES SUGGEST THE LINE (Michel, 2026-10-29: "I wish the comments
+         of the saved versions could contribute too — suggested as default
+         values"): the app's bench commits since the last ship, their lines
+         joined with a middle dot, offered in the box; typing replaces it */
+      try {
+        var bench = window.lcBench, tg = bench && bench.target ? bench.target(box) : null;
+        if (tg && tg.repo && tg.pat && !tg.here) {
+          var path = bench.resolve(files[0], box), since = box._lcLastShipAt || "";
+          fetch(API + tg.repo + "/commits?path=" + encodeURIComponent(path) + "&per_page=20" + (since ? "&since=" + encodeURIComponent(since) : ""),
+                { headers: { Authorization: "Bearer " + tg.pat, "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
+            .then(function (r) { return r.ok ? r.json() : []; })
+            .then(function (list) {
+              if (inp.value.trim() || !form.parentNode) return;
+              var lines = (list || []).map(function (c) { return String(c.commit && c.commit.message || "").split("\n")[0].replace(/^✍️\s*/, "").trim(); })
+                .filter(function (m) { return m && m.indexOf(String(window.lcStarterMsg || "\u0000")) !== 0; });
+              var seen = {}; lines = lines.filter(function (m) { if (seen[m]) return false; seen[m] = 1; return true; }).reverse();
+              if (!lines.length) return;
+              inp.value = lines.join(" · ").slice(0, 120); go.disabled = false; inp.select();
+            }).catch(function () {});
+        }
+      } catch (x) {}
     });
     var rp = parseFloat(el.getAttribute("replay") || "");   /* the time machine's seconds per copy */
     if (rp > 0) box.setAttribute("data-replay", String(Math.round(rp * 1000)));

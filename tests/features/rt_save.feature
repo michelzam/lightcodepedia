@@ -1101,3 +1101,27 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I pick two version rows one right after the other
     Then there is one replay, one diff pane, one slider
     And the replay lands on frame 1
+
+  Scenario: A file written elsewhere reaches the pad at once
+    Michel, 2026-10-29: the recording's link "is added to the file, but not
+    visible in the editor until we refresh it". A bench write to the pad's
+    own file, announced, is read back — when nothing of the pad's is pending.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Alice — WHS volunteer"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then the pad shows "# Alice — WHS volunteer"
+    When the bench's "courses/demo/mod/cv.md" becomes "# Alice — WHS volunteer\n\n[Recording](https://youtu.be/x)\n{: .video }" and the write is announced
+    Then the pad's text contains "[Recording](https://youtu.be/x)"
+
+  Scenario: A picture beside the learner's file shows in the pad's preview
+    Michel, 2026-10-29: "why isn't fern.jpg visible in my cv? the file is in
+    the same folder as the cv.md". A relative image is read from the bench,
+    with the key, as the runner reads a page's pictures.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Alice\n\n![Fern](Fern.png)"
+    And the bench serves the picture "courses/demo/mod/Fern.png"
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    Then the pad's text contains "![Fern](Fern.png)"
+    And the pad's preview shows the picture "Fern" from the bench

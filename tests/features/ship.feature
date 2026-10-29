@@ -75,6 +75,38 @@ Feature: 🚀 Ship — the author-designed deployment component
     Then the bay's commit for "bays/spike_dogs_cafebabe12345678/_ship_app.md" ends with "— the tour pasted"
     And the bay manifest's "spike_dogs" history starts with the note "the tour pasted"
 
+  Scenario: A picture beside a shipped page ships with it, and the saves since the last ship suggest the line
+    Michel, 2026-10-29: Fern.jpg beside cv.md — public bay, private bench.
+    Also: "I wish the comments of the saved versions could contribute too,
+    suggested as default values".
+
+    Given I am signed in with a course key
+    And this browser is paired to the bench "acme/bench"
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      [Ship it](#)
+      {: .ship app="spike_dogs" files="_ship_app.md" bay="acme/bay/bays" comment="true" }
+      """
+    And the GitHub contents API serves "courses/demo/_ship_app.md" with the document:
+      """
+      # 🐕 Spike dogs
+
+      ![Fern](Fern.jpg)
+      """
+    And the bench serves the picture "courses/demo/Fern.jpg"
+    And the bench HEAD commit is "cafebabe12345678"
+    And the bench's history for "courses/demo/_ship_app.md" reads "✍️ the tour pasted" then "✍️ the brag written"
+    And the bay accepts writes
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    And I press the ship button
+    Then the ship's line is pre-filled with "the brag written · the tour pasted"
+    When I write the ship line "with Fern" and press Enter
+    Then the bay received "bays/spike_dogs_cafebabe12345678/_ship_app.md"
+    And the bay received "bays/spike_dogs_cafebabe12345678/Fern.jpg"
+
   Scenario: A pending bay invitation is accepted on the fly, and the ship completes
     A collaborator grant can land as a pending invitation instead of a
     direct one — the bay exists, push was granted, and the PUT still says

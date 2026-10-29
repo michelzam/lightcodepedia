@@ -353,6 +353,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      swapped to blob: URLs. Root-absolute and external srcs stay untouched
      (site assets, CDNs). Without a key, srcs rewrite to raw URLs — right for
      public repos, and no worse than today's 404 for private ones. */
+  window.lcHealImages = function (root, repo, path) { return healImages(root, repo, path); };   /* a pad's preview heals its pictures the same way */
   function healImages(root, repo, path) {
     var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
     (root._lcImgUrls || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
@@ -721,10 +722,16 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
        such file, so the shipped one shows. */
     var benchFirst = function () {
       var p = root.dataset.lcSrcPath;
+      delete root.dataset.lcHealRepo; delete root.dataset.lcHealPath;
       if (!window.lcBench || !p) return loadMd(src);
       return window.lcBench.read("/" + p, root)
         .catch(function () { return null; })
-        .then(function (got) { return got ? got.text : loadMd(src); });
+        .then(function (got) {
+          if (!got) return loadMd(src);
+          /* the text came from the bench: its pictures live there too (Michel, 2026-10-29, Fern.jpg beside cv.md) */
+          try { var tg = window.lcBench.target(root); if (tg && tg.repo && !tg.here) { root.dataset.lcHealRepo = tg.repo; root.dataset.lcHealPath = p; } } catch (e) {}
+          return got.text;
+        });
     };
     (root.dataset.lcBenchFirst ? benchFirst() : loadMd(src))
       .then(function (md) {
@@ -809,7 +816,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
           if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page
           if (spec.gh && barSt.repo) {
             healRelLinks(root, barSt.repo, barSt.path);
-            healImages(root, barSt.repo, barSt.path);
+            healImages(root, root.dataset.lcHealRepo || barSt.repo, root.dataset.lcHealPath || barSt.path);
           }
           /* RT slides parity: the deck census ran at page load, before this
              render existed — rebuild it around the rendered sections. Page-

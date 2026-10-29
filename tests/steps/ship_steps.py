@@ -264,3 +264,22 @@ def step_press_ship_with_line(context, text):
     inp.fill(text)
     inp.press("Enter")
     context.page.wait_for_timeout(1500)
+
+
+@given('the bench\'s history for "{path}" reads "{first}" then "{second}"')
+def step_bench_history(context, path, first, second):
+    """the commits API for that path, newest first — registered after the HEAD stub, so it wins for ?path="""
+    body = json.dumps([{"sha": "h1", "commit": {"message": first}}, {"sha": "h2", "commit": {"message": second}}])
+
+    def fulfill(route):
+        if "path=" in route.request.url:
+            route.fulfill(status=200, content_type="application/json", body=body)
+        else:
+            route.fallback()
+    context.page.route("**/api.github.com/repos/**/commits*", fulfill)
+
+
+@then('the ship\'s line is pre-filled with "{text}"')
+def step_ship_prefill(context, text):
+    inp = context.page.locator(".lc-ship .lc-ship-commentbar input")
+    expect(inp).to_have_value(text, timeout=5_000)

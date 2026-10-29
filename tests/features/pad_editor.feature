@@ -31,6 +31,9 @@ Feature: The pad types like a text field, painted
 
     When I type "\n\n[Recording](https://youtu.be/x)\n{: .vid" at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .vid" includes "video"
+    When I type "\n\nvid" at the end of the "playground" pad
+    Then completion in the "playground" pad after "vid" includes "video"
+    And the completion list is fixed to the viewport and fully visible
 
   Scenario: Ctrl+Space inside a python fence offers the runtime's words, the pad's classes, and after self. their attributes
     Michel, 2026-10-21: "should python code also accept code completion in

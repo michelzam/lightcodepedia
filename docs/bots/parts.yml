@@ -48,3 +48,10 @@ button:
     [Label](#)
     {: .button #TODO_YOUR_BUTTON }
   adapt: the label is the link's text; the id lets Python find it
+video:
+  name: a video — a YouTube link or a file, played in the page
+  module: Components · Video
+  lines: |
+    [Recording](TODO_YOUR_YOUTUBE_LINK)
+    {: .video }
+  adapt: paste the link YouTube gave you in place of TODO_YOUR_YOUTUBE_LINK

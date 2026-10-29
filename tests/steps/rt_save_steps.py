@@ -20,6 +20,7 @@ def _stub_bench(context, files, bench=BENCH):
     context.bench_commits = []
     context.author_commits = []
     context.bench_reads = []
+    context.bench_files = files   # a later step may change what the bench holds
 
     def bench(route, req):
         path = req.url.split("/contents/", 1)[1].split("?")[0]
@@ -1335,3 +1336,39 @@ def step_kept_same(context):
     context.page.wait_for_timeout(800)
     same = context.page.evaluate("pad => { const p = [...document.querySelectorAll(pad + ' .lc-mdpad-out p')].find(e => e.textContent.trim() === 'Kept line.'); return !!(p && p.__lcKept); }", PAD)
     assert same, "the kept paragraph was rebuilt with the frame"
+
+
+@when('the bench\'s "{path}" becomes "{text}" and the write is announced')
+def step_bench_changes(context, path, text):
+    """another component wrote the file (the recorder's insert, a second pad):
+    the bench holds the new text and the page hears lc-bench-write"""
+    context.bench_files[path] = text.replace("\\n", "\n")
+    context.page.evaluate("(p) => document.dispatchEvent(new CustomEvent('lc-bench-write', { detail: { path: p } }))", path)
+    context.page.wait_for_timeout(1500)
+
+
+@given('the bench serves the picture "{path}"')
+def step_bench_picture(context, path):
+    """a 1×1 PNG, as the contents API hands a binary: a JSON envelope with base64"""
+    import json as _json
+    body = _json.dumps({"content": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "encoding": "base64", "sha": "pic-sha"})
+    context.page.route("**/api.github.com/repos/**/contents/" + path + "*",
+                       lambda r: r.fulfill(status=200, content_type="application/json", body=body))
+
+
+@then('the pad\'s preview shows the picture "{name}" from the bench')
+def step_pad_picture(context, name):
+    try:
+        context.page.wait_for_function(
+            """(n) => { const i = Array.from(document.querySelectorAll('.lc-mdpad-out img')).find(x => (x.getAttribute('alt') || '') === n || /blob:/.test(x.src));
+                        return !!(i && i.src.indexOf('blob:') === 0 && i.naturalWidth > 0); }""", arg=name, timeout=10_000)
+    except Exception:
+        got = context.page.evaluate("""() => ({ imgs: Array.from(document.querySelectorAll('.lc-mdpad-out img')).map(x => [x.getAttribute('alt'), x.src.slice(0, 60), x.naturalWidth]),
+            heal: typeof window.lcHealImages, reads: performance.getEntriesByType('resource').map(r => r.name).filter(n => /contents/.test(n)).slice(-6) })""")
+        raise AssertionError("no picture from the bench: %r" % (got,))
+
+
+@then('the pad\'s text contains "{text}"')
+def step_pad_contains(context, text):
+    got = context.page.evaluate("() => document.querySelector('.lc-mdpad-in').value")
+    assert text in got, "pad holds %r" % got

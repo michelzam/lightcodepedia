@@ -98,7 +98,7 @@ Auto-included by docs/_layouts/default.html.
   pointer-events: none; z-index: 2; }
 .lc-mdpad-ghost span { position: absolute; right: 0; top: -0.75em; font-size: 0.72em; padding: 0.05em 0.5em; border-radius: 999px;
   background: rgba(241, 245, 249, 0.85); color: #475569; border: 1px solid rgba(148, 163, 184, 0.5); }
-.lc-mdpad-comp { position: absolute; z-index: 6; min-width: 15em; max-width: 26em; max-height: 15em; overflow: auto;
+.lc-mdpad-comp { position: fixed; z-index: 2147483000; min-width: 15em; max-width: 26em; max-height: 15em; overflow: auto;
   border-radius: 8px; background: rgba(248, 250, 252, 0.97); border: 1px solid #c4c9d4; box-shadow: 0 6px 20px rgba(0,0,0,0.22);
   font-size: 0.8em; padding: 0.2em 0; color: #333; }
 .lc-mdpad-comp .o { display: flex; gap: 0.5em; align-items: baseline; padding: 0.2em 0.6em; cursor: pointer; white-space: nowrap; }
@@ -1444,6 +1444,21 @@ Auto-included by docs/_layouts/default.html.
       }
     }
     var padCache = [];   /* [{ key: a block's text, el: its container }] — the last preview */
+    /* A PICTURE NEXT TO THE FILE (Michel, 2026-10-29: "why isn't fern.jpg
+       visible in my cv? the file is in the same folder as the cv.md"): a
+       relative image is read from where the text lives — the learner's
+       bench for a saved pad, the page's repo otherwise — with the key, as
+       the runner does for a page; the browser alone cannot reach a private
+       repo's file by a relative name. */
+    function healPreview() {
+      if (!window.lcHealImages || !body.querySelector("img[src]")) return;
+      var hr = null;
+      try {
+        if (benchPath && window.lcBench) { var tg = window.lcBench.target(wrap); if (tg && tg.repo && !tg.here) hr = { repo: tg.repo, path: window.lcBench.resolve(benchPath, wrap) }; }
+        if (!hr) { var hostEl = wrap.closest && wrap.closest("[data-lc-src-path]"); if (hostEl && hostEl.dataset.lcSrcRepo) hr = { repo: hostEl.dataset.lcSrcRepo, path: hostEl.dataset.lcSrcPath }; }
+      } catch (x) { hr = null; }
+      if (hr) window.lcHealImages(body, hr.repo, hr.path);
+    }
     function render(text) {
       var v = typeof text === "string" ? text : ta.value;   /* a replay frame, else the editor */
       if (!window.marked) {
@@ -1451,7 +1466,7 @@ Auto-included by docs/_layouts/default.html.
         return;
       }
       var inline = window.lcInlineIAL || function (h) { return h; };
-      if (!deco) { body.innerHTML = inline(window.marked.parse(v)); return; }
+      if (!deco) { body.innerHTML = inline(window.marked.parse(v)); healPreview(); return; }
       /* decorations: the runner's pipeline on the preview — IAL on its own
          paragraph, block IAL applied, then the same scan that upgrades a
          page's fences into components, and the cells inside them */
@@ -1517,6 +1532,7 @@ Auto-included by docs/_layouts/default.html.
         padCache = fresh;
       }
       if (window.lcScanElement) window.lcScanElement(body);
+      healPreview();
       if (kept) {
         /* the tabs exist now: the one that was open is pressed again (its
            panel is scanned on the way, as a tap would), the scroll and the
@@ -2435,9 +2451,16 @@ Auto-included by docs/_layouts/default.html.
         return "<div class='o" + (k === pop.i ? " on" : "") + "' role='option' data-k='" + k + "'><span class='i'>" + escHtml(it.icon || "") + "</span><span class='l'>" +
           escHtml(it.label) + "</span><span class='d'>" + escHtml(it.detail || "") + "</span></div>";
       }).join("");
-      var r = caretRect(), h = host.getBoundingClientRect();
-      pop.el.style.left = Math.max(0, Math.min(r.left - h.left, h.width - 240)) + "px";
-      pop.el.style.top = (r.bottom - h.top + 2) + "px";
+      /* THE LIST RIDES OVER EVERY FRAME (Michel, 2026-10-29: "the picklist is
+         covered/truncated by the editor's frame instead of sliding outside"):
+         fixed to the viewport at the caret, so no ancestor's overflow clips
+         it; above the caret when the bottom of the screen is near */
+      var r = caretRect(), vw = window.innerWidth, vh = window.innerHeight;
+      pop.el.style.position = "fixed";
+      pop.el.style.left = Math.max(4, Math.min(r.left, vw - 264)) + "px";
+      var below = vh - r.bottom;
+      if (below < 160 && r.top > below) { pop.el.style.top = ""; pop.el.style.bottom = (vh - r.top + 2) + "px"; pop.el.style.maxHeight = Math.min(240, r.top - 8) + "px"; }
+      else { pop.el.style.bottom = ""; pop.el.style.top = (r.bottom + 2) + "px"; pop.el.style.maxHeight = Math.min(240, below - 8) + "px"; }
       wrap.setAttribute("data-lc-comp", pop.cx.kind);
     }
     function complete(force) {
@@ -2589,6 +2612,8 @@ Auto-included by docs/_layouts/default.html.
       else if (pop.el) complete(false);
     });
     ta.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement !== ta) popClose(); }, 150); });
+    /* the page scrolls: a fixed list would drift from its caret — closed; the editor itself scrolls (a new line at the bottom): the list follows the caret */
+    window.addEventListener("scroll", function (e) { if (!pop.el) return; if (wrap.contains(e.target)) popShow(); else popClose(); }, true);
     ta.addEventListener("click", popClose);
     /* A BLANK IS TAKEN WHOLE (Michel, 2026-10-16: "when a todo value is
        selected, typing should replace it, not insert characters"): a click
@@ -2718,6 +2743,23 @@ Auto-included by docs/_layouts/default.html.
       var next = ta.value, patched = patchOneLine(lastVal, next);
       lastVal = next; blocks = blocksOf(next);
       if (patched) paintSoon(); else paintPiano();
+    });
+    /* THE FILE, WRITTEN ELSEWHERE (Michel, 2026-10-29: the recording's link
+       "is added to the file, but not visible in the editor until we
+       refresh"): a bench write to this pad's file — the recorder's insert,
+       a save from another pad — is read back here at once, when the pad
+       has nothing of its own pending. Its own save reads back its own text:
+       nothing moves. */
+    if (benchPath && window.lcBench) document.addEventListener("lc-bench-write", function (e) {
+      var mine = ""; try { mine = window.lcBench.resolve(benchPath, wrap); } catch (x) { return; }
+      if (!e.detail || e.detail.path !== mine || wrap.hasAttribute("data-lc-dirty")) return;
+      window.lcBench.read("/" + mine, wrap).then(function (f) {
+        if (!f || typeof f.text !== "string" || f.text === ta.value) return;
+        ta.value = f.text; lastVal = f.text; blocks = blocksOf(f.text);
+        if (typeof bOrigin !== "undefined") { bOrigin = f.text; bSha = f.sha || bSha; }
+        render(); paintPiano();
+        wrap.setAttribute("data-lc-refetched", "1");
+      }).catch(function () {});
     });
     if (keysEl) {
       ta.addEventListener("scroll", function () { keysEl.scrollTop = ta.scrollTop; });

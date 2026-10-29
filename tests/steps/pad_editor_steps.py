@@ -715,3 +715,16 @@ def step_pad_type_at_caret(context, text, pad_id):
     """after a caret step: the keys go where the caret is, not at the end"""
     _ta(context, pad_id).focus()
     context.page.keyboard.type(text.replace("\\n", "\n"))
+
+
+@then("the completion list is fixed to the viewport and fully visible")
+def step_pad_comp_fixed(context):
+    """Michel, 2026-10-29: the list was "covered/truncated by the editor's frame" — it rides over every frame now"""
+    context.page.keyboard.press("Control+Space")
+    loc = context.page.locator(".lc-mdpad-comp").first
+    expect(loc).to_be_visible(timeout=5_000)
+    got = context.page.evaluate("""() => { const e = document.querySelector('.lc-mdpad-comp'), r = e.getBoundingClientRect();
+        return { pos: getComputedStyle(e).position, top: r.top, bottom: r.bottom, left: r.left, right: r.right, vh: innerHeight, vw: innerWidth }; }""")
+    assert got["pos"] == "fixed", got
+    assert got["top"] >= 0 and got["bottom"] <= got["vh"] + 1 and got["left"] >= 0 and got["right"] <= got["vw"] + 1, got
+    context.page.keyboard.press("Escape")
