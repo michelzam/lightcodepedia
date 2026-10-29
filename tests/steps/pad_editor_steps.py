@@ -680,3 +680,38 @@ def step_pad_fold_btn(context, pad_id):
 def step_pad_caught_up(context, pad_id):
     """the preview redraws a beat after the text changes (debounced)"""
     context.page.wait_for_timeout(1500)
+
+
+@when('I open tab {n:d} of the "{pad_id}" pad\'s preview')
+def step_pad_open_tab(context, n, pad_id):
+    btn = context.page.locator("[data-lc-id='%s'] .lc-mdpad-out .lc-tabs .lc-tab-btn" % pad_id).nth(n - 1)
+    btn.wait_for(state="visible", timeout=10_000)
+    btn.click()
+    context.page.wait_for_timeout(300)
+
+
+@when('I note the "{pad_id}" pad\'s preview height')
+def step_pad_note_preview(context, pad_id):
+    context.pad_prev_h = _pad_heights(context, pad_id)["preview"]
+
+
+@then('tab {n:d} of the "{pad_id}" pad\'s preview is still open')
+def step_pad_tab_open(context, n, pad_id):
+    got = context.page.evaluate("""(id) => {
+        const t = document.querySelector("[data-lc-id='" + id + "'] .lc-mdpad-out .lc-tabs");
+        const b = Array.from(t.querySelectorAll(':scope > .lc-tab-bar .lc-tab-btn'));
+        return b.findIndex(x => x.classList.contains('active')) + 1; }""", pad_id)
+    assert got == n, "tab %s is open, expected %s" % (got, n)
+
+
+@then('the "{pad_id}" pad\'s preview kept its height')
+def step_pad_kept_height(context, pad_id):
+    h = _pad_heights(context, pad_id)["preview"]
+    assert abs(h - context.pad_prev_h) <= 4, "preview %s → %s" % (context.pad_prev_h, h)
+
+
+@when('I type "{text}" at the caret of the "{pad_id}" pad')
+def step_pad_type_at_caret(context, text, pad_id):
+    """after a caret step: the keys go where the caret is, not at the end"""
+    _ta(context, pad_id).focus()
+    context.page.keyboard.type(text.replace("\\n", "\n"))

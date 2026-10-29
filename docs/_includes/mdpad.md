@@ -1469,11 +1469,27 @@ Auto-included by docs/_layouts/default.html.
          not touch keeps its container, so the preview changes where the
          text changed and nowhere else (Michel, 2026-10-19: "avoid a visual
          flick") */
-      var whole = /beside=|\blayout="?(?:beside|behind)|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v);
+      var whole = /beside=|\blayout="?(?:beside|behind)|\.accordion|\.tabs\b|\[\^|^\s{0,3}\[[^\]]+\]:\s/m.test(v), kept = null;
       if (whole) {
+        /* THE WHOLE PREVIEW, REBUILT WITHOUT A JOLT (Michel, 2026-10-29:
+           "the whole mdpad is flickering for every key I type"): an app is
+           one tabs fence, so every keystroke rebuilds it. What jolted was
+           not the paint but the state lost with it — the tab that was open
+           fell back to the first, the scroll went to the top, and the
+           preview collapsed before growing back. The new tree is built off
+           screen and swapped in one move; the open tab of every tabs block,
+           the scroll and the height carry over. */
+        var keep = { tabs: [].map.call(body.querySelectorAll(".lc-tabs"), function (t) {
+                       return [].indexOf.call(t.querySelectorAll(":scope > .lc-tab-bar .lc-tab-btn"), t.querySelector(":scope > .lc-tab-bar .lc-tab-btn.active")); }),
+                     scroll: body.scrollTop, h: body.offsetHeight };
         padCache = [];
-        body.innerHTML = inline(window.marked.parse(norm));
+        var next = document.createElement("div");
+        next.innerHTML = inline(window.marked.parse(norm));
+        if (keep.h) body.style.minHeight = keep.h + "px";
+        while (body.firstChild) body.removeChild(body.firstChild);
+        while (next.firstChild) body.appendChild(next.firstChild);
         if (window.lcApplyIAL) window.lcApplyIAL(body);
+        kept = keep;                          /* restored below, once the scan has built the tabs */
       } else {
         var lines = v.split("\n"), fresh = [], used = [];
         if (!body.querySelector(":scope > .lc-pad-blk")) { padCache = []; body.innerHTML = ""; }
@@ -1501,6 +1517,18 @@ Auto-included by docs/_layouts/default.html.
         padCache = fresh;
       }
       if (window.lcScanElement) window.lcScanElement(body);
+      if (kept) {
+        /* the tabs exist now: the one that was open is pressed again (its
+           panel is scanned on the way, as a tap would), the scroll and the
+           height come back */
+        [].forEach.call(body.querySelectorAll(".lc-tabs"), function (t, k) {
+          var i = kept.tabs[k]; if (!(i > 0)) return;
+          var b = t.querySelectorAll(":scope > .lc-tab-bar .lc-tab-btn")[i];
+          if (b && !b.classList.contains("active")) b.click();
+        });
+        body.scrollTop = kept.scroll;
+        setTimeout(function () { body.style.minHeight = ""; }, 400);
+      }
       if (window.lcCellsRescan) window.lcCellsRescan();
       markWires(cur);                       /* a wire to nothing is drawn as such */
       if (appTitle) {

@@ -25,6 +25,13 @@ Feature: The pad types like a text field, painted
     When I type "\n{: .server " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .server " offers "beside, exports, model, pages"
 
+  Scenario: Ctrl+Space after a dot offers every component, video among them
+    Michel, 2026-10-29: "in mdpad, the code completion, I noticed, 'video' is
+    not recognized". The classes come from the component model; video is one.
+
+    When I type "\n\n[Recording](https://youtu.be/x)\n{: .vid" at the end of the "playground" pad
+    Then completion in the "playground" pad after "{: .vid" includes "video"
+
   Scenario: Ctrl+Space inside a python fence offers the runtime's words, the pad's classes, and after self. their attributes
     Michel, 2026-10-21: "should python code also accept code completion in
     the fence? Doable?"
