@@ -322,3 +322,17 @@ def step_open_return(context, token):
 def step_received_token(context, token):
     got = context.page.evaluate("() => window._lcYtMsgs || []")
     assert any(m.get("token") == token for m in got), got
+
+
+@when('the recording\'s link "{url}" is inserted into the page')
+def step_insert_link(context, url):
+    context.page.wait_for_selector(".lc-rec-btn, .lc-rec-launch, [data-lc-upgraded]", timeout=10_000)
+    context.page.evaluate("""(u) => { const st = document.createElement('div'); st.id = 'lc-yt-insert-probe';
+        document.body.appendChild(st); window.lcYtInsertIntoPage(u, st); }""", url)
+    context.page.wait_for_function("() => /Added|❌|copied/.test(document.getElementById('lc-yt-insert-probe').textContent)", timeout=10_000)
+
+
+@then('the insert\'s status says "{text}"')
+def step_insert_status(context, text):
+    got = context.page.inner_text("#lc-yt-insert-probe")
+    assert text in got, got

@@ -304,3 +304,23 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     And the page listens for the sign-in window's message
     And the page opens the sign-in window's return, carrying the token "tok-opener"
     Then the page received the token "tok-opener" from the window
+
+  Scenario: Insert into page writes the link into the learner's own file, never the course's
+    Michel, 2026-10-29, page 3 in Canvas: "error when I try to insert it in
+    the page" — the insert aimed at the site's docs/ and a frame has no such
+    file. into="my_app.md" on the recorder names the learner's file.
+
+    Given a connected bench whose "courses/demo/mod/my_app.md" holds "# My app"
+    And the GitHub contents API serves "courses/demo/mod/stage.md" with the document:
+      """
+      # On stage
+
+      Record this page.
+      {: .recorder into="my_app.md" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/stage.md"
+    And I wait for the page to be interactive
+    And the recording's link "https://youtu.be/abc123" is inserted into the page
+    Then the bench received a commit to "courses/demo/mod/my_app.md" containing "[Recording](https://youtu.be/abc123)"
+    And the bench received a commit to "courses/demo/mod/my_app.md" containing "{: .video }"
+    And the insert's status says "Added to my_app.md"

@@ -134,6 +134,13 @@ Auto-included by docs/_layouts/default.html.
     var pipSize = parseInt(el.getAttribute("size") || "240", 10);
     var camZoom = parseFloat(el.getAttribute("zoom") || "1.35");
     var fps     = parseInt(el.getAttribute("fps")  || "25",  10);
+    /* into="my_app.md": WHERE THE LINK LANDS (Michel, 2026-10-29, page 3 in
+       Canvas: "error when I try to insert it in the page" — the insert wrote
+       to the site's docs/, and a lesson in a frame has no such file). The
+       learner's own file in their bench, resolved like a save= — the last
+       launcher upgraded on the page is the one the modal asks. */
+    window._lcRecInto = el.getAttribute("into") || "";
+    window._lcRecFrom = el;
 
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
@@ -988,9 +995,35 @@ Auto-included by docs/_layouts/default.html.
 
     // Insert a .video embed into the current page file via GitHub API.
     function ytInsertIntoPage(videoUrl, statusEl) {
+      var snippet = "\n\n[Recording](" + videoUrl + ")\n{: .video }\n";
+      var say = function (t) { if (statusEl) statusEl.textContent = t; };
+      /* THE LEARNER'S FILE FIRST: into="…" on the recorder, or the page on
+         screen when it is their own bench page. A course page (the vault)
+         is nobody's to write: the link is copied instead, and the status
+         says where to paste it. The site's docs/ road stays for authors. */
+      var into = window._lcRecInto || "", from = window._lcRecFrom || null;
+      var root = document.querySelector(".lc-run[data-lc-src-path]");
+      if (!into && root && root.dataset.lcSrcPath && !root.dataset.lcReadonly && !/-vault$/.test(root.dataset.lcSrcRepo || ""))
+        into = "/" + root.dataset.lcSrcPath;
+      if (!into && root && (root.dataset.lcReadonly || /-vault$/.test(root.dataset.lcSrcRepo || ""))) {
+        try { if (navigator.clipboard) navigator.clipboard.writeText(videoUrl); } catch (x) {}
+        say("This page is the course's. The link is copied — paste it in your own page (your app's Author tab).");
+        return;
+      }
+      if (into && window.lcBench) {
+        say("Saving to " + into.replace(/^\//, "") + "…");
+        window.lcBench.read(into, from)
+          .then(function (got) {
+            var text = (got && got.text ? String(got.text).replace(/\s+$/, "") : "") + snippet;
+            return window.lcBench.write(into, text, "📹 the recording's link", got ? got.sha : undefined, from);
+          })
+          .then(function () { say("✅ Added to " + into.replace(/^\//, "").split("/").pop() + " — ship again and the QR code carries it."); })
+          .catch(function (e) { say("❌ " + (e && e.message || e)); });
+        return;
+      }
       var pat = localStorage.getItem("lc_ed_pat");
       if (!pat || !_lcSiteRepo) {
-        if (statusEl) statusEl.textContent = "⚠️ Sign in to GitHub to insert into page.";
+        say("⚠️ Sign in to GitHub to insert into page.");
         return;
       }
       var pathname = window.location.pathname.replace(/\/$/, "") || "/index";
@@ -1001,8 +1034,8 @@ Auto-included by docs/_layouts/default.html.
       fetch(base + filePath, { headers: hdrs })
         .then(function(r){ return r.json(); })
         .then(function(data) {
+          if (!data || !data.content) throw new Error("no page file at " + filePath + (data && data.message ? " (" + data.message + ")" : ""));
           var existing = decodeURIComponent(escape(atob(data.content.replace(/\s/g, ""))));
-          var snippet = "\n\n[Recording](" + videoUrl + ")\n{: .video }\n";
           var updated = btoa(unescape(encodeURIComponent(existing + snippet)));
           return fetch(base + filePath, {
             method: "PUT", headers: hdrs,
@@ -1017,6 +1050,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     // Core upload: takes a File or Blob, returns videoUrl via onDone(url) or onDone(null, err).
+    window.lcYtInsertIntoPage = ytInsertIntoPage;
     function ytDoUpload(token, fileOrBlob, title, mimeType, onProgress, onDone, description) {
       fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
         method: "POST",

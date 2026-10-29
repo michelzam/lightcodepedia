@@ -101,6 +101,7 @@ How your face is shown depends on the browser, because of how each one talks to 
 | Attribute | Default | What it does |
 |---|---|---|
 | `pip="bottom-right"` | `bottom-right` | Face position: `bottom-right`, `bottom-left`, `top-right`, `top-left` |
+| `into="my_app.md"` | — | Where **Insert into page** puts the YouTube link: a file in the learner's bench, resolved like a `save=`. Without it, the page on screen when it is their own; a course page is never written — the link is copied instead |
 | `size="240"` | `240` | Diameter of the face circle in pixels |
 | `zoom="1.35"` | `1.35` | How far to zoom into your face inside the circle (1 = no zoom) |
 | `fps="25"` | `25` | Frames per second |
