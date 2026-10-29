@@ -136,9 +136,14 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
-  Scenario: Text spec passes
+  Scenario: Pad spec passes
+    The pad's chapters — focus, replay, knobs, versions, decorations,
+    wires — moved from the Text page to the Pad page (Michel, 2026-10-29:
+    "there is a lot of information about the mdpad, not just about the
+    markdown and text. Move it"); their proofs moved with them.
+
     Given I have a clean browser page
-    When I navigate to "/components/text"
+    When I navigate to "/components/mdpad"
     And I wait for the page to be interactive
     And I wait for the selector ".lc-mdpad"
     And I run the page's embedded features

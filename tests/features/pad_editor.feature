@@ -209,6 +209,9 @@ Feature: The pad types like a text field, painted
     clause) so learners can see the wires faster". A word that is only prose
     lights nothing.
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -271,6 +274,9 @@ Feature: The pad types like a text field, painted
   Scenario: ⌘-click on a wire jumps to its id; on the id, it walks the uses
     Michel, 2026-10-11: "ctrl-click on an id ref to jump to the id".
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -309,6 +315,9 @@ Feature: The pad types like a text field, painted
     Michel, 2026-10-11: "a refactor/rename of an ID with propagation to
     other usages".
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -353,6 +362,9 @@ Feature: The pad types like a text field, painted
     another to put it beside next/previous" — for all blocks. 2026-10-24:
     "for the layout behind, I would appreciate a key shortcut too".
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -473,6 +485,9 @@ Feature: The pad types like a text field, painted
     should propose a {: .form }, and suggest with tabs to fly over all the
     sections". The part is the catalogue's; the ids offered are the pad's.
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -517,6 +532,9 @@ Feature: The pad types like a text field, painted
     — a form part inserted earlier kept its blanks for Tab, wherever the
     caret went next.
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -558,6 +576,9 @@ Feature: The pad types like a text field, painted
     values inside knobs, with picklist" — and a source offers the pad's
     datasets, an x the source's columns.
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -604,6 +625,9 @@ Feature: The pad types like a text field, painted
     Michel, 2026-10-11: "an horizontal line with a short semi-transparent
     caption saying '🛢️ Dataset (invisible)'".
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires
@@ -646,6 +670,9 @@ Feature: The pad types like a text field, painted
     between knobs and ids, just like in a form … and the class names too,
     everything that can be customized".
 
+    When I navigate to "/components/mdpad"
+    And I wait for the page to be interactive
+    And I wait for the selector "[data-lc-id='wires_pad'] .lc-mdpad-in"
     Given the GitHub contents API serves "courses/demo/module_05/wires.md" with the document:
       """
       # Wires

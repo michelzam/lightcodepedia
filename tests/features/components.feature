@@ -118,7 +118,7 @@ Feature: Component gallery behaviors
   # decorations="true": the preview is the page, not only the text — a
   # decorated fence becomes the live component, and follows the typing
   Scenario: A decorated mdpad preview renders components and follows typing
-    When I navigate to "/components/text"
+    When I navigate to "/components/mdpad"
     And I wait for the page to be interactive
     Then the decorated mdpad shows a live "lc-pitch"
     And the decorated mdpad shows a live "lc-cards"
@@ -130,7 +130,7 @@ Feature: Component gallery behaviors
   # example, typed into the pad, must come alive (avatar and dataset have no
   # face in a preview, by design)
   Scenario: Every library component is a decoration the mdpad previews
-    When I navigate to "/components/text"
+    When I navigate to "/components/mdpad"
     And I wait for the page to be interactive
     And I type every library component into the decorated mdpad
     Then every one of them comes alive in the preview
