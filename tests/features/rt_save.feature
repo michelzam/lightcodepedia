@@ -249,6 +249,26 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I drag the "cv" pad's grip 200px down
     Then the replay's preview and diff both grew by about 200px
 
+  Scenario: An app screen's preview follows the grip as the editor does
+    Michel, 2026-10-29 (page 2): "the vertical resize of a mdpad leaves the
+    preview behind, while the code editor follows well". A decorated, saved
+    pad wears app chrome with a cap of its own; the grip overrides it.
+
+    Given a connected bench whose "courses/demo/mod/cv.md" holds "# Draft three"
+    And the GitHub contents API serves "courses/demo/mod/work.md" with the document:
+      """
+      # Work page
+
+      ```markdown
+      # Starter résumé — replace me
+      ```
+      {: .mdpad #cv save="cv.md" decorations="true" rows="6" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/work.md"
+    And I wait for the page to be interactive
+    And I drag the "cv" pad's grip 250px down
+    Then the "cv" pad's editor and preview grew by about 250px
+
   Scenario: Replay walks the saved versions forward and back, with the usual diff cues
     Michel, 2026-10-05: students watch their own document grow, frame by
     frame, the author's starter first, + and − where a line came or went,

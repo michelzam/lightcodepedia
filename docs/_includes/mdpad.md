@@ -173,6 +173,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-appbody { padding: 0.8em; overflow: auto; flex: 1; }
 /* the app's bar stays, its body scrolls (Michel, 2026-10-25) */
 .lc-mdpad-app { max-height: 80vh; }
+.lc-mdpad[style*="height"] > .lc-mdpad-app { max-height: none; }   /* the grip's height wins over the app screen's cap */
 .lc-mdpad-app .lc-mdpad-appbody { min-height: 0; }
 /* phones: preview first, then the source under it — same order as wide */
 @media (max-width: 640px) { .lc-mdpad { flex-direction: column; } }
@@ -665,7 +666,12 @@ Auto-included by docs/_layouts/default.html.
          heights — the grip lets them go, so both follow the pad (Michel,
          2026-10-18: "when the version panel is open, the vertical resize
          handle does not resize the preview and editor") */
-      if (wrap.hasAttribute("data-lc-replay") && getComputedStyle(wrap).flexDirection !== "column") {
+      /* …and always, replay or not: a height measured by an earlier replay
+         outlives its panel, and an app screen (decorations + save) wears a
+         max-height of its own — the grip is the one rule while it is held
+         (Michel, 2026-10-29, page 2: "the vertical resize of a mdpad leaves
+         the preview behind, while the code editor follows well") */
+      if (getComputedStyle(wrap).flexDirection !== "column") {
         [wrap.querySelector(":scope > .lc-mdpad-out"), wrap.querySelector(":scope > .lc-mdpad-diff")].forEach(function (p) {
           if (p) { p.style.height = ""; p.style.minHeight = "0"; }
         });

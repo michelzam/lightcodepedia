@@ -302,3 +302,23 @@ def step_safari_toast(context):
     toast = context.page.locator(".lc-guide-hello", has_text="Safari").first
     expect(toast).to_be_visible(timeout=5_000)
     expect(toast).to_contain_text("Chrome")
+
+
+@when("the page listens for the sign-in window's message")
+def step_listen_message(context):
+    context.page.evaluate("""() => { window._lcYtMsgs = [];
+        window.addEventListener('message', (e) => { if (e.data && e.data.type === 'lc_yt_token') window._lcYtMsgs.push(e.data); }); }""")
+
+
+@when('the page opens the sign-in window\'s return, carrying the token "{token}"')
+def step_open_return(context, token):
+    with context.page.expect_popup() as pop:
+        context.page.evaluate("(t) => { window.open('/?#access_token=' + t + '&state=lc_yt_oauth_popup&expires_in=3600', 'yt_oauth'); }", token)
+    context.yt_popup = pop.value
+    context.page.wait_for_timeout(3000)
+
+
+@then('the page received the token "{token}" from the window')
+def step_received_token(context, token):
+    got = context.page.evaluate("() => window._lcYtMsgs || []")
+    assert any(m.get("token") == token for m in got), got

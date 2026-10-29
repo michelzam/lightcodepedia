@@ -292,3 +292,15 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     And I wait for the page to be interactive
     And I tick "🎬 Short next walk" in the guide's menu
     Then a toast says Safari records no tab sound
+
+  Scenario: The sign-in window hands its token to the opener, storage or not
+    Michel, 2026-10-29, Canvas in Chrome: "Connecting YouTube… stalled".
+    A course frame and the sign-in window keep separate storage jars, so
+    the token written by the window never reached the frame. The window
+    now posts it to its opener; the frame stores it and uploads.
+
+    When I navigate to "/components/recorder"
+    And I wait for the page to be interactive
+    And the page listens for the sign-in window's message
+    And the page opens the sign-in window's return, carrying the token "tok-opener"
+    Then the page received the token "tok-opener" from the window

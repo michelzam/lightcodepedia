@@ -217,3 +217,50 @@ def step_ship_sticky_title(context, title):
     expect(h1).to_contain_text(title, timeout=20_000)
     assert h1.evaluate("e => getComputedStyle(e).position") == "fixed", "the app's title scrolls away"
     expect(context.page.locator(".lc-run[data-lc-app] h1")).to_have_count(0)
+
+
+@then('the ship button reads "{text}"')
+def step_ship_btn_reads(context, text):
+    assert context.page.locator(".lc-ship button").first.inner_text().strip() == text
+
+
+@then("the ship asks for one line")
+def step_ship_asks(context):
+    context.page.wait_for_selector(".lc-ship .lc-ship-commentbar input", timeout=5000)
+
+
+@when('I write the ship line "{text}" and press Enter')
+def step_ship_line(context, text):
+    inp = context.page.locator(".lc-ship .lc-ship-commentbar input")
+    inp.fill(text)
+    inp.press("Enter")
+    context.page.wait_for_timeout(1500)
+
+
+@then('the bay\'s commit for "{path}" ends with "{tail}"')
+def step_bay_received_msg(context, path, tail):
+    assert path in context.bay_puts, "bay got %r" % (sorted(context.bay_puts.keys()),)
+    msg = context.bay_puts[path].get("message", "")
+    assert msg.endswith(tail), msg
+
+
+@then('the bay manifest\'s "{app}" history starts with the note "{note}"')
+def step_manifest_note(context, app, note):
+    import base64
+    puts = {p: b for p, b in context.bay_puts.items() if p.endswith("manifest.json")}
+    assert puts, "no manifest was written"
+    body = json.loads(base64.b64decode(list(puts.values())[0]["content"]).decode("utf-8"))
+    assert body[app]["history"][0].get("note") == note, body[app]["history"][0]
+
+
+@when('I press the ship button and write the line "{text}"')
+def step_press_ship_with_line(context, text):
+    """comment="true" on the lesson's ship: the press opens the one-line box; the line ships"""
+    btn = context.page.locator(".lc-ship button").first
+    expect(btn).to_be_enabled(timeout=15_000)
+    btn.click()
+    inp = context.page.locator(".lc-ship .lc-ship-commentbar input")
+    inp.wait_for(state="visible", timeout=5000)
+    inp.fill(text)
+    inp.press("Enter")
+    context.page.wait_for_timeout(1500)

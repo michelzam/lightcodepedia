@@ -47,6 +47,34 @@ Feature: 🚀 Ship — the author-designed deployment component
     And the bay manifest now points "spike_dogs" at "cafebabe12345678"
     And the ship button reports the shipped link
 
+  Scenario: With comment="true", 🚀 Ship it… asks one line, and the ledger keeps it
+    Michel, 2026-10-29: "the ship's time machine shows no comments for the
+    commits — I would follow the mdpad example". The line rides the copy's
+    commit and its ledger entry; the copies list shows it.
+
+    Given I am signed in with a course key
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      [Ship it](#)
+      {: .ship app="spike_dogs" files="_ship_app.md" bay="acme/bay/bays" comment="true" }
+      """
+    And the GitHub contents API serves "courses/demo/_ship_app.md" with the document:
+      """
+      # 🐕 Spike dogs
+      """
+    And the bench HEAD commit is "cafebabe12345678"
+    And the bay accepts writes
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    Then the ship button reads "🚀 Ship it…"
+    When I press the ship button
+    Then the ship asks for one line
+    When I write the ship line "the tour pasted" and press Enter
+    Then the bay's commit for "bays/spike_dogs_cafebabe12345678/_ship_app.md" ends with "— the tour pasted"
+    And the bay manifest's "spike_dogs" history starts with the note "the tour pasted"
+
   Scenario: A pending bay invitation is accepted on the fly, and the ship completes
     A collaborator grant can land as a pending invitation instead of a
     direct one — the bay exists, push was granted, and the PUT still says

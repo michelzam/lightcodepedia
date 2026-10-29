@@ -924,18 +924,38 @@ Auto-included by docs/_layouts/default.html.
           response_type: "token", scope: YT_SCOPE, state: "lc_yt_oauth_popup"
         }), "yt_oauth", "width=520,height=640,left=200,top=100"
       );
-      function onStorage(e) {
-        if (e.key !== "lc_yt_access" || !e.newValue) return;
+      var done = false;
+      function settle(t) {
+        if (done) return; done = true;
         window.removeEventListener("storage", onStorage);
+        window.removeEventListener("message", onMessage);
         clearInterval(poll);
         if (popup && !popup.closed) try { popup.close(); } catch(x){}
-        onToken(e.newValue);
+        onToken(t);
+      }
+      function onStorage(e) {
+        if (e.key !== "lc_yt_access" || !e.newValue) return;
+        settle(e.newValue);
+      }
+      /* INSIDE A COURSE FRAME THE STORAGE ROAD IS CUT (Michel, 2026-10-29,
+         Canvas in Chrome: "Connecting YouTube… stalled"): the browser keeps
+         a frame's storage apart from the sign-in window's — same site, two
+         jars (storage partitioning) — so the token the window writes never
+         reaches the frame. The window hands it to its opener directly. */
+      function onMessage(e) {
+        if (e.origin !== window.location.origin || !e.data || e.data.type !== "lc_yt_token" || !e.data.token) return;
+        try {
+          localStorage.setItem("lc_yt_access", e.data.token);
+          localStorage.setItem("lc_yt_expiry", String(e.data.expiry || (Date.now() + 3600 * 1000)));
+        } catch (x) {}
+        settle(e.data.token);
       }
       window.addEventListener("storage", onStorage);
+      window.addEventListener("message", onMessage);
       var poll = setInterval(function() {
         var t = ytGetToken();
-        if (t) { clearInterval(poll); window.removeEventListener("storage", onStorage); if (popup && !popup.closed) try { popup.close(); } catch(x){} onToken(t); return; }
-        if (popup && popup.closed) { clearInterval(poll); window.removeEventListener("storage", onStorage); }
+        if (t) { settle(t); return; }
+        if (popup && popup.closed) { clearInterval(poll); window.removeEventListener("storage", onStorage); window.removeEventListener("message", onMessage); }
       }, 600);
     }
 
@@ -946,10 +966,15 @@ Auto-included by docs/_layouts/default.html.
         var token = hp.get("access_token"), state = hp.get("state");
         var expiresIn = parseInt(hp.get("expires_in") || "3600", 10);
         if (token && (state === "lc_yt_oauth" || state === "lc_yt_oauth_popup")) {
-          localStorage.setItem("lc_yt_access", token);
-          localStorage.setItem("lc_yt_expiry", String(Date.now() + expiresIn * 1000));
+          var expiry = Date.now() + expiresIn * 1000;
+          try { localStorage.setItem("lc_yt_access", token); localStorage.setItem("lc_yt_expiry", String(expiry)); } catch (x) {}
           window.history.replaceState({}, "", window.location.pathname);
-          if (state === "lc_yt_oauth_popup") { window.close(); return; }
+          if (state === "lc_yt_oauth_popup") {
+            /* the opener may live in another storage jar (a course frame): hand the token over */
+            try { if (window.opener) window.opener.postMessage({ type: "lc_yt_token", token: token, expiry: expiry }, window.location.origin); } catch (x) {}
+            setTimeout(function () { window.close(); }, 150);
+            return;
+          }
           localStorage.setItem("lc_yt_open_upload", "1");
           window.location.href = localStorage.getItem("lc_yt_return") || "/";
         }
@@ -1076,7 +1101,11 @@ Auto-included by docs/_layouts/default.html.
       var token = ytGetToken();
       if (token) { run(token); return; }
       pctEl.textContent = "Connecting YouTube…";
-      ytStartOAuthPopup(function(t){ run(t); });
+      var slow = setTimeout(function () {
+        if (pctEl.textContent === "Connecting YouTube…")
+          pctEl.textContent = "Still connecting… finish the Google window; if it closed on its own, press YouTube again.";
+      }, 25000);
+      ytStartOAuthPopup(function(t){ clearTimeout(slow); run(t); });
     }
 
     function openYtModal() {

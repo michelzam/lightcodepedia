@@ -49,6 +49,13 @@ Auto-included by docs/_layouts/default.html.
 }
 .lc-ship button:disabled { background: #e5e7eb; border-color: #d1d5db; color: #9ca3af; cursor: default; }
 .lc-ship .lc-ship-status { font-size: 0.9em; color: #6b7280; flex: 1; min-width: 200px; }
+/* 🚀 Ship it… — the one-line box: what is in this copy? (the pad's 💾 Save… look) */
+.lc-ship .lc-ship-commentbar { display: flex; gap: 0.5em; align-items: center; flex-basis: 100%; margin: 0.4em 0 0; font-size: 0.9em; }
+.lc-ship .lc-ship-commentbar input { flex: 1; min-width: 120px; font: inherit; padding: 0.35em 0.6em; border: 1px solid #bbb; border-radius: 6px; }
+.lc-ship .lc-ship-commentbar button { font: inherit; font-size: 0.9em; padding: 0.35em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #444; cursor: pointer; }
+.lc-ship .lc-ship-commentbar button.lc-ship-go { background: #b45309; border-color: #b45309; color: #fff; }
+.lc-ship .lc-ship-commentbar button:disabled { opacity: 0.45; cursor: default; }
+.lc-ship .lc-ship-note { color: #6b7280; font-style: italic; margin-left: 0.4em; }
 .lc-ship .lc-ship-status a { color: #0066cc; font-weight: 600; text-decoration: none; }
 .lc-ship .lc-ship-versions { flex-basis: 100%; font-size: 0.85em; color: #6b7280; border-top: 1px dashed #e6d3ae; padding-top: 0.6em; }
 .lc-ship .lc-ship-versions a { color: #0066cc; font-weight: 600; text-decoration: none; font-family: ui-monospace, Menlo, monospace; }
@@ -144,8 +151,10 @@ Auto-included by docs/_layouts/default.html.
       .catch(function () { return false; });
   }
 
-  function shipIt(box, btn, status, ctx, bay, app, files) {
+  function escNote(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function shipIt(box, btn, status, ctx, bay, app, files, note) {
     files = files.slice();   /* this ship's own list: the app's embeds join it below */
+    note = String(note || "").trim().slice(0, 120);
     btn.disabled = true;
     status.textContent = "Shipping…";
     var folder, sha;
@@ -273,7 +282,7 @@ Auto-included by docs/_layouts/default.html.
                 function put() {
                   return fetch(API + bay.repo + "/contents/" + folder + "/" + dest, {
                     method: "PUT", headers: hdrs({ "Content-Type": "application/json" }),
-                    body: JSON.stringify({ message: "🚀 " + app + " @ " + sha.slice(0, 7),
+                    body: JSON.stringify({ message: "🚀 " + app + " @ " + sha.slice(0, 7) + (note ? " — " + note : ""),
                                            content: b64utf8(text) })
                   });
                 }
@@ -338,7 +347,11 @@ Auto-included by docs/_layouts/default.html.
               body.replace(/(?:^|\s)\.([A-Za-z][\w-]*)/g, function (x, c) { if (parts.indexOf(c) < 0) parts.push(c); return x; });
               return m;
             });
-            history.unshift({ sha: sha, at: now, entry: shaped[0], engine: ENGINE, parts: parts, todo: todo });
+            /* THE SHIP'S OWN LINE (Michel, 2026-10-29: "the time machine
+               shows no comments for the commits — follow the mdpad"): the
+               line asked before the ship rides the copy's commit and its
+               ledger entry, and the copies list shows it */
+            history.unshift({ sha: sha, at: now, entry: shaped[0], engine: ENGINE, parts: parts, todo: todo, note: note || undefined });
             current[app] = { sha: sha, entry: shaped[0], files: shaped, by: by || undefined, engine: ENGINE,
                              at: now, history: history.slice(0, 50) };
             var body = { message: "📒 manifest: " + app + " @ " + sha.slice(0, 7),
@@ -414,7 +427,7 @@ Auto-included by docs/_layouts/default.html.
           var on = picked ? picked.sha === h.sha : i === 0;
           return "<li class='" + (on ? "lc-ship-on" : "") + "'><button type='button' class='lc-ship-pick' data-i='" + i + "'>" +
             (i === 0 ? "🆕 " : "📦 ") + h.sha.slice(0, 7) + " <span>" + when(h.at) + "</span>" +
-            (i === 0 ? " <b>latest</b>" : "") + "</button> <a href='" + copyLink(bay, app, h) +
+            (i === 0 ? " <b>latest</b>" : "") + (h.note ? " <em class='lc-ship-note'>" + escNote(h.note) + "</em>" : "") + "</button> <a href='" + copyLink(bay, app, h) +
             "' target='_blank' rel='noopener' title='open this copy on its own'>↗</a></li>";
         };
         panel.innerHTML = "<div class='lc-ship-last'>Last shipped " + when(list[0].at) + " · " +
@@ -482,7 +495,35 @@ Auto-included by docs/_layouts/default.html.
     if (why) { btn.disabled = true; status.textContent = why; return; }
 
     status.textContent = "Ships " + files.join(", ") + " to " + bay.repo + " — publicly.";
-    btn.addEventListener("click", function () { shipIt(box, btn, status, ctx, bay, app, files); });
+    /* comment="true": 🚀 Ship it… asks one line first — what is in this
+       copy — the way the pad's 💾 Save… does; Enter ships, Escape forgets */
+    var askNote = el.getAttribute("comment") === "true";
+    if (askNote) btn.textContent = "🚀 Ship it…";
+    btn.addEventListener("click", function () {
+      if (!askNote) return shipIt(box, btn, status, ctx, bay, app, files);
+      if (box.querySelector(".lc-ship-commentbar")) return;
+      var form = document.createElement("form");
+      form.className = "lc-ship-commentbar"; form.setAttribute("autocomplete", "off");
+      form.addEventListener("submit", function (e) { e.preventDefault(); });
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.maxLength = 120; inp.name = "lc-ship-diary";
+      inp.setAttribute("autocomplete", "off"); inp.setAttribute("data-lpignore", "true"); inp.setAttribute("data-1p-ignore", "true");
+      inp.placeholder = "What is in this copy? — one line, e.g. the tour pasted";
+      inp.setAttribute("aria-label", "What is in this copy?");
+      var go = document.createElement("button"); go.type = "button"; go.className = "lc-ship-go"; go.textContent = "🚀 Ship"; go.disabled = true;
+      var no = document.createElement("button"); no.type = "button"; no.className = "lc-ship-cancel"; no.textContent = "Cancel";
+      form.appendChild(inp); form.appendChild(go); form.appendChild(no);
+      box.insertBefore(form, status.nextSibling);
+      var close = function () { if (form.parentNode) form.parentNode.removeChild(form); };
+      var ship = function () { var n = inp.value.trim(); if (!n) return; close(); shipIt(box, btn, status, ctx, bay, app, files, n); };
+      inp.addEventListener("input", function () { go.disabled = !inp.value.trim(); });
+      inp.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") { e.preventDefault(); ship(); }
+        if (e.key === "Escape") { e.preventDefault(); close(); }
+      });
+      go.addEventListener("click", ship); no.addEventListener("click", close);
+      inp.focus();
+    });
     var rp = parseFloat(el.getAttribute("replay") || "");   /* the time machine's seconds per copy */
     if (rp > 0) box.setAttribute("data-replay", String(Math.round(rp * 1000)));
     showVersions(box, bay, app);
