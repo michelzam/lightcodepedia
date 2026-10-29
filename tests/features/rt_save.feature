@@ -1132,3 +1132,4 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     When the page-level pass heals the whole page against the vault
     Then the pad's preview shows the picture "Fern" from the bench
     And the picture "Fern.png" was never asked from the vault
+    And the picture fits the preview's width

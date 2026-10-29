@@ -1394,3 +1394,11 @@ def step_picture_not_vault(context, name):
     assert not got, got
     src = context.page.evaluate("() => (document.querySelector('.lc-mdpad-out img') || {}).src || ''")
     assert src.startswith("blob:"), src
+
+
+@then("the picture fits the preview's width")
+def step_picture_fits(context):
+    """a 2000-px photo must not widen the pad (Michel, 2026-10-29: "Fern is not autosized")"""
+    got = context.page.evaluate("""() => { const img = document.querySelector('.lc-mdpad-out img'), out = img.closest('.lc-mdpad-out');
+        const cs = getComputedStyle(img); return { maxw: cs.maxWidth, h: cs.height === 'auto' || img.style.height === '' , w: img.getBoundingClientRect().width, ow: out.getBoundingClientRect().width }; }""")
+    assert got["maxw"] == "100%" and got["w"] <= got["ow"], got

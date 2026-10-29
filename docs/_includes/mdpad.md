@@ -155,6 +155,8 @@ Auto-included by docs/_layouts/default.html.
   border: 1px solid #d0d0d0; border-radius: 6px;
   background: #1e1e2e; color: #cdd6f4;
 }
+/* a picture fits the preview (Michel, 2026-10-29: "Fern is not autosized") */
+.lc-mdpad-out img { max-width: 100%; height: auto; }
 .lc-mdpad-out {
   flex: 1; min-width: 0; padding: 0.8em; overflow: auto;
   border: 1px solid #d0d0d0; border-radius: 6px;
