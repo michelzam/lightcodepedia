@@ -1125,3 +1125,7 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     And I wait for the page to be interactive
     Then the pad's text contains "![Fern](Fern.png)"
     And the pad's preview shows the picture "Fern" from the bench
+    When I type "\n\nmine." at the end of the "cv" pad
+    And the "cv" pad's preview has caught up
+    Then the pad's preview shows the picture "Fern" from the bench
+    And the picture "Fern.png" was read from the bench once

@@ -1372,3 +1372,10 @@ def step_pad_picture(context, name):
 def step_pad_contains(context, text):
     got = context.page.evaluate("() => document.querySelector('.lc-mdpad-in').value")
     assert text in got, "pad holds %r" % got
+
+
+@then('the picture "{name}" was read from the bench once')
+def step_picture_once(context, name):
+    """a render on every keystroke must not fetch the picture again (2.5 MB on Michel's CV)"""
+    n = context.page.evaluate("(n) => performance.getEntriesByType('resource').filter(r => r.name.indexOf('/contents/') > 0 && r.name.indexOf(n) > 0).length", name)
+    assert n == 1, "the picture was read %d times" % n

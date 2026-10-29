@@ -354,10 +354,13 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      (site assets, CDNs). Without a key, srcs rewrite to raw URLs — right for
      public repos, and no worse than today's 404 for private ones. */
   window.lcHealImages = function (root, repo, path) { return healImages(root, repo, path); };   /* a pad's preview heals its pictures the same way */
+  /* A PICTURE IS FETCHED ONCE (2026-10-29: a pad's preview renders on every
+     keystroke, and Fern.jpg weighs 2.5 MB): the blob of each repo/path is
+     kept for the page's life and handed to every later render; a fetch in
+     flight is shared, not repeated. */
+  var IMG_CACHE = {};
   function healImages(root, repo, path) {
     var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
-    (root._lcImgUrls || []).forEach(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} });
-    root._lcImgUrls = [];
     var pat = edKey();
     root.querySelectorAll("img[src]").forEach(function (img) {
       var s = img.getAttribute("src") || "";
@@ -372,7 +375,9 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
         img.src = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full;
         return;
       }
-      fetch("https://api.github.com/repos/" + repo + "/contents/" + full,
+      var key = repo + "/" + full;
+      if (IMG_CACHE[key]) { IMG_CACHE[key].then(function (u) { img.src = u; }).catch(function () {}); return; }
+      IMG_CACHE[key] = fetch("https://api.github.com/repos/" + repo + "/contents/" + full,
             { headers: { Authorization: "Bearer " + pat, Accept: "application/vnd.github.v3.raw", "X-GitHub-Api-Version": "2022-11-28" }, cache: "no-store" })
         .then(function (r) {
           if (!r.ok) throw 0;
@@ -394,15 +399,15 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
           var mime = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg", gif: "image/gif", webp: "image/webp", svg: "image/svg+xml", avif: "image/avif" }[(ext || "").toLowerCase()];
           if (mime && b.type !== mime) b = new Blob([b], { type: mime });
           var u = URL.createObjectURL(b);
-          root._lcImgUrls.push(u);
           img.src = u;
+          return u;
         })
         /* A KEY GITHUB REFUSES SAYS NOTHING ABOUT THE IMAGE (Michel,
            2026-09-13: the setup page's fifteen slides, blank on pedia, in
            the one browser holding an expired key). Fall back to the road a
            keyless visitor takes — raw — which a public repo serves; a
            private one 404s there as it always did, no worse than a blank. */
-        .catch(function () { img.src = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full; });
+        .catch(function () { delete IMG_CACHE[key]; var u = "https://raw.githubusercontent.com/" + repo + "/HEAD/" + full; img.src = u; return u; });
     });
   }
 
