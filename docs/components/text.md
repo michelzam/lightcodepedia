@@ -44,6 +44,8 @@ Inline *colour*{: .red} works in the live preview too.
 
 [Visit lightcodepedia](/)
 
+![A picture is a link with ! in front](/images/lucky.svg)
+
 ```python
 def greet(name):
     print(f"Hello, {name}!")
@@ -51,6 +53,9 @@ def greet(name):
 ````
 {: .mdpad #playground rows="16" }
 
+A picture is a link with `!` in front: `![what it shows](Fern.jpg)`. The name
+beside the file, as here, reads the picture from your own space, like a page
+you embed; a full address shows any picture on the web. It fits the width.
 Try changing `**Bold**` to `**Loud**`. Add a new bullet. Break a table row. The preview updates on every keystroke — no server, just JavaScript[^marked] in the browser.
 
 ### 🎯 Focus — the caret's block, on both sides

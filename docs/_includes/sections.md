@@ -35,8 +35,11 @@ Auto-included by docs/_layouts/default.html.
 /* THE CUE: a bar with no marker reads as a title, not a door. Who could
    guess "Markdown, in one page" unfolds? (Michel, 2026-09-07) — every
    accordion header wears ▸, turning ▾ when open. */
-.lc-accordion > details > summary::before { content: "\25B8"; color: #94a3b8; font-size: 0.8em; margin-right: 0.45em; }
-.lc-accordion > details[open] > summary::before { content: "\25BE"; }
+/* THE FOLD, SEEN (Michel, 2026-10-29: "make the accordion arrow more visible
+   to show there is something folded there"): a blue triangle at text size,
+   not a grey speck — a learner missed a quiz under one */
+.lc-accordion > details > summary::before { content: "\25B6"; color: #0066cc; font-size: 0.85em; margin-right: 0.55em; display: inline-block; transition: transform 0.15s; }
+.lc-accordion > details[open] > summary::before { transform: rotate(90deg); }
 .lc-acc-live { float: right; font-weight: 400; font-size: 0.82em; color: #64748b; margin-left: 1em; }
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #f0f6ff; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }

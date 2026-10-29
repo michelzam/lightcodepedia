@@ -1149,3 +1149,24 @@ def step_no_key_no_provider(context):
     text = context.page.locator("body").inner_text().lower()
     for word in ("supabase", "sb_publishable", "eyj", "apikey=", "databricks", "snowflake"):
         assert word not in text, "the page names " + word
+
+
+def _cue_style(context, which):
+    return context.page.evaluate("""(which) => {
+        const d = Array.from(document.querySelectorAll('.lc-accordion > details'))[0];
+        const s = d.querySelector(':scope > summary'), cs = getComputedStyle(s, '::before'), base = getComputedStyle(s);
+        return { color: cs.color, size: parseFloat(cs.fontSize), text: parseFloat(base.fontSize), transform: cs.transform, open: d.open }; }""", which)
+
+
+@then("the fold cue is blue, at text size, and not turned")
+def step_cue_visible(context):
+    st = _cue_style(context, "closed")
+    assert st["color"] == "rgb(0, 102, 204)", st
+    assert st["size"] >= 0.8 * st["text"], st
+    assert st["transform"] in ("none", "matrix(1, 0, 0, 1, 0, 0)"), st
+
+
+@then("the fold cue is turned down")
+def step_cue_turned(context):
+    st = _cue_style(context, "open")
+    assert st["open"] and st["transform"] not in ("none", "matrix(1, 0, 0, 1, 0, 0)"), st

@@ -500,13 +500,17 @@ Feature: Component gallery behaviors
   Scenario: An accordion header wears the fold cue
     A bar with no marker reads as a title, not a door: who could guess
     "Markdown, in one page" unfolds? (Michel, 2026-09-07). Every header
-    wears ▸, and ▾ once open.
+    wears ▶, blue and at text size (Michel, 2026-10-29: "make the arrow more
+    visible to show there is something folded there" — a learner missed a
+    quiz under one), and the same triangle turned down once open.
 
     When I navigate to "/components/accordion"
     And I wait for the page to be interactive
-    Then the closed accordion headers wear "▸"
+    Then the closed accordion headers wear "▶"
+    And the fold cue is blue, at text size, and not turned
     When I open the first accordion section
-    Then the open accordion header wears "▾"
+    Then the open accordion header wears "▶"
+    And the fold cue is turned down
 
   Scenario: A grid prints UTC stamps on the reader's clock, UTC on hover
     The memory, the seat files and GitHub keep ISO-Z; a teacher in
