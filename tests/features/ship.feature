@@ -157,26 +157,6 @@ Feature: 🚀 Ship — the author-designed deployment component
     Then the ship button is disarmed with a reason
     And the reason names the foreign pairing
 
-  Scenario: The stage door opens the latest copy with the camera on it
-    Michel, 2026-10-30: "the recorder records on the course page, not on
-    the autonomous app page — not very consistent". stage="my_app.md" on
-    the ship block: the latest copy, in its own tab, ?stage=1, and into=
-    the learner's file the recording's link lands in.
-
-    Given I am signed in with a course key
-    And this browser is paired to the bench "acme/bench"
-    And the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
-    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
-      """
-      # Assignment
-
-      [Ship it](#)
-      {: .ship app="spike_dogs" files="_ship_app.md" bay="acme/bay/bays" stage="_ship_app.md" }
-      """
-    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
-    And I wait for the page to be interactive
-    Then the ship panel offers "🎬 Step on stage" opening "/run.html?stage=1&into=/courses/demo/_ship_app.md#src=gh:acme/bay/bays/spike_dogs_cafebabe12345678/_ship_app.md"
-
   Scenario: A ship: embed renders the latest shipped copy, keyless
     Given the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
     And the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:

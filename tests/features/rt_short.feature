@@ -324,18 +324,3 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     Then the bench received a commit to "courses/demo/mod/my_app.md" containing "[Recording](https://youtu.be/abc123)"
     And the bench received a commit to "courses/demo/mod/my_app.md" containing "{: .video }"
     And the insert's status says "Added to my_app.md"
-
-  Scenario: On stage, the shipped app carries the camera itself
-    Michel, 2026-10-30: the recording must be of the thing handed over. A
-    shipped copy opened with ?stage=1 mounts the recorder's launcher over
-    the app; into= names the file the link lands in.
-
-    Given the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:
-      """
-      # 🐕 Spike dogs
-
-      Twelve dogs, none invisible.
-      """
-    When I navigate to "/run.html?stage=1&into=/courses/demo/mod/my_app.md#src=gh:acme/bay/bays/spike_dogs_cafebabe12345678/_ship_app.md"
-    And I wait for the page to be interactive
-    Then the stage shows the camera over the app, landing in "/courses/demo/mod/my_app.md"

@@ -475,19 +475,8 @@ Auto-included by docs/_layouts/default.html.
             (i === 0 ? " <b>latest</b>" : "") + (h.note ? " <em class='lc-ship-note'>" + escNote(h.note) + "</em>" : "") + "</button> <a href='" + copyLink(bay, app, h) +
             "' target='_blank' rel='noopener' title='open this copy on its own'>↗</a></li>";
         };
-        /* 🎬 THE STAGE DOOR (Michel, 2026-10-30): stage="my_app.md" — the
-           latest copy opens in its own tab with the camera on it, and the
-           recording's link lands in that file of the learner's bench */
-        var stageHtml = "";
-        if (box._lcStage) {
-          var intoPath = "";
-          try { intoPath = window.lcBench && window.lcBench.resolve ? "/" + String(window.lcBench.resolve(box._lcStage, box)).replace(/^\/+/, "") : ""; } catch (e) { intoPath = ""; }
-          var link = copyLink(bay, app, list[0]), cut = link.indexOf("#");
-          var stageHref = link.slice(0, cut) + "?stage=1" + (intoPath ? "&into=" + encodeURIComponent(intoPath) : "") + link.slice(cut);
-          stageHtml = " · <a class='lc-ship-stage' href='" + stageHref + "' target='_blank' rel='noopener' title='your shipped app, in its own tab, with the camera on it'>🎬 Step on stage ↗</a>";
-        }
         panel.innerHTML = "<div class='lc-ship-last'>Last shipped " + when(list[0].at) + " · " +
-          "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='noopener'>open " + list[0].sha.slice(0, 7) + " ↗</a>" + stageHtml + "</div>" +
+          "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='noopener'>open " + list[0].sha.slice(0, 7) + " ↗</a></div>" +
           (list.length > 1 ? "<details class='lc-ship-all'" + (wasOpen ? " open" : "") + "><summary>🗂 All " + list.length + " copies</summary>" +
             "<button type='button' class='lc-ship-replay'>🎞 Time machine</button><ol>" +
             list.map(row).join("") + "</ol></details>" : "");
@@ -601,7 +590,6 @@ Auto-included by docs/_layouts/default.html.
         }
       } catch (x) {}
     });
-    box._lcStage = (el.getAttribute("stage") || "").trim();   /* the file the stage's recording lands in */
     var rp = parseFloat(el.getAttribute("replay") || "");   /* the time machine's seconds per copy */
     if (rp > 0) box.setAttribute("data-replay", String(Math.round(rp * 1000)));
     showVersions(box, bay, app);

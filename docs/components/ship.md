@@ -23,7 +23,6 @@ worked is the app itself, live, not a success message.
 | `app` | the assignment's name, chosen by the author — it prefixes every deploy folder, so submissions are enumerable by construction |
 | `files` | exactly what ships, comma-separated, relative to the page — the author decides the blast radius, never the learner in the moment. Each file is read from the learner's bench first, then from a pad on the page that saves it (as the pad shows it), then from the course. Files from other folders (`../module_00/_app_dogs.md`) keep their places in the shipped copy, so an app's embeds work there too |
 | `bay` | `owner/repo` or `owner/repo/base` — a **public** repo (or folder in one) that receives the deploys and holds the `manifest.json` ledger |
-| `stage` | a file of the learner's bench, e.g. `my_app.md`: the panel offers **🎬 Step on stage ↗** — the latest copy in its own tab with `?stage=1`, the recorder's launcher floating over the app, and `into=` that file, where **📄 Insert into page** puts the recording's link |
 {: .wide_first }
 
 ## 📐 How it holds together

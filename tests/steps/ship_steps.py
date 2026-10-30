@@ -283,14 +283,3 @@ def step_bench_history(context, path, first, second):
 def step_ship_prefill(context, text):
     inp = context.page.locator(".lc-ship .lc-ship-commentbar input")
     expect(inp).to_have_value(text, timeout=5_000)
-
-
-@then('the ship panel offers "{label}" opening "{href}"')
-def step_ship_stage_door(context, label, href):
-    import urllib.parse
-    a = context.page.locator(".lc-ship .lc-ship-stage").first
-    expect(a).to_be_visible(timeout=15_000)
-    assert a.inner_text().strip().startswith(label), a.inner_text()
-    got = urllib.parse.unquote(a.get_attribute("href") or "")
-    assert got.endswith(href), got
-    assert a.get_attribute("target") == "_blank"
