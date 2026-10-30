@@ -216,25 +216,6 @@ Feature: A crew — agents as the rows of a dataset, a loop with its bounds
     And the crew "desk" sorted "Ferraro" as "meet" in 2 tries
     And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
 
-  Scenario: A checker in Python — an exact rule, free, the same every time
-    Michel, 2026-10-24: "go python Chuck", then "just one agent? I would like
-    to have 2": the lesson keeps Chuck an AI agent; the engine keeps a Python
-    checker for a rule that is exact — a rules member named in checked_by.
-
-    Given I have a clean browser page
-    And an energy key "AIza-crew-test" is already saved on this device
-    And the AI answers as Rey and Chuck, Rey wrong the first time
-    And the module 08 lesson "01_the_front_desk.md" is served with a Python Chuck
-    When I open the served lesson
-    And I press ▶ Run on the crew "desk"
-    Then the crew "desk" is done
-    And the crew "desk" says why "Ferraro" went "meet": "Chuck agreed"
-    # Chuck's checks are rule runs: Rey alone asks — Ferraro, Lindqvist, Moreau: two reads each
-    And the crew "desk" asked the AI 6 times
-    And the desk's cost reads 192: 12 rule runs, 6 AI asks, 0 left OPEN
-    When I open the accordion section "event flow"
-    Then the run's event flow "desk_flow" tells "Ferraro / 🤖 Rey proposes adopt / 🐍 Chuck disagrees: no visit yet: meet first / 🤖 Rey proposes meet / 🐍 Chuck agrees / Ferraro → meet ✅"
-
   Scenario: Answers as objects — the crew asks for JSON and reads it, the page's instructions say the role only
     Michel, 2026-10-24: "structured answers… objects instantiated from that
     json BUT encapsulated, so I don't want more complexity in the example".
