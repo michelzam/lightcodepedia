@@ -12,10 +12,12 @@ Welcome back! So far, every change in your database happened because
 - a **cursor** — a way to walk through rows **one at a time**;
 - a **trigger** — logic the database runs **by itself** when data changes.
 
-Like last week, everything happens in **MySQL Workbench**, on a small
-database of its own, **coursedb** — two tables, made for experiments.
-Your **uwm** and **shopdb** stay untouched. Every step says what to run
-and **what you should see**, so you can check yourself at each line.
+Procedures and cursors you meet **on paper** this week: read them,
+understand them, no need to run them. The **trigger** is the one you
+build — in **MySQL Workbench**, on a small database of its own,
+**coursedb**: two tables, made for experiments. Your **uwm** and
+**shopdb** stay untouched. Every hands-on step says what to run and
+**what you should see**, so you can check yourself at each line.
 
 Every step ends with a little quiz, just for you. Take your time. 🙂
 
@@ -33,9 +35,8 @@ menu — two checkmarks, like last week, but one has changed:
   rolling anything back today: each change should be kept as soon as it
   runs.
 
-Then build **coursedb**: a few courses, and an empty table of course
-**resources** (guidelines, cheat sheets…) that will soon track their own
-versions.
+Then build **coursedb**: two courses, and three course **resources**
+(guidelines, cheat sheets…) that will soon track their own versions.
 
 ```sql
 CREATE DATABASE IF NOT EXISTS coursedb;
@@ -65,13 +66,19 @@ INSERT INTO Courses (CourseNumber, CourseTitle) VALUES
   ('INFOST 350', 'Intro to Application Development'),
   ('INFOST 410', 'Database Information Retrieval Systems');
 
-SELECT COUNT(*) AS courses FROM Courses;
+INSERT INTO Resources (CourseID, Title, Description) VALUES
+  (2, 'Project Guidelines', 'Initial draft for Module 6'),
+  (2, 'Query Cheat Sheet', 'SELECT, JOIN, GROUP BY'),
+  (1, 'Python Setup', 'Install and first run');
+
+SELECT ResourceID, CourseID, Title, Version FROM Resources;
 ```
 
-Run it all at once (⚡). **You should see:** **2** courses, and
-**coursedb** in the Navigator's SCHEMAS (🔄 to refresh). Lost at any point
-this week? Run this script again, then redo the steps from step 2: it
-rebuilds coursedb from scratch, and only coursedb.
+Run it all at once (⚡). **You should see:** **3** resources, each at
+**Version 1**, and **coursedb** in the Navigator's SCHEMAS (🔄 to
+refresh). Lost at any point this week? Run this script again, then redo
+the steps from step 3: it rebuilds coursedb from scratch — and only
+coursedb.
 
 **Q:** Why does this script start with `DROP TABLE IF EXISTS Resources`?
 
@@ -134,52 +141,39 @@ one that can act, decide, and react.
 {: .accordion #three_tools }
 
 ````
-### 🧩 Step 2 · A stored procedure: save it once, CALL it often
+### 🧩 Step 2 · Stored procedures — on paper
 
 [Stored procedures](_slides/m10_02.jpg)
 {: .embed image="true" width="100%" }
 
-Adding a resource always takes the same INSERT. Wrap it in a procedure,
-then **call** it by name. Select the whole block — the DELIMITER lines
-included — and run it:
+When the same SQL keeps coming back — adding a resource, cleaning a
+log — you can wrap it into a **stored procedure**: a routine saved in
+the database, run by name with **CALL**, like a reusable function.
 
-```sql
-USE coursedb;
-DROP PROCEDURE IF EXISTS AddResource;
+**To read, not to run** — the INSERT of step 0, wrapped once:
 
-DELIMITER //
+~~~sql
 CREATE PROCEDURE AddResource(IN NewCourseID INT,
                              IN NewTitle VARCHAR(100),
                              IN NewDescription TEXT)
 BEGIN
   INSERT INTO Resources (CourseID, Title, Description)
   VALUES (NewCourseID, NewTitle, NewDescription);
-  SELECT * FROM Resources WHERE ResourceID = LAST_INSERT_ID();
-END //
-DELIMITER ;
-```
+END;
 
-**Why DELIMITER?** The procedure's body contains semicolons. `DELIMITER //`
-tells Workbench: "until I say otherwise, a statement ends with //" — so
-the whole procedure travels to the server as **one** statement. Then
-`DELIMITER ;` puts the usual ending back.
-
-You should see: green checks, no grid yet — a procedure is saved, not
-run. It appears in the Navigator under **coursedb › Stored Procedures**.
-
-Now **call** it, three times:
-
-```sql
+-- then, any time:
 CALL AddResource(2, 'Project Guidelines', 'Initial draft for Module 6');
-CALL AddResource(2, 'Query Cheat Sheet', 'SELECT, JOIN, GROUP BY');
-CALL AddResource(1, 'Python Setup', 'Install and first run');
-SELECT COUNT(*) FROM Resources;
-```
+~~~
 
-You should see: each CALL shows its new row, with **Version 1**; the
-count says **3**. One routine, three uses — written once.
+Read it like a sentence: *AddResource takes a course, a title and a
+description, and inserts them as a new resource.* Three CALLs would give
+the three rows step 0 inserted by hand.
 
-**Q:** You saved AddResource. What does a fourth resource cost you now?
+Why bother? ♻ **Reusability** — written once, used often. 🧱
+**Consistency** — fix the logic in one place. 🔒 **Security and
+performance** — the SQL stays on the server.
+
+**Q:** Once AddResource is saved, what does a fourth resource cost?
 
 - [ ] A new procedure, since each procedure works only once
 
@@ -194,10 +188,9 @@ count says **3**. One routine, three uses — written once.
 
   > A procedure never runs on its own. It waits for a CALL.
 
-- [ ] A new DELIMITER, since the old one is used up
+- [ ] A copy of the whole procedure, pasted again
 
-  > DELIMITER is only needed while creating the procedure. Calling it is
-  > ordinary SQL.
+  > The procedure lives in the database: you only CALL it.
 {: .quiz }
 ````
 {: .accordion #procedure }
@@ -231,6 +224,13 @@ DELIMITER ;
 
 SHOW TRIGGERS LIKE 'Resources';
 ```
+
+Select the whole block — the DELIMITER lines included — and run it.
+
+**Why DELIMITER?** The trigger's body contains semicolons. `DELIMITER //`
+tells Workbench: "until I say otherwise, a statement ends with //" — so
+the whole trigger travels to the server as **one** statement. Then
+`DELIMITER ;` puts the usual ending back.
 
 Read it like a sentence: *before any row of Resources is updated, if its
 new Description differs from the old one, raise its Version by one and
@@ -345,19 +345,19 @@ and the trigger ran **once for each** — FOR EACH ROW.
 {: .accordion #test_trigger }
 
 ````
-### 🔁 Step 5 · A cursor: row by row, inside a procedure
+### 🔁 Step 5 · Cursors — on paper
 
 [Cursors](_slides/m10_03.jpg)
 {: .embed image="true" width="100%" }
 
-How many versions exist in total? A cursor walks through the Version of
-every resource, **one row at a time**, and adds them up:
+Sometimes one big query is not enough: each row needs its own
+decision. A **cursor** lets a stored procedure walk through a query's
+rows **one at a time**.
 
-```sql
-USE coursedb;
-DROP PROCEDURE IF EXISTS SumVersions;
+**To read, not to run** — a procedure that adds up every Version, row
+by row:
 
-DELIMITER //
+~~~sql
 CREATE PROCEDURE SumVersions(OUT Total INT)
 BEGIN
   DECLARE Done INT DEFAULT 0;
@@ -372,21 +372,24 @@ BEGIN
     SET Total = Total + OneVersion;
   END LOOP;
   CLOSE VersionCursor;
-END //
-DELIMITER ;
-
-CALL SumVersions(@Total);
-SELECT @Total AS CursorTotal, (SELECT SUM(Version) FROM Resources) AS SetTotal;
-```
+END;
+~~~
 
 The four moves of every cursor: **DECLARE** it for a query, **OPEN** it,
 **FETCH** row after row, **CLOSE** it. The **handler** sets `Done` when
 there are no more rows, so the loop knows when to stop.
 
-You should see: **CursorTotal 7** and **SetTotal 7**. Same answer, two
-ways of thinking: the cursor walks **step by step**; `SUM` answers for
-the **whole set** at once. For a sum, SUM is simpler and faster — a
-cursor earns its place when each row needs its own decision.
+After step 4, this cursor would answer **7**: 4 + 2 + 1. And one line of
+set logic gives the same answer — this one you can run:
+
+```sql
+SELECT SUM(Version) AS TotalVersions FROM Resources;
+```
+
+You should see: **7**. Same answer, two ways of thinking: the cursor
+walks **step by step**; SUM answers for the **whole set** at once. For a
+sum, SUM is simpler and faster — a cursor earns its place when each row
+needs its own decision.
 
 **Q:** What tells the cursor's loop that the rows are finished?
 
@@ -446,7 +449,7 @@ WHERE Resources.Version > 1
 [changed at least once](#)
 {: .datagrid source="q_touched" rows="2" }
 
-**② The set answer** — what the cursor added up, row by row:
+**② The set answer** — what the cursor of step 5 would add up, row by row:
 
 ```sql
 SELECT SUM(Resources.Version) AS TotalVersions
@@ -543,25 +546,25 @@ voice: en-US
 face:
   zoom: 1.2
 script:
-  - say: "Welcome back! This week the logic moves inside the database: procedures you call, cursors that walk row by row, and triggers that react on their own. All in Workbench, on a small database called coursedb."
+  - say: "Welcome back! This week the logic moves inside the database. Procedures and cursors on paper, and one trigger you build yourself, in Workbench, on a small database called coursedb."
   - at: setup
     do: open
-    say: "Step zero. In the Query menu, check Stop Script Execution on Errors, and this week check Auto-Commit Transactions too. Then build coursedb. You should see two courses."
+    say: "Step zero. In the Query menu, check Stop Script Execution on Errors, and this week check Auto-Commit Transactions too. Then build coursedb. You should see three resources, each at version one."
   - at: three_tools
     do: open
     say: "Step one. Three tools, one idea. You call a procedure. A cursor lives inside a procedure. And the database calls a trigger, by itself, when data changes."
   - at: procedure
     do: open
-    say: "Step two. Save a procedure once, then call it three times. DELIMITER lets the whole procedure travel as one statement. You should see three resources, each at version one."
+    say: "Step two, on paper. A stored procedure is a routine saved once in the database and run by name with CALL. Read it like a sentence. No need to run it."
   - at: trigger
     do: open
-    say: "Step three. A trigger that watches every update. If the description changes, the version goes up by one and the time is stamped. OLD is the row as it was, NEW the row about to be saved."
+    say: "Step three. Now you build. A trigger that watches every update: if the description changes, the version goes up by one and the time is stamped. DELIMITER lets it travel as one statement. OLD is the row as it was, NEW the row about to be saved."
   - at: test_trigger
     do: open
     say: "Step four. Test it, one update at a time. A new description: version two. A new title only: still two. The same description: still two. Then several rows at once: the trigger runs for each row."
   - at: cursor
     do: open
-    say: "Step five. A cursor walks the versions one row at a time and adds them up. Seven. And SUM gives seven too, for the whole set at once."
+    say: "Step five, on paper. A cursor walks rows one at a time: declare, open, fetch, close. This one would add up the versions to seven. Run SUM, and you get seven too, for the whole set at once."
   - at: live
     do: open
     say: "Here is the practice block, with the resources the trigger changed. Your move: total the versions per course. Course two should total six. The last check stays red until you do."
@@ -569,15 +572,15 @@ stories:
   summarize the page:
     - 'You might wonder: summarize the page'
     - This week the logic moves inside the database, in three tools.
-    - A stored procedure is a routine you save once and call by name.
-    - A trigger runs by itself when data changes, here raising a version when a description changes.
-    - A cursor walks through rows one at a time inside a procedure.
-    - Everything runs in Workbench on a small database called coursedb.
+    - A stored procedure is a routine you save once and call by name, read here on paper.
+    - A cursor walks through rows one at a time inside a procedure, also on paper.
+    - The trigger is the one you build, in Workbench, on a small database called coursedb.
+    - It raises a version every time a description changes, all by itself.
   why delimiter:
     - 'You might wonder: why delimiter'
-    - A procedure or trigger body holds several statements, each ending with a semicolon.
+    - A trigger body holds several statements, each ending with a semicolon.
     - DELIMITER double slash tells Workbench that a statement now ends with double slash.
-    - So the whole procedure reaches the server as one statement, and DELIMITER semicolon puts things back.
+    - So the whole trigger reaches the server as one statement, and DELIMITER semicolon puts things back.
   trigger or procedure:
     - 'You might wonder: trigger or procedure'
     - You run a procedure yourself, with CALL, when you decide.
