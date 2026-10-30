@@ -18,6 +18,7 @@ Start with the first module, then follow the quest:
 - [🛠️ 07 · Finish the Map, Build It in Workbench](module_07/index.md)
 - [👀 08 · From Designer to Auditor](module_08/index.md)
 - [🤑 09 · TILT — Transactions, Integrity, Logic, and Trust](module_09/index.md)
+- [🧙 10 · Advanced SQL — Procedures, Cursors, and Triggers](module_10/index.md)
 
 [Browse](#)
 {: .folder }
@@ -41,6 +42,7 @@ stories:
     - Module 07 finishes UWM's map with many-to-many, and builds it in MySQL Workbench, one iteration at a time.
     - Module 08 shows one SQL injection, then turns you into an auditor of database designs, yours first.
     - Module 09 changes data safely with TILT, on a tiny shop database: a transaction that fails on purpose and rolls back.
+    - Module 10 moves logic inside the database: a procedure you call, a trigger that reacts, a cursor that walks row by row.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }
