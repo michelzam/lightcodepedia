@@ -43,6 +43,8 @@ files a learner is already working in.
    a phone opens) — an embed WITHOUT a title is a part of the app: no box of
    its own. With a title it is an app inside the app: it keeps its window. */
 .lc-mdpad-app .lc-runner-embed:not(.lc-runner-win),
+/* 🎬 the stage: the camera's launcher floats over a shipped copy */
+.lc-stage { position: fixed; right: 12px; bottom: 12px; z-index: 2147482000; width: min(380px, calc(100vw - 24px)); max-height: 80vh; overflow: auto; background: #fff; border: 1px solid #d0d7de; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.18); padding: 0.4em 0.6em; }
 .lc-run[data-lc-app] .lc-runner-embed:not(.lc-runner-win) {
   border: 0; border-radius: 0; padding: 0; margin: 0.9em 0; background: transparent;
 }
@@ -329,6 +331,29 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      same repo through the runner — a vault module links the next module, a
      bench README its exercises, and clicking only changes the hash (fast).
      External, site-absolute (/…) and #fragment links stay untouched. */
+  /* 🎬 ON STAGE (Michel, 2026-10-30: "the recorder records on the course
+     page, not on the autonomous app page … not very consistent"): a shipped
+     copy opened with ?stage=1 carries the camera itself — the recorder's
+     launcher floats over the app, so the recording is of the thing handed
+     over, the face in its corner, no class material in the frame. into=
+     names the learner's file the link lands in, an absolute bench path.
+     The flag rides the link the lesson gives; strangers never see a camera. */
+  function mountStage(root) {
+    if (document.querySelector(".lc-stage")) return;
+    var q = null; try { q = new URLSearchParams(location.search); } catch (e) { return; }
+    if (!q || q.get("stage") !== "1" || !root || !root.dataset.lcApp) return;
+    var into = q.get("into") || "";
+    var box = document.createElement("div");
+    box.className = "lc-stage";
+    var p = document.createElement("p");
+    p.className = "recorder";
+    if (into) p.setAttribute("into", into);
+    p.textContent = "🎬 On stage";
+    box.appendChild(p);
+    document.body.appendChild(box);
+    document.documentElement.classList.add("lc-stage-mode");
+    if (window.lcScanElement) window.lcScanElement(box);
+  }
   function healRelLinks(root, repo, path) {
     var dir = path.indexOf("/") >= 0 ? path.split("/").slice(0, -1).join("/") : "";
     var runUrl = (window.lcHref ? window.lcHref("/run.html") : "/run.html");
@@ -837,6 +862,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
              page's deck. */
           if (!fixedSrc && window.lcSlidesRebuild) window.lcSlidesRebuild(root);
           status.style.display = "none";
+          mountStage(root);
           if (bar) {
             /* a bench (any gh: source that isn't the course vault) flips the
                topbar into the learner's safe playground */

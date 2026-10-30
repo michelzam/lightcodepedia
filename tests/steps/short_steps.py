@@ -336,3 +336,12 @@ def step_insert_link(context, url):
 def step_insert_status(context, text):
     got = context.page.inner_text("#lc-yt-insert-probe")
     assert text in got, got
+
+
+@then('the stage shows the camera over the app, landing in "{into}"')
+def step_stage(context, into):
+    from playwright.sync_api import expect
+    expect(context.page.locator(".lc-stage .lc-recorder").first).to_be_visible(timeout=15_000)
+    assert context.page.evaluate("() => document.documentElement.classList.contains('lc-stage-mode')")
+    assert context.page.evaluate("() => window._lcRecInto") == into
+    assert context.page.evaluate("() => !!document.querySelector('.lc-run[data-lc-app]')"), "not a shipped copy"
