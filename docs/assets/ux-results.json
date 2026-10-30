@@ -6368,7 +6368,7 @@
     "url": "/assets/ux-report.html#scenario_706"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "On a visitor's tab, the dead key still names Get started",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
