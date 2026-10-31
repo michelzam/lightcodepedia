@@ -73,6 +73,23 @@ impacts:
 ```
 {: .impact_map #valued_map valuated="true" estimated="true" }
 
+## Facts the map stands on
+
+A map may list the **facts** it stands on — what an expert, a survey or
+the market said — under `facts:`. They show under the tree, and the
+agents and proofs of the page read them with the rest of the map.
+
+```yaml
+goal: More dogs go home
+facts:
+  - Most failed adoptions start with a payment before any visit
+  - Coordinators spend Tuesday mornings on the phone with families
+impacts:
+  - how: She stops payments that come before a visit
+    what: The gate
+```
+{: .impact_map #facts_map }
+
 ## The map reads the pitch
 
 With `goal` and `who` omitted, the map fills them from the pitch it

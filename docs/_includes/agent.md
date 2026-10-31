@@ -1739,6 +1739,8 @@ Auto-included by docs/_layouts/default.html.
        panel would (record) — same box, same ledger, same provenance.
        (Michel, 2026-10-01: Disturb Your Agent — ask, then assert.) */
     panel.setAttribute('data-bound-expr', boundExpr || '');
+    /* an agent never asked still answers {= eve.last } — with nothing */
+    if (!panel.getAttribute('data-lc-value')) panel.setAttribute('data-lc-value', JSON.stringify({ last: '', asked: 0 }));
     panel._lcAgent = {
       request: function (userText) { return agentRequest(cfg, userText); },
       record: function (question, text) {
@@ -1919,6 +1921,12 @@ Auto-included by docs/_layouts/default.html.
           if (result.engine) { entry.setAttribute('data-provider', result.engine.pid || ''); entry.setAttribute('data-model', result.engine.model || ''); }
           logEl.appendChild(entry);
         }
+        /* ITS LAST ANSWER IS THE PAGE'S TO READ (Michel, 2026-10-31: "Sue
+           should consider also what Eve suggests") — {= eve.last } in a cell,
+           eve.last in another agent's bound=, for this sitting. */
+        var aid = panel.getAttribute('data-lc-id') || (panel.id || '').replace(/^lc-agent-/, '');
+        panel.setAttribute('data-lc-value', JSON.stringify({ last: result.text, asked: (window.lcDid ? window.lcDid.count(aid, 'ask') : 1) }));
+        if (window.lcCellsRescan) window.lcCellsRescan();
 
         /* 📓 THE AGENT JOINS THE DOC LOG (Michel, 2026-10-04): a page agent's
            exchange lands in the learner's bench beside Doc's — same file,

@@ -358,3 +358,25 @@ Feature: Problem space — persona, pitch, impact map
     And I wait for the page to be interactive
     Then the map "quiet_map" shows neither worth nor cost
     And the map "told_map" shows "💰 0.9 — refunds cost" and "🛠 3 pts — one rule"
+
+  Scenario: A map shows the facts it stands on
+    Michel, 2026-10-31: "those facts should also be traced in the map".
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/facts.md" with the document:
+      """
+      # Facts
+
+      ```yaml
+      goal: More dogs go home
+      facts:
+        - Most failed adoptions start with an early payment
+      impacts:
+        - how: She stops early payments
+          what: The gate
+      ```
+      {: .impact_map #fact_map }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/facts.md"
+    And I wait for the page to be interactive
+    Then the map "fact_map" shows the fact "Most failed adoptions start with an early payment"

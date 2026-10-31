@@ -76,6 +76,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-imap-what a { text-decoration: none; }
 .lc-imap .lc-imap-notes { border-left: none; padding-left: 1.6em; font-size: 0.92em; color: #4b5563; }
 .lc-imap .lc-imap-notes li { margin: 0.1em 0; }
+.lc-imap-facts { margin-top: 0.7em; padding-top: 0.5em; border-top: 1px dashed #e5e7eb; color: #374151; }
+.lc-imap .lc-imap-facts ul { border-left: none; padding-left: 1.2em; list-style: disc; }
 .lc-imap-info { margin: 0.3em 0 0.2em; padding: 0.45em 0.7em; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 0.9em; font-weight: 400; }
 .lc-imap-found { margin-top: 0.7em; font-size: 0.85em; color: #6b7280; }
 
@@ -568,12 +570,18 @@ Auto-included by docs/_layouts/default.html.
             "<ul><li class='lc-imap-what'>🦄 " + what + (notes ? "<ul class='lc-imap-notes'>" + notes + "</ul>" : "") + "</li></ul></li>";
         }).join("");
         html += "</ul></li></ul></li></ul>";
+        /* facts: what the map stands on — a list the learner pastes from the
+           expert, shown under the tree, read by agents and proofs (Michel,
+           2026-10-31: "those facts should also be traced in the map") */
+        var facts = Array.isArray(m.facts) ? m.facts.filter(function (f) { return f !== null && f !== undefined && String(f).trim(); }) : [];
+        if (facts.length)
+          html += "<div class='lc-imap-facts'><b>📌 Facts</b><ul>" + facts.map(function (f) { return "<li>" + escapeHtml(String(f)) + "</li>"; }).join("") + "</ul></div>";
         if (pitchRef) html += "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(pitchRef) + "'>✨ reads #" + escapeHtml(pitchRef) + "</a></div>";
         html += "<div class='lc-imap-found' hidden></div>";
         box.innerHTML = html;
         /* the map is a document too: {= map.goal } in a cell, and an agent
            bound to it, read the map as rendered — goal and who included */
-        var pub = { goal: goal, who: who, impacts: rows };
+        var pub = { goal: goal, who: who, impacts: rows, facts: Array.isArray(m.facts) ? m.facts : [] };
         box.setAttribute("data-lc-value", JSON.stringify(pub));
         if (window.lcSetDataset) window.lcSetDataset(mapId, pub);
       }

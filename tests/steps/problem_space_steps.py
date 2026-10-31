@@ -316,3 +316,9 @@ def step_map_told(context, mid, worth, cost):
     m = context.page.locator('.lc-imap[data-lc-id="%s"]' % mid)
     expect(m.locator(".lc-imap-value")).to_contain_text(worth, timeout=15_000)
     expect(m.locator(".lc-imap-effort")).to_contain_text(cost)
+
+
+@then('the map "{mid}" shows the fact "{fact}"')
+def step_map_fact(context, mid, fact):
+    m = context.page.locator('.lc-imap[data-lc-id="%s"]' % mid)
+    expect(m.locator(".lc-imap-facts")).to_contain_text(fact, timeout=15_000)

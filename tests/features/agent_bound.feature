@@ -1019,3 +1019,26 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the box of the agent "sky" holds "What is the weakest word in my pitch?"
     When I empty the box of the agent "sky" and tap its suggestion
     Then the box of the agent "sky" holds "What is the weakest word in my pitch?"
+
+  Scenario: An agent's last answer is the page's to read, empty before the first ask
+    Michel, 2026-10-31: "Sue should consider also what Eve suggests" — another
+    agent's bound=, or a sentence, reads eve.last and eve.asked.
+
+    Given I have a clean browser page
+    And an AI key is saved on this device
+    And the GitHub contents API serves "courses/demo/mod/last.md" with the document:
+      """
+      # Last
+
+      ```yaml
+      name: Eve the Expert
+      placeholder: What are the facts?
+      system: You are an expert.
+      ```
+      {: .agent #eve }
+
+      Eve was asked {= eve.asked } times.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/last.md"
+    And I wait for the page to be interactive
+    Then the page reads "Eve was asked 0 times."

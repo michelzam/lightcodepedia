@@ -112,7 +112,8 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
        back (Michel, 2026-08-10). */
     /* …and a crew's totals: {= desk.cost } (Michel, 2026-10-24) */
     document.querySelectorAll(".lc-form[data-lc-value], .lc-mdpad[data-lc-value], "
-                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value], .lc-imap[data-lc-value], .lc-crew[data-lc-value]").forEach(function (f) {
+                            + ".lc-persona[data-lc-value], .lc-pitch[data-lc-value], .lc-imap[data-lc-value], .lc-crew[data-lc-value], "
+                            + ".lc-agent[data-lc-value]").forEach(function (f) {   /* …and an agent's last answer: {= eve.last } (Michel, 2026-10-31) */
       var id = f.getAttribute("data-lc-id") || "";
       var o;
       try { o = JSON.parse(f.getAttribute("data-lc-value")); } catch (e) { return; }
