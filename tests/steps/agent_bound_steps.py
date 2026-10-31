@@ -1002,3 +1002,34 @@ def step_areas_no_stars(context, agent_id, direction, question):
     for area in (d, q):
         assert "**" not in area, "stray stars: %r" % area
     assert "Direction –" not in d and "Question back –" not in q, "the label stayed in the sentence: %r / %r" % (d, q)
+
+
+def _agent_box(context, aid):
+    return context.page.locator('[data-lc-id="%s"] .lc-agent-prompt' % aid)
+
+
+@when('I press Tab in the empty box of the agent "{aid}"')
+def step_agent_tab(context, aid):
+    box = _agent_box(context, aid)
+    expect(box).to_be_visible(timeout=15_000)
+    box.click()
+    box.press("Tab")
+
+
+@when('I empty the box of the agent "{aid}" and tap its suggestion')
+def step_agent_tap(context, aid):
+    box = _agent_box(context, aid)
+    box.fill("")
+    box.dispatch_event("input")
+    context.page.locator('[data-lc-id="%s"] .lc-agent-suggest' % aid).click()
+
+
+@then('the box of the agent "{aid}" holds "{text}"')
+def step_agent_box_holds(context, aid, text):
+    expect(_agent_box(context, aid)).to_have_value(text)
+
+
+@given("an AI key is saved on this device")
+def step_agent_key_saved(context):
+    """the box to type in shows once a key is there; without one, the key form does"""
+    context.page.add_init_script("localStorage.setItem('lc_ai_key_groq', 'gsk-tab-test');")

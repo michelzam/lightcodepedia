@@ -600,6 +600,15 @@ def _lc_did(part, verb):
     return int(d.count(str(pid), verb))
 
 
+def _lc_did_at(part, verb):
+    """When the learner last did it — milliseconds since 1970, 0 for never."""
+    d = getattr(js.window, "lcDid", None)
+    pid = part._attr("data-lc-id") if part._el is not None else None
+    if d is None or not pid or not hasattr(d, "at"):
+        return 0
+    return int(d.at(str(pid), verb) or 0)
+
+
 def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     """Class decorator: generate data-* knob properties and register the spec.
 
@@ -975,6 +984,12 @@ class Object:
 class Block(Object):
     def __bool__(self):
         return self._el is not None
+
+    @property
+    def saved_at(self):
+        """When the learner last saved this part, on this page (0: never) —
+        a document's 💾, a grid's save."""
+        return _lc_did_at(self, "save")
 
     @property
     def page(self):
@@ -1896,6 +1911,12 @@ class Agent(Block):
     def target(self):
         """The check it aims at (target=)."""
         return _lc_ref(self, "data-lc-target")
+
+    @property
+    def asked_at(self):
+        """When the learner last asked this agent, on this page (0: never) —
+        compare it with a document's saved_at: changed after the answer?"""
+        return _lc_did_at(self, "ask")
 
     @property
     def asked(self):

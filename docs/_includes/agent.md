@@ -122,6 +122,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-help:hover { color: #0066cc; text-decoration: underline; }
 .lc-agent-intro { margin: 0 0 0.7em; color: #666; font-style: italic; font-size: 0.9em; }
 .lc-agent-ask { display: flex; gap: 0.5em; margin-bottom: 0.6em; align-items: flex-start; }
+.lc-agent-suggest { display: inline-block; margin: -0.2em 0 0.6em; padding: 0.25em 0.7em; border: 1px dashed #9fb4d0; border-radius: 999px; background: #f4f8fd; color: #2a5a8a; font: inherit; font-size: 0.86em; cursor: pointer; }
+.lc-agent-suggest[hidden] { display: none; }
 .lc-agent-prompt { flex: 1; padding: 0.5em 0.7em; border: 1px solid #ccc; border-radius: 4px; font: inherit; font-size: 0.92em; resize: vertical; min-height: 2.5em; box-sizing: border-box; }
 .lc-agent-prompt:focus { outline: 2px solid #0066cc; border-color: #0066cc; }
 .lc-agent-send { background: #0066cc; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9em; white-space: nowrap; }
@@ -1443,6 +1445,29 @@ Auto-included by docs/_layouts/default.html.
     var body = panel.querySelector('.lc-agent-body');
     var askForm = panel.querySelector('.lc-agent-ask');
     var prompt = panel.querySelector('.lc-agent-prompt');
+    /* THE SUGGESTED QUESTION IS ONE KEY OR ONE TAP AWAY (Michel, 2026-10-31:
+       "propose the default question with a tab or a tap"). The placeholder
+       is the page's question: Tab in the empty box takes it, and on a phone,
+       where there is no Tab, a chip under the box does. */
+    if (prompt && askForm && cfg.placeholder && cfg.placeholder !== 'Ask anything...') {
+      var suggest = document.createElement('button');
+      suggest.type = 'button';
+      suggest.className = 'lc-agent-suggest';
+      suggest.textContent = '💬 ' + cfg.placeholder;
+      suggest.title = 'Use this question (or press Tab in the empty box)';
+      askForm.parentNode.insertBefore(suggest, askForm.nextSibling);
+      var takeSuggestion = function () {
+        if (prompt.value.trim()) return false;
+        prompt.value = cfg.placeholder;
+        prompt.focus();
+        return true;
+      };
+      suggest.addEventListener('click', function () { takeSuggestion(); });
+      prompt.addEventListener('keydown', function (e) {
+        if (e.key === 'Tab' && !e.shiftKey && !prompt.value.trim() && takeSuggestion()) e.preventDefault();
+      });
+      prompt.addEventListener('input', function () { suggest.hidden = !!prompt.value.trim(); });
+    }
     var sendBtn = panel.querySelector('.lc-agent-send');
     var status = panel.querySelector('.lc-agent-status');
     var response = panel.querySelector('.lc-agent-response');

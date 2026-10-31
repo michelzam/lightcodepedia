@@ -995,3 +995,27 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I ask the "coach" agent "how to doctest a print?"
     Then the "coach" agent's areas read "Put the expected printed text" and "What exact string does your function print" with no stray stars
 
+
+  Scenario: The page's question is one Tab or one tap away
+    Michel, 2026-10-31, module 08 on a phone: "propose the default question
+    with a tab or a tap" — the placeholder is the page's own question.
+
+    Given I have a clean browser page
+    And an AI key is saved on this device
+    And the GitHub contents API serves "courses/demo/mod/ask.md" with the document:
+      """
+      # Ask
+
+      ```yaml
+      name: Sky the Skeptic
+      placeholder: What is the weakest word in my pitch?
+      system: You are a skeptic.
+      ```
+      {: .agent #sky }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/ask.md"
+    And I wait for the page to be interactive
+    And I press Tab in the empty box of the agent "sky"
+    Then the box of the agent "sky" holds "What is the weakest word in my pitch?"
+    When I empty the box of the agent "sky" and tap its suggestion
+    Then the box of the agent "sky" holds "What is the weakest word in my pitch?"

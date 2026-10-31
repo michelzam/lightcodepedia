@@ -314,6 +314,7 @@ Auto-included by docs/_layouts/default.html.
       window.lcBench.write(opts.save, dumpYaml(opts.getData()), "✍️ " + (node.id || opts.save), sha, node)
         .then(function (s) {
           sha = s || sha;
+          if (window.lcDid) window.lcDid.mark(node.getAttribute("data-lc-id") || node.id || "", "save");   /* doc.saved_at — a proof reads it */
           mine.hidden = false;
           if (psFrame) psFrame.setMine(true);
           if (vers) vers.reveal();

@@ -489,10 +489,15 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
         if (!id) return 0;
         var a = all(), k = page() + "|" + id + "|" + verb;
         a[k] = (a[k] || 0) + 1;
+        /* and WHEN, so a proof can say "you changed it after the agent
+           answered" (Michel, 2026-10-31: "the proof should check the skeptic
+           was called and its feedback considered") */
+        a[k + "|at"] = Date.now();
         try { localStorage.setItem(K, JSON.stringify(a)); } catch (e) {}
         return a[k];
       },
-      count: function (id, verb) { return all()[page() + "|" + id + "|" + verb] || 0; }
+      count: function (id, verb) { return all()[page() + "|" + id + "|" + verb] || 0; },
+      at: function (id, verb) { return all()[page() + "|" + id + "|" + verb + "|at"] || 0; }
     };
   })();
 

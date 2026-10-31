@@ -171,7 +171,7 @@ All configuration goes in the YAML block.
 | `name` | `Agent` | The panel's title — who answers |
 | `icon` | `🤖` | The face on every answer, one emoji — `icon: 🤓` |
 | `intro` | (none) | A hint rendered above the input |
-| `placeholder` | "Ask anything..." | Placeholder text in the prompt field |
+| `placeholder` | "Ask anything..." | Placeholder text in the prompt field — the page's own question: Tab in the empty box, or a tap on the 💬 chip under it, takes it |
 | `placeholder_next` | "Your answer — then press Ask" | What the prompt field invites from the second turn on — the opening line is said once, then the box asks for the next move |
 
 Every reply signs itself under the answer, beside the token count: the
