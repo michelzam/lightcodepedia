@@ -1465,14 +1465,15 @@ Auto-included by docs/_layouts/default.html.
         chip.className = 'lc-agent-suggest';
         chip.textContent = '💬 ' + q;
         chip.title = 'Use this question';
-        chip.addEventListener('click', function () { prompt.value = q; prompt.focus(); chipRow.hidden = true; });
+        chip.addEventListener('click', function () { prompt.value = q; prompt.focus(); });
         chipRow.appendChild(chip);
       });
       askForm.parentNode.insertBefore(chipRow, askForm.nextSibling);
       prompt.addEventListener('keydown', function (e) {
-        if (e.key === 'Tab' && !e.shiftKey && !prompt.value.trim()) { prompt.value = asks[0]; chipRow.hidden = true; e.preventDefault(); }
+        if (e.key === 'Tab' && !e.shiftKey && !prompt.value.trim()) { prompt.value = asks[0]; e.preventDefault(); }
       });
-      prompt.addEventListener('input', function () { chipRow.hidden = !!prompt.value.trim(); });
+      /* THE CHIPS STAY (Michel, 2026-10-31: "the suggestions should remain
+         available even after asks, so students can ask them again") */
     }
     var sendBtn = panel.querySelector('.lc-agent-send');
     var status = panel.querySelector('.lc-agent-status');
