@@ -47,6 +47,21 @@ Feature: Families meet the dog before they pay
 | `pitch="id"` | pulls `goal`/`who` from that pitch when your YAML leaves them empty; chip + x-ray wire |
 | `feature:` (row field) | the id of a `.feature` card — the leaf links to it, takes its title when `what` is empty, and wears its state (📝 wanted · 🔧 implemented · 🟢 proven · 🔴 failing · ⚪ elsewhere) |
 
+## A target on each leaf
+
+A leaf may say what it bets on — a **measurable hypothesis** that moves a
+metric: *in 30 minutes*, *for $20*, *twice a week*. Write it under
+`target:`; the leaf shows it with a 🎯.
+
+```yaml
+goal: More dogs go home
+impacts:
+  - how: Families book a visit before they pay
+    what: The gate
+    target: no payment refunded after a visit, within a month
+```
+{: .impact_map #target_map }
+
 ## Worth and cost on the leaves
 
 A leaf may carry what a stakeholder says it is **worth** (`value`, 0 to

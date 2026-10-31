@@ -405,3 +405,25 @@ Feature: Problem space — persona, pitch, impact map
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/market.md"
     And I wait for the page to be interactive
     Then the page reads "📊 Market — 2 in 5 first-year students fail a course (estimate)"
+
+  Scenario: A leaf shows the target it bets on
+    Michel, 2026-10-31: "target: … a measurable hypothesis to improve a metric,
+    expressed as in 30 minutes, for 20$".
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/target.md" with the document:
+      """
+      # Target
+
+      ```yaml
+      goal: More dogs go home
+      impacts:
+        - how: Families book a visit before they pay
+          what: The gate
+          target: no refund after a visit, within a month
+      ```
+      {: .impact_map #target_map }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/target.md"
+    And I wait for the page to be interactive
+    Then the page reads "🎯 no refund after a visit, within a month"

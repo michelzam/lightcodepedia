@@ -565,6 +565,11 @@ Auto-included by docs/_layouts/default.html.
              with comments … hidden by default, activated by knob"; INVE
              now, the full INVEST next module) */
           var notes = "";
+          /* target: the measurable hypothesis the feature bets on — "in 30
+             minutes", "for $20" — always shown: it is part of the leaf
+             (Michel, 2026-10-31) */
+          if (r.target !== undefined && r.target !== null && String(r.target).trim())
+            notes += "<li class='lc-imap-target'>🎯 " + escapeHtml(String(r.target)) + "</li>";
           if (valuated && (r.value !== undefined && r.value !== null && r.value !== ""))
             notes += "<li class='lc-imap-value'>💰 <b>" + escapeHtml(String(r.value)) + "</b>" +
                      (r.value_why ? " — " + escapeHtml(r.value_why) : "") + "</li>";
