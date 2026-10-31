@@ -42,6 +42,9 @@ Auto-included by docs/_layouts/default.html.
   border: 1px dashed #e6d3ae; border-radius: 10px; background: #fdfaf4;
   padding: 0.9em 1.2em; margin: 1.2em 0;
 }
+/* a ship that waits for its cell keeps its row when the cell opens it — the
+   cells' [visible] rule shows a block, which lost the gap (Michel, 2026-10-31) */
+.lc-ship[visible].lc-vis-show { display: flex !important; }
 .lc-ship button {
   font-size: 1em; font-weight: 700; padding: 0.5em 1.3em;
   border-radius: 8px; border: 1px solid #b45309;

@@ -62,6 +62,7 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 | `format="yaml"` | `yaml` (default) or `json` |
 | `master="<grid-id>"` | Link to a datagrid — form fills when a row is selected |
 | `editable="true"` | Make primitive fields editable — see below |
+| `locked="a, b"` | With `master=` and `editable`: these fields show, read-only — the givens of a card |
 | `compute="photo = '…' + str(pic)"` | ƒ fields the form derives from the row it shows — `col = expr; col2 = expr2`, the grid's spelling; the row it reads is never changed |
 
 **Q:** You put two forms on a page and only one shows up. What did you forget?

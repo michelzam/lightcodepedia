@@ -742,6 +742,9 @@ Auto-included by docs/_layouts/default.html.
         /* a subclass's object shows its own fields' rules and verbs */
         if (model && row._kind && (window.lcModels || {})[row._kind]) { cls = row._kind; model = window.lcModels[cls]; }
         var locked = [], chips = [], picks = {}, refs = {}, refNames = {}, required = [];
+        /* locked="as_a, so_that": fields shown, never typed in — a card on a
+           plain list keeps its givens read-only (Michel, 2026-10-31) */
+        (el.getAttribute("locked") || "").split(",").forEach(function (k) { k = k.trim(); if (k) locked.push(k); });
         if (model) {
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
