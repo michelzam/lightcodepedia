@@ -1097,6 +1097,16 @@ class Dataset(Object):
         if fn is not None:
             fn(self._id)
 
+    def put(self, row, key="id"):
+        """The row whose `key` matches takes these fields; no such row, it is
+        added (Michel, 2026-10-31: a button assigns the stakeholder's values
+        and the builder's notes to each feature). Returns True when a row
+        was updated, False when one was added."""
+        fn = getattr(js.window, "lcDatasetPut", None)
+        if fn is None:
+            raise RuntimeError("this page cannot write rows")
+        return bool(fn(self._id, json.dumps(row), key))
+
     def append(self, row):
         """One more row: on the page at once, and — when the list lives in a
         sheet that takes writes — in the sheet too, then read back

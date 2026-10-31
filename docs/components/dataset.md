@@ -188,6 +188,13 @@ small Apps Script web app for instance. Module 06's *Who Walked Whom*
 uses one. `clock()` gives the time as a person writes it (`16:05`),
 the way `weekday()` gives the day.
 
+A button can also **put** a row by its key: the row whose key matches
+takes the new fields, and when none matches, the row is added —
+`button.page.features.put({"what": "The gate", "value": 0.9}, key="what")`.
+The key keeps its own spelling; the match ignores capitals and spaces.
+Module 08 assigns a stakeholder's values to each feature this way. A
+sentence or an agent reads a whole list as **rows**: `{= wanted.rows }`.
+
 A list read from elsewhere is read again when the reader comes back to the
 page (from the sheet's tab, say), on its grid's **↻**, and every N seconds
 with `refresh="N"` on the dataset. A Google Sheet's own link

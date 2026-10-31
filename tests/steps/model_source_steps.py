@@ -1617,3 +1617,16 @@ def step_card_required(context, fid, label):
     card = context.page.locator("[data-lc-id='" + fid + "']")
     expect(card.locator(".lc-form-label-cell", has_text=label)).to_have_count(1, timeout=T)
     expect(card.locator(".lc-form-missing")).to_have_count(1, timeout=T)
+
+
+@when('I click the button with the id "{bid}"')
+def step_click_button_id(context, bid):
+    context.page.locator('[data-lc-id="%s"], #%s' % (bid, bid)).first.click()
+
+
+@then('the list "{did}" holds {n:d} rows, "{what}" worth "{value}"')
+def step_list_put(context, did, n, what, value):
+    context.page.wait_for_function("(a) => ((window.lcDatasets || {})[a[0]] || []).length === a[1]", arg=[did, n], timeout=15_000)
+    rows = context.page.evaluate("(d) => window.lcDatasets[d]", did)
+    hit = [r for r in rows if r.get("what") == what]
+    assert hit and str(hit[0].get("value")) == value, rows

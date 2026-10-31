@@ -171,7 +171,11 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
       /* .first — the first row, so a sentence can say WHICH, not only how
          many: {= walk_when.first.time } (Michel, 2026-10-16, module 06) */
       var first = n && arr[0] && typeof arr[0] === "object" ? JSON.parse(JSON.stringify(arr[0])) : {};
-      scopes[id] = { count: n, empty: n === 0, first: first };
+      /* .rows — every row, so an agent's bound= can read a whole list (Michel,
+         2026-10-31: the stakeholder re-values the features with the tech notes) */
+      var rows = [];
+      for (var ri = 0; ri < n; ri++) if (arr[ri] && typeof arr[ri] === "object") rows.push(JSON.parse(JSON.stringify(arr[ri])));
+      scopes[id] = { count: n, empty: n === 0, first: first, rows: rows };
     });
     var bare = {};
     for (var k in counts) if (counts[k] === 1) bare[k] = vals[k];

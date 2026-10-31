@@ -1532,3 +1532,29 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I wait for the page to be interactive
     And I run the feature "verbs_proof"
     Then the feature "verbs_proof" is green
+
+  Scenario: A button puts a row into a list by its key — updated when it is there, added when not
+    Michel, 2026-10-31, module 08: a button assigns the stakeholder's values,
+    or the builder's notes, to each feature — by its name.
+
+    Given the GitHub contents API serves "courses/demo/mod/put.md" with the document:
+      """
+      # Put
+
+      ```yaml
+      - { what: "The gate", value: "" }
+      ```
+      {: .dataset #wanted }
+
+      [Put](#)
+      {: .button #put_btn }
+      ```python
+      button.page.wanted.put({"what": "the gate", "value": "0.9"}, key="what")
+      button.page.wanted.put({"what": "The count table", "value": "0.6"}, key="what")
+      ```
+      {: .onclick }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/put.md"
+    And I wait for the page to be interactive
+    And I click the button with the id "put_btn"
+    Then the list "wanted" holds 2 rows, "The gate" worth "0.9"

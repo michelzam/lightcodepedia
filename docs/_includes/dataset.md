@@ -927,6 +927,18 @@ Auto-included by docs/_layouts/default.html.
     if (ch.del.length) calls.push(fetch(r.db.base + "?id=in.(" + ch.del.map(encodeURIComponent).join(",") + ")", { method: "DELETE", headers: H }).then(ok));
     return Promise.all(calls).then(function () { r.pull(); return ch; });
   };
+  /* put: the row whose key matches takes the fields, or the row is added —
+     a button's way to write a list it walks by name (Michel, 2026-10-31) */
+  window.lcDatasetPut = function (id, rowJson, key) {
+    var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
+    var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
+    var k = key || "id", want = String(row[k] == null ? "" : row[k]).trim().toLowerCase(), hit = null;
+    arr.forEach(function (r) { if (!hit && String(r[k] == null ? "" : r[k]).trim().toLowerCase() === want) hit = r; });
+    if (hit) Object.keys(row).forEach(function (f) { if (f !== k) hit[f] = row[f]; });   /* the key keeps its own spelling */
+    else arr.push(row);
+    window.lcSetDataset(id, arr);
+    return !!hit;
+  };
   window.lcDatasetAppend = function (id, rowJson) {
     var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
     var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
