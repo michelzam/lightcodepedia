@@ -728,3 +728,13 @@ def step_pad_comp_fixed(context):
     assert got["pos"] == "fixed", got
     assert got["top"] >= 0 and got["bottom"] <= got["vh"] + 1 and got["left"] >= 0 and got["right"] <= got["vw"] + 1, got
     context.page.keyboard.press("Escape")
+
+
+@then('the pad "{pid}" source still reads "{formula}", and its preview "{value}"')
+def step_pad_formula_kept(context, pid, formula, value):
+    pad = context.page.locator('.lc-mdpad[data-lc-id="%s"]' % pid)
+    expect(pad.locator(".lc-mdpad-out")).to_contain_text(value, timeout=20_000)
+    # the page's cell pass has run (the preview holds the value): the source is still code
+    context.page.wait_for_timeout(1500)
+    expect(pad.locator(".lc-mdpad-src")).to_contain_text(formula)
+    assert pad.locator(".lc-mdpad-src .lc-cell").count() == 0, "a cell was evaluated inside the pad's source"

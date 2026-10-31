@@ -31,6 +31,10 @@ files a learner is already working in.
   border: 1px solid #dbe3ec; border-radius: 10px;
   padding: 1.1em 1.3em; margin: 1.4em 0; background: #fbfcfe;
 }
+/* quiet="true": the file runs — its datasets, classes and queries join the
+   page — and nothing is drawn (Michel, 2026-10-31, module 08: "why the frame
+   The projects? It's useless there"). Data a page needs, not a window. */
+.lc-runner-quiet { display: none !important; }
 .lc-runner-embed > .lc-run > :first-child { margin-top: 0; }
 .lc-runner-embed > .lc-run > :last-child { margin-bottom: 0; }
 /* the injected file's own H1 names it for someone opening it alone; inside a
@@ -1071,6 +1075,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
     var wrap = document.createElement("div");
     wrap.className = fixedSrc ? "lc-runner lc-runner-embed" : "lc-runner";
     if (winTitle !== null) wrap.className += " lc-runner-win";
+    if (fixedSrc && el.getAttribute("quiet") === "true") wrap.className += " lc-runner-quiet";
     /* one page-level runner (the /run page) publishes canonical ids; embedded
        demos get scoped classes so several can coexist without id clashes */
     var idAttr = fixedSrc ? "" : ' id="lc-run"';

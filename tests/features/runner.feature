@@ -581,3 +581,13 @@ Feature: The instant runner (RT) — Phase A parity
     And I press the "Press me" button
     Then the "oops_btn" part shows ⚠️ explaining "NameError"
     And the "oops_btn" part's ⚠️ names line 2
+
+  Scenario: A quiet runner brings a file's data, not its window
+    Michel, 2026-10-31, module 08: "why the frame The projects? It's useless
+    there" — a page needed a course file's data and a learner's saved choice;
+    each window drew an empty box. quiet="true" runs the file unseen.
+
+    Given I have a clean browser page
+    When I navigate to "/components/runner"
+    And I wait for the page to be interactive
+    Then the quiet window "teams_data" is not drawn, and the sentence reads "2 teams, the first in Milwaukee"

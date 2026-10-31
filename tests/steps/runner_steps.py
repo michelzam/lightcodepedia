@@ -885,3 +885,9 @@ def step_open_diagram_no_framework(context):
                  .map(d => d.textContent).join(' ')""")
     for name in ("Block", "Accordion", "Recorder", "Chart"):
         assert name not in text, "the diagram shows the framework class %s" % name
+
+
+@then('the quiet window "{wid}" is not drawn, and the sentence reads "{text}"')
+def step_quiet_window(context, wid, text):
+    expect(context.page.locator('[data-lc-id="%s"]' % wid)).to_be_hidden(timeout=10_000)
+    expect(context.page.locator("p", has_text="ran unseen").first).to_contain_text(text, timeout=20_000)

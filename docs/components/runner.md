@@ -73,6 +73,18 @@ Nothing saved and nothing shipped: the window says it is not written yet.
 ```
 {: .code }
 
+**Data, no window**: `quiet="true"` runs the file — its datasets, classes
+and queries join the page — and draws nothing. A lesson that only needs a
+course file's data, or a learner's saved choice, reads it without an empty
+window in the middle of the prose.
+
+[Teams](#)
+{: .runner src="/run_samples/teams.md" quiet="true" #teams_data }
+
+The teams file above ran unseen; this sentence reads it: {= teams.count }
+teams, the first in {= teams.first.city }.
+{: #quiet_sentence }
+
 **Images**: a relative `![…](pic.png)` in a rendered page resolves against
 the rendered file's folder and is fetched with your key — so pictures in a
 private course render like anywhere else. Site-absolute and external image

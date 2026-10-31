@@ -833,3 +833,29 @@ Feature: The pad types like a text field, painted
     Then the "cells" pad holds '{: layout="beside" }'
     When I press "Control+Alt+ArrowLeft" in the "cells" pad
     Then the "cells" pad does not contain "beside"
+
+  Scenario: A cell written in a pad stays a formula in its source, its value only in the preview
+    Michel, 2026-10-31, module 08: after a refresh the pad's source showed the
+    project's name where {= my_project.first.name } was written — the page's
+    cell pass had reached into the editor's coloured mirror.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/cellpad.md" with the document:
+      """
+      # Cells in a pad
+
+      ```csv
+      name
+      Rex
+      Biscuit
+      ```
+      {: .dataset #dogs }
+
+      ````markdown
+      We have {= dogs.count } dogs.
+      ````
+      {: .mdpad #cellpad decorations="true" rows="4" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/cellpad.md"
+    And I wait for the page to be interactive
+    Then the pad "cellpad" source still reads "{= dogs.count }", and its preview "We have 2 dogs"

@@ -29,7 +29,8 @@ Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
 
 <style>
-.lc-cell { font-weight: 700; color: #0066cc; font-variant-numeric: tabular-nums; }
+/* a computed value wears the colour, not the weight: bold is the author's (Michel, 2026-10-31) */
+.lc-cell { color: #0066cc; font-variant-numeric: tabular-nums; }
 .lc-cell.lc-cell-err { color: #b91c1c; font-weight: 600; }
 /* hidden until a cell decides — the .lc-vis-show class (set by JS) wins */
 [visible^="="] { display: none; border-left: 3px solid #cde8cd; background: #fffdf5; padding: 6px 12px; border-radius: 6px; margin: 8px 0; }
@@ -66,7 +67,7 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
     while ((n = walker.nextNode())) if (n.nodeValue.indexOf("{=") >= 0) hits.push(n);
     hits.forEach(function (t) {
       if (t.parentNode && t.parentNode.closest &&
-          t.parentNode.closest("pre, code, script, style")) return;
+          t.parentNode.closest("pre, code, script, style, .lc-mdpad-src")) return;   /* a pad's source mirror is code too: the formula stays written there (Michel, 2026-10-31) */
       var s = t.nodeValue, re = /\{=\s*([\s\S]*?)\s*\}/g, m, last = 0,
           frag = document.createDocumentFragment(), any = false;
       while ((m = re.exec(s))) {
