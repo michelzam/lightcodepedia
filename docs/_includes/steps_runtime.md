@@ -2722,6 +2722,12 @@ class Pitch(Block):
 class ImpactMap(Block):
     """Impact map (.impact_map) — goal → who → how → what."""
     @property
+    def data(self):
+        """The map as rendered: goal, who, and impacts — each leaf's how,
+        what, and the value/effort it may carry (with their reasons)."""
+        return _lc_doc_data(self)
+
+    @property
     def pitch(self):
         return _lc_ref(self, "data-pitch")
 

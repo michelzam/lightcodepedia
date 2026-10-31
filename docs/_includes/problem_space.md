@@ -74,6 +74,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-imap-goal { font-weight: 700; color: #111827; }
 .lc-imap-who { font-weight: 600; color: #374151; }
 .lc-imap-what a { text-decoration: none; }
+.lc-imap .lc-imap-notes { border-left: none; padding-left: 1.6em; font-size: 0.92em; color: #4b5563; }
+.lc-imap .lc-imap-notes li { margin: 0.1em 0; }
 .lc-imap-info { margin: 0.3em 0 0.2em; padding: 0.45em 0.7em; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 0.9em; font-weight: 400; }
 .lc-imap-found { margin-top: 0.7em; font-size: 0.85em; color: #6b7280; }
 
@@ -513,10 +515,13 @@ Auto-included by docs/_layouts/default.html.
     el.dataset.lcUpgraded = "1";
     var raw = (el.querySelector("code") || {}).textContent || "";
     var pitchRef = el.getAttribute("pitch") || "";
+    var valuated = el.getAttribute("valuated") === "true", estimated = el.getAttribute("estimated") === "true";
     parseData(raw, "yaml").then(function (m) {
       m = m || {};
       var box = document.createElement("div");
       box.className = "lc-imap";
+      if (valuated) box.setAttribute("data-valuated", "true");
+      if (estimated) box.setAttribute("data-estimated", "true");
       var mapId = carryId(el, box, "impact_map");
       if (pitchRef) box.setAttribute("data-pitch", pitchRef);
       function render() {
@@ -546,8 +551,21 @@ Auto-included by docs/_layouts/default.html.
           } else {
             what = escapeHtml(leafName(r.what || ""));
           }
+          /* valuated="true" / estimated="true": the leaf shows what the
+             stakeholder said it is worth and what the builder said it costs,
+             each with its reason — fields a leaf may always carry, shown only
+             when the map is asked to (Michel, 2026-10-31: "Stan's valuation
+             with comments … hidden by default, activated by knob"; INVE
+             now, the full INVEST next module) */
+          var notes = "";
+          if (valuated && (r.value !== undefined && r.value !== null && r.value !== ""))
+            notes += "<li class='lc-imap-value'>💰 <b>" + escapeHtml(String(r.value)) + "</b>" +
+                     (r.value_why ? " — " + escapeHtml(r.value_why) : "") + "</li>";
+          if (estimated && (r.effort !== undefined && r.effort !== null && r.effort !== ""))
+            notes += "<li class='lc-imap-effort'>🛠 <b>" + escapeHtml(String(r.effort)) + " pts</b>" +
+                     (r.effort_why ? " — " + escapeHtml(r.effort_why) : "") + "</li>";
           return "<li class='lc-imap-how'>🔀 " + escapeHtml(r.how || "") +
-            "<ul><li class='lc-imap-what'>🦄 " + what + "</li></ul></li>";
+            "<ul><li class='lc-imap-what'>🦄 " + what + (notes ? "<ul class='lc-imap-notes'>" + notes + "</ul>" : "") + "</li></ul></li>";
         }).join("");
         html += "</ul></li></ul></li></ul>";
         if (pitchRef) html += "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(pitchRef) + "'>✨ reads #" + escapeHtml(pitchRef) + "</a></div>";

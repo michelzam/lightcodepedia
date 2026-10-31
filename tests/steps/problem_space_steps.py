@@ -302,3 +302,17 @@ def step_imap_shows(context, cid, a, b):
 def step_imap_info(context, cid, text):
     info = _card(context, "imap", cid).locator(".lc-imap-what .lc-imap-info")
     expect(info).to_contain_text(text, timeout=PS_TIMEOUT)
+
+
+@then('the map "{mid}" shows neither worth nor cost')
+def step_map_quiet(context, mid):
+    m = context.page.locator('.lc-imap[data-lc-id="%s"]' % mid)
+    expect(m).to_contain_text("The gate", timeout=15_000)
+    assert m.locator(".lc-imap-value, .lc-imap-effort").count() == 0, m.inner_text()
+
+
+@then('the map "{mid}" shows "{worth}" and "{cost}"')
+def step_map_told(context, mid, worth, cost):
+    m = context.page.locator('.lc-imap[data-lc-id="%s"]' % mid)
+    expect(m.locator(".lc-imap-value")).to_contain_text(worth, timeout=15_000)
+    expect(m.locator(".lc-imap-effort")).to_contain_text(cost)

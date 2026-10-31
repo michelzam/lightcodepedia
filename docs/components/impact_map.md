@@ -43,8 +43,35 @@ Feature: Families meet the dog before they pay
 | knob | meaning |
 |---|---|
 | `#id` | the map's id (default `impact_map`) |
+| `valuated="true"` · `estimated="true"` | show each leaf's `value` (with `value_why`) and `effort` (with `effort_why`) — quiet otherwise |
 | `pitch="id"` | pulls `goal`/`who` from that pitch when your YAML leaves them empty; chip + x-ray wire |
 | `feature:` (row field) | the id of a `.feature` card — the leaf links to it, takes its title when `what` is empty, and wears its state (📝 wanted · 🔧 implemented · 🟢 proven · 🔴 failing · ⚪ elsewhere) |
+
+## Worth and cost on the leaves
+
+A leaf may carry what a stakeholder says it is **worth** (`value`, 0 to
+1, with `value_why`) and what a builder says it **costs** (`effort`, in
+Fibonacci points, with `effort_why`). The fields stay quiet until the map
+is asked to show them: `valuated="true"` shows the worth, `estimated="true"`
+the cost.
+
+```yaml
+goal: No family pays before meeting the dog
+impacts:
+  - how: She stops payments that come before a visit
+    what: The gate
+    value: 0.9
+    value_why: every failed adoption costs a refund and a dog
+    effort: 3
+    effort_why: one rule on the payment form
+  - how: She sees each week where families stop
+    what: The count table
+    value: 0.6
+    value_why: helps her call the right families
+    effort: 2
+    effort_why: a query and a grid
+```
+{: .impact_map #valued_map valuated="true" estimated="true" }
 
 ## The map reads the pitch
 

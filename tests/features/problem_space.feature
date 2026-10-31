@@ -319,3 +319,42 @@ Feature: Problem space — persona, pitch, impact map
     When I follow the impact map "map" leaf to "no_payment_before_visit"
     Then the page's address still names "courses/demo/mod/elsewhere.md"
     And the impact map "map" says "is not on this page" under the leaf
+
+  Scenario: A leaf shows its worth and its cost only when the map is asked to
+    Michel, 2026-10-31: "Stan's valuation with comments … 2 new fields to the
+    leafs, hidden by default, activated by knob valuated=true; same for Dan,
+    with estimated=true" — INVE in sprint 1, the full INVEST next module.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/leaves.md" with the document:
+      """
+      # Leaves
+
+      ```yaml
+      goal: More dogs go home
+      impacts:
+        - how: She stops early payments
+          what: The gate
+          value: 0.9
+          value_why: refunds cost
+          effort: 3
+          effort_why: one rule
+      ```
+      {: .impact_map #quiet_map }
+
+      ```yaml
+      goal: More dogs go home
+      impacts:
+        - how: She stops early payments
+          what: The gate
+          value: 0.9
+          value_why: refunds cost
+          effort: 3
+          effort_why: one rule
+      ```
+      {: .impact_map #told_map valuated="true" estimated="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/leaves.md"
+    And I wait for the page to be interactive
+    Then the map "quiet_map" shows neither worth nor cost
+    And the map "told_map" shows "💰 0.9 — refunds cost" and "🛠 3 pts — one rule"
