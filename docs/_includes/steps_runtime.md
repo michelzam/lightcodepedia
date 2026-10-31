@@ -520,7 +520,16 @@ def _lc_harvest(cls):
     # they become widget buttons. The framework surface (anything Object
     # itself carries) and transition methods are excluded; inherited author
     # methods arrive via the parent's _lc_pub.
-    _root = globals().get("Object")
+    # THE ROOT IS THE CLASS'S OWN ANCESTOR, never the global of that name: a
+    # class declared in a runner window was seen on a phone with all four of
+    # Object's methods as buttons (Confetti · Delete · New · To Dot) — the
+    # name had been rebound by the time it was harvested (Michel, 2026-10-31,
+    # module 08). Walk the bases, as _lc_verbs does.
+    _root = cls
+    while isinstance(_root, type) and _root.__name__ != "Object":
+        _root = _root.__bases__[0] if _root.__bases__ else None
+    if not isinstance(_root, type):
+        _root = None
     pub = {}
     if _root is not None and cls is not _root:
         pub = dict(getattr(cls, "_lc_pub", {}) or {})

@@ -1488,3 +1488,47 @@ Feature: A class wears a dataset — the grid dresses the rows
     # every row has a walker now: the author's next visit makes the table refuse blanks
     When the table "walk" gets "Bo" as the walker of "Pepper", and I come back to the page
     Then the table "walk" does refuse a blank "walker"
+
+  Scenario: Only the class's own methods become buttons, whatever the name Object points to
+    Michel, 2026-10-31, module 08 on a phone: a class declared in a runner
+    window showed Confetti · Delete · New · To Dot under its form — Object's
+    own methods, because the engine looked Object up by its global name, and
+    that name pointed elsewhere by then. The root is the class's own
+    ancestor now.
+
+    Given the GitHub contents API serves "courses/demo/mod/verbs.md" with the document:
+      """
+      # Verbs
+
+      ```gherkin
+      Feature: The framework's methods stay the framework's
+        Scenario: A class harvested while the name Object points elsewhere
+          Given a class with one method of its own
+          :::python
+          self.real = Object
+          class Lamp(self.real):
+              name = Attr(str)
+              def switch(self):
+                  pass
+          self.cls = Lamp
+          :::
+          When it is harvested while Object names something else
+          :::python
+          g = globals()
+          g["Object"] = type("Object", (), {})
+          try:
+              _lc_harvest(self.cls)
+          finally:
+              g["Object"] = self.real
+          :::
+          Then its only button is its own method
+          :::python
+          assert sorted(self.cls._lc_pub) == ["switch"], sorted(self.cls._lc_pub)
+          :::
+      ```
+      {: .feature #verbs_proof visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/verbs.md"
+    And I wait for the page to be interactive
+    And I run the feature "verbs_proof"
+    Then the feature "verbs_proof" is green
