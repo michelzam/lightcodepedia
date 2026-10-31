@@ -1042,3 +1042,26 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/last.md"
     And I wait for the page to be interactive
     Then the page reads "Eve was asked 0 times."
+
+  Scenario: An agent offers its page's questions as chips — one tap, one question
+    Michel, 2026-10-31: "several chips suggested as potential prompts".
+
+    Given I have a clean browser page
+    And an AI key is saved on this device
+    And the GitHub contents API serves "courses/demo/mod/chips.md" with the document:
+      """
+      # Chips
+
+      ```yaml
+      name: Sue
+      prompts:
+        - Ideas for my weakest blank
+        - Market data for my pitch
+      system: You help.
+      ```
+      {: .agent #sue }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/chips.md"
+    And I wait for the page to be interactive
+    And I tap the chip "Market data for my pitch" of the agent "sue"
+    Then the box of the agent "sue" holds "Market data for my pitch"

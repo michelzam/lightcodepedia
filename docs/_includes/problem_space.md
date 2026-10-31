@@ -76,6 +76,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-imap-what a { text-decoration: none; }
 .lc-imap .lc-imap-notes { border-left: none; padding-left: 1.6em; font-size: 0.92em; color: #4b5563; }
 .lc-imap .lc-imap-notes li { margin: 0.1em 0; }
+.lc-pitch-market { margin: 0.5em 0 0.2em; font-size: 0.92em; color: #374151; }
 .lc-imap-facts { margin-top: 0.7em; padding-top: 0.5em; border-top: 1px dashed #e5e7eb; color: #374151; }
 .lc-imap .lc-imap-facts ul { border-left: none; padding-left: 1.2em; list-style: disc; }
 .lc-imap-info { margin: 0.3em 0 0.2em; padding: 0.45em 0.7em; border-radius: 6px; background: #f3f4f6; color: #374151; font-size: 0.9em; font-weight: 400; }
@@ -425,7 +426,11 @@ Auto-included by docs/_layouts/default.html.
     var meta = ref
       ? "<div class='lc-pitch-meta'><a class='lc-pitch-chip' href='#" + escapeHtml(ref) + "'>👤 reads #" + escapeHtml(ref) + "</a></div>"
       : "";
-    return "<div class='lc-pitch-text'>" + text + "</div>" + meta +
+    /* market: the figures the pitch stands on — one or more metrics that
+       later valuation will lean on (Michel, 2026-10-31) — under the two
+       sentences, only when written */
+    var market = p.market ? "<div class='lc-pitch-market'>📊 <b>Market</b> — " + escapeHtml(String(p.market)) + "</div>" : "";
+    return "<div class='lc-pitch-text'>" + text + "</div>" + market + meta +
       "<div class='lc-pitch-warn' hidden></div>";
   }
   function upgradePitch(el) {

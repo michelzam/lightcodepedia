@@ -172,6 +172,7 @@ All configuration goes in the YAML block.
 | `icon` | `🤖` | The face on every answer, one emoji — `icon: 🤓` |
 | `intro` | (none) | A hint rendered above the input |
 | `placeholder` | "Ask anything..." | Placeholder text in the prompt field — the page's own question: Tab in the empty box, or a tap on the 💬 chip under it, takes it |
+| `prompts` | (the placeholder) | The page's questions, a list — each a 💬 chip under the box; Tab in the empty box takes the first |
 | `placeholder_next` | "Your answer — then press Ask" | What the prompt field invites from the second turn on — the opening line is said once, then the box asks for the next move |
 
 Every reply signs itself under the answer, beside the token count: the

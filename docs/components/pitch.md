@@ -37,6 +37,7 @@ goal: Every dog goes to a family that met it first
 | `#id` | the pitch's id — the impact map references it (default `pitch`) |
 | `persona="id"` | the persona this pitch serves: chip, wire, **calculated who**, and a drift check on the need |
 | `source="form_id"` | that form becomes the pitch's **editor** — the sentences follow every keystroke |
+| `market` (field) | one or more figures the pitch stands on — shown under the sentences as 📊 Market |
 | `save="file.yaml"` | the learner's own pitch, kept in their bench (same contract as the persona's) |
 
 ## The form as editor

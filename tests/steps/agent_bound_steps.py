@@ -1033,3 +1033,8 @@ def step_agent_box_holds(context, aid, text):
 def step_agent_key_saved(context):
     """the box to type in shows once a key is there; without one, the key form does"""
     context.page.add_init_script("localStorage.setItem('lc_ai_key_groq', 'gsk-tab-test');")
+
+
+@when('I tap the chip "{words}" of the agent "{aid}"')
+def step_agent_chip(context, aid, words):
+    context.page.locator('[data-lc-id="%s"] .lc-agent-suggest' % aid, has_text=words).first.click()

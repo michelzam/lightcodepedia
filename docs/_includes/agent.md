@@ -123,7 +123,9 @@ Auto-included by docs/_layouts/default.html.
 .lc-agent-intro { margin: 0 0 0.7em; color: #666; font-style: italic; font-size: 0.9em; }
 .lc-agent-ask { display: flex; gap: 0.5em; margin-bottom: 0.6em; align-items: flex-start; }
 .lc-agent-suggest { display: inline-block; margin: -0.2em 0 0.6em; padding: 0.25em 0.7em; border: 1px dashed #9fb4d0; border-radius: 999px; background: #f4f8fd; color: #2a5a8a; font: inherit; font-size: 0.86em; cursor: pointer; }
-.lc-agent-suggest[hidden] { display: none; }
+.lc-agent-suggest[hidden], .lc-agent-suggests[hidden] { display: none; }
+.lc-agent-suggests { display: flex; flex-wrap: wrap; gap: 0.4em; margin: -0.2em 0 0.6em; }
+.lc-agent-suggests .lc-agent-suggest { margin: 0; }
 .lc-agent-prompt { flex: 1; padding: 0.5em 0.7em; border: 1px solid #ccc; border-radius: 4px; font: inherit; font-size: 0.92em; resize: vertical; min-height: 2.5em; box-sizing: border-box; }
 .lc-agent-prompt:focus { outline: 2px solid #0066cc; border-color: #0066cc; }
 .lc-agent-send { background: #0066cc; color: white; border: none; padding: 0.5em 1em; border-radius: 4px; cursor: pointer; font-weight: 500; font-size: 0.9em; white-space: nowrap; }
@@ -1445,28 +1447,32 @@ Auto-included by docs/_layouts/default.html.
     var body = panel.querySelector('.lc-agent-body');
     var askForm = panel.querySelector('.lc-agent-ask');
     var prompt = panel.querySelector('.lc-agent-prompt');
-    /* THE SUGGESTED QUESTION IS ONE KEY OR ONE TAP AWAY (Michel, 2026-10-31:
-       "propose the default question with a tab or a tap"). The placeholder
-       is the page's question: Tab in the empty box takes it, and on a phone,
-       where there is no Tab, a chip under the box does. */
-    if (prompt && askForm && cfg.placeholder && cfg.placeholder !== 'Ask anything...') {
-      var suggest = document.createElement('button');
-      suggest.type = 'button';
-      suggest.className = 'lc-agent-suggest';
-      suggest.textContent = '💬 ' + cfg.placeholder;
-      suggest.title = 'Use this question (or press Tab in the empty box)';
-      askForm.parentNode.insertBefore(suggest, askForm.nextSibling);
-      var takeSuggestion = function () {
-        if (prompt.value.trim()) return false;
-        prompt.value = cfg.placeholder;
-        prompt.focus();
-        return true;
-      };
-      suggest.addEventListener('click', function () { takeSuggestion(); });
-      prompt.addEventListener('keydown', function (e) {
-        if (e.key === 'Tab' && !e.shiftKey && !prompt.value.trim() && takeSuggestion()) e.preventDefault();
+    /* THE SUGGESTED QUESTIONS ARE ONE KEY OR ONE TAP AWAY (Michel,
+       2026-10-31: "propose the default question with a tab or a tap"; then
+       "several chips suggested as potential prompts"). prompts: lists the
+       page's questions — each a chip under the box; without it, the
+       placeholder is the one. Tab in the empty box takes the first. */
+    var asks = Array.isArray(cfg.prompts) ? cfg.prompts.map(String)
+             : (typeof cfg.prompts === 'string' && cfg.prompts.trim() ? cfg.prompts.split('|').map(function (s) { return s.trim(); }) : []);
+    asks = asks.filter(Boolean);
+    if (!asks.length && cfg.placeholder && cfg.placeholder !== 'Ask anything...') asks = [cfg.placeholder];
+    if (prompt && askForm && asks.length) {
+      var chipRow = document.createElement('div');
+      chipRow.className = 'lc-agent-suggests';
+      asks.forEach(function (q) {
+        var chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'lc-agent-suggest';
+        chip.textContent = '💬 ' + q;
+        chip.title = 'Use this question';
+        chip.addEventListener('click', function () { prompt.value = q; prompt.focus(); chipRow.hidden = true; });
+        chipRow.appendChild(chip);
       });
-      prompt.addEventListener('input', function () { suggest.hidden = !!prompt.value.trim(); });
+      askForm.parentNode.insertBefore(chipRow, askForm.nextSibling);
+      prompt.addEventListener('keydown', function (e) {
+        if (e.key === 'Tab' && !e.shiftKey && !prompt.value.trim()) { prompt.value = asks[0]; chipRow.hidden = true; e.preventDefault(); }
+      });
+      prompt.addEventListener('input', function () { chipRow.hidden = !!prompt.value.trim(); });
     }
     var sendBtn = panel.querySelector('.lc-agent-send');
     var status = panel.querySelector('.lc-agent-status');

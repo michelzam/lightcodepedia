@@ -380,3 +380,28 @@ Feature: Problem space — persona, pitch, impact map
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/facts.md"
     And I wait for the page to be interactive
     Then the map "fact_map" shows the fact "Most failed adoptions start with an early payment"
+
+  Scenario: A pitch shows the market figures it stands on
+    Michel, 2026-10-31: "market/current reference data could be an additional
+    field in the pitch … that could inspire later valuation".
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/market.md" with the document:
+      """
+      # Market
+
+      ```yaml
+      who: Lina
+      need: help tonight
+      product: Study Buddy
+      category: tutoring app
+      benefit: two hours saved
+      alternative: the class chat
+      difference: the AI matches a buddy
+      market: 2 in 5 first-year students fail a course (estimate)
+      ```
+      {: .pitch #market_pitch }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/market.md"
+    And I wait for the page to be interactive
+    Then the page reads "📊 Market — 2 in 5 first-year students fail a course (estimate)"
