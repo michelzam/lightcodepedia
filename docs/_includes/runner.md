@@ -1153,5 +1153,21 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
   }
 
   if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.runner", upgradeRunner);
+  /* .import — a file's data, not its window (Michel, 2026-10-31: "Should
+     runner be called rather import?" → "go import"). The link names the file:
+     [The projects](_projects.md) {: .import }; bench="true" reads the
+     learner's copy first. It IS a quiet runner: one engine, two words — a
+     runner shows a file, an import brings what it declares. */
+  function upgradeImport(el) {
+    if (el.dataset.lcUpgraded) return;
+    if (!el.getAttribute("src")) {
+      var a = el.querySelector("a[href]");
+      var href = a ? a.getAttribute("href") || "" : "";
+      if (href && href !== "#") el.setAttribute("src", href);
+    }
+    el.setAttribute("quiet", "true");
+    upgradeRunner(el);
+  }
+  if (window.lcRegisterUpgrader) window.lcRegisterUpgrader("p.import", upgradeImport);
 })();
 </script>

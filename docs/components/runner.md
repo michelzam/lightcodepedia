@@ -73,13 +73,15 @@ Nothing saved and nothing shipped: the window says it is not written yet.
 ```
 {: .code }
 
-**Data, no window**: `quiet="true"` runs the file — its datasets, classes
-and queries join the page — and draws nothing. A lesson that only needs a
-course file's data, or a learner's saved choice, reads it without an empty
-window in the middle of the prose.
+**Data, no window: `import`**. A page that needs a file's data — its
+datasets, classes and queries — but not its window imports it: the link
+names the file, and nothing is drawn. `bench="true"` reads the learner's
+copy first, as a runner does. (It is a runner with `quiet="true"`: one
+engine, two words — a runner shows a file, an import brings what it
+declares.)
 
-[Teams](#)
-{: .runner src="/run_samples/teams.md" quiet="true" #teams_data }
+[Teams](/run_samples/teams.md)
+{: .import #teams_data }
 
 The teams file above ran unseen; this sentence reads it: {= teams.count }
 teams, the first in {= teams.first.city }.

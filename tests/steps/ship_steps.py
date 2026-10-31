@@ -283,3 +283,9 @@ def step_bench_history(context, path, first, second):
 def step_ship_prefill(context, text):
     inp = context.page.locator(".lc-ship .lc-ship-commentbar input")
     expect(inp).to_have_value(text, timeout=5_000)
+
+
+@then('the ship "{shut}" is hidden and the ship "{shown}" is shown')
+def step_ship_visible(context, shut, shown):
+    expect(context.page.locator('.lc-ship[data-lc-id="%s"]' % shown)).to_be_visible(timeout=15_000)
+    expect(context.page.locator('.lc-ship[data-lc-id="%s"]' % shut)).to_be_hidden()

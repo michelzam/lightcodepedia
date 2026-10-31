@@ -519,6 +519,10 @@ Auto-included by docs/_layouts/default.html.
     var box = document.createElement("div");
     box.className = "lc-ship";
     if (el.id) { box.id = el.id; box.setAttribute("data-lc-id", el.id); }
+    /* visible="= brief_proof.passing": the button waits for a proof on its own
+       page — the cell keeps it shut until then (Michel, 2026-10-31: "merge
+       pages 4 and 5", the brief and its ship on one page) */
+    if (el.getAttribute("visible")) box.setAttribute("visible", el.getAttribute("visible"));
     var btn = document.createElement("button");
     btn.type = "button";
     btn.textContent = "🚀 Ship it";

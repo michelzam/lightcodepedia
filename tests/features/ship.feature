@@ -261,3 +261,22 @@ Feature: 🚀 Ship — the author-designed deployment component
     When I navigate to "/run.html#src=gh:acme/bay/bays/spike_dogs_cafebabe12345678/_ship_app.md"
     And I wait for the page to be interactive
     Then the shipped app's title "Spike dogs" stays on top as the page scrolls
+
+  Scenario: A ship button waits for its cell — shut until the expression is true
+    Michel, 2026-10-31: the brief and its ship on one page, the button
+    waiting for the brief's proof. The ship kept no visible= of its own.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/gate.md" with the document:
+      """
+      # Gate
+
+      [Ship it](#)
+      {: .ship app="shut" #shut visible="= 1 > 2" }
+
+      [Ship it](#)
+      {: .ship app="open" #open visible="= 2 > 1" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/gate.md"
+    And I wait for the page to be interactive
+    Then the ship "shut" is hidden and the ship "open" is shown
