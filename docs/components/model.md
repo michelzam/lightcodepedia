@@ -179,6 +179,16 @@ class, a card with its verbs, a diagram of it. What a class can say:
 - **A state and its verbs**: `stage = State("asked", "met", "home")`,
   `@transition("asked", "met")` on the method that moves it; the grid shows
   the stage as a chip, the card's buttons are live or grey by it.
+- **Another column**: `owner = Attr(str, column="_owner")` — the
+  attribute reads the table's column of that name instead of making its
+  own; a column starting with `_` is the table's note (`_owner`: who made
+  the row, stamped on insert), read-only. `Owner()` is its shortcut. Who
+  may read and write is the class line's `read=` / `write=`.
+- **A dressed state**: `State("draft::✏️", "offered", "sold:green:🏷️",
+  "canceled:gray")` — after the value, a colour and an icon, each optional;
+  only the value is stored (`sold`), the chip, the hints and the diagram
+  wear the rest. `@transition([], "canceled")` moves from any state: the
+  diagram draws it out of a superstate.
 - **Plain verbs**: any public method is a button, listed in the order
   written, the base class first.
 - **A computed column**: `@property`; with a `.setter`, one you can edit.

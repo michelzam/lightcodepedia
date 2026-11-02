@@ -163,6 +163,7 @@ That's the whole syntax. The page upgrades the static code block into a live edi
 | `silent="true"` | No UI at all — runs once on page load, stdout swallowed, errors go to the console |
 | `expected="…"` | After ▶ Run, compare printed output to this string. ✓ if it matches; counts toward the 🏆 score |
 | `mypy="true"` | A 🩺 Dr. mypy (lite) button: the type hints checked, strict, in mypy's words — `"loose"` forgives missing hints |
+| `pep8="true"` | A 🛁 PEP 8 (lite) button: the style checked, in pycodestyle's codes and `file:line:col` format |
 | `readonly="true"` | A program to read, run and import, not to edit — a module the page documents (its title says so) |
 | `subtitles="on"` | The 💬 Subtitles start shown: every part of the program says what it is (a parameter, a default value, a type hint, a loop variable, a call, a named argument…) on hover or tap. The button is on every runner; the knob only opens it first |
 
@@ -374,6 +375,55 @@ if __name__ == "__main__":
 {: .run #mypy_demo mypy="true" }
 
 Press 🩺 Dr. mypy, then add `-> float` to the `def` line and press it again. A [✍️ pad](/components/mdpad) wears the same check on its python fences with `mypy="true"`: ⚠ on the line, mypy's words beside it.
+
+## 🛁 PEP 8 (lite) — style, checked in the page
+
+[PEP 8](https://peps.python.org/pep-0008/) is how Python code is laid out so that it reads like prose. `pycodestyle` checks it, and it cannot run in the browser either, so the runner carries a small one that reads the text and answers in pycodestyle's own codes and format, `file:line:col: CODE words`. It checks:
+
+- blank lines: two around a top-level `def` or `class`, one between methods (E301–E306);
+- whitespace around `=`, comparisons and `->`, after a comma, inside brackets, before `(` and around a parameter's `=` (E2xx);
+- comments (`# ` after the hash, two spaces before an inline one);
+- indentation by fours (E111, E117), one statement per line (E401, E70x), `== None` and `== True` (E711, E712), the names `l`, `O` and `I` (E741), lines longer than 79 characters (E501), trailing whitespace (W291, W293, W391).
+
+It skips how continuation lines are aligned (E12x) and what is inside an f-string. A line ending in `# noqa` is skipped, as pycodestyle does.
+
+There are two ways in. `import pycodestyle` and `pycodestyle.StyleGuide().check_files([__file__])` print each issue and return a report whose `total_errors` counts them, as the real one does, so the PythonAnywhere recipe runs unchanged. And `pep8="true"` on a runner adds a **🛁 PEP 8** button, which gives the verdict without running the program.
+
+```python
+"""
+For curious minds
+Who want to know who is with whom
+Our app pairs people, Python-style
+While each person knows whether they are single
+"""
+
+class Person:
+    pass
+
+class Person:
+    def __init__(self, name: str, spouse: Person | None = None):
+        self.name: str = name
+        self.spouse: Person=spouse
+
+    def is_single(self) -> bool:
+        return self.spouse is None
+
+    def __str__(self) -> str:
+        if self.spouse:
+            return f"{self.name} ❤️ {self.spouse}"
+        return f"{self.name} (single)"
+
+
+if __name__ == "__main__":
+    import pycodestyle
+    print("🔍 Checking PEP 8 style...")
+    r = pycodestyle.StyleGuide().check_files([__file__])
+    print("✅ All clean!" if r.total_errors == 0
+          else f"❌ {r.total_errors} issues found.")
+```
+{: .run #pep8_demo pep8="true" }
+
+Press ▶ Run: three issues, the same three pycodestyle finds. Add a blank line above each `class`, put spaces around the `=` on line 14, and press 🛁 PEP 8: all clean.
 
 ## ⌨️ REPL — line-by-line exploration
 

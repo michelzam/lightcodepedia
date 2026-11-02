@@ -27,8 +27,13 @@ def step_head_commit(context, sha):
     context.page.route("**/api.github.com/repos/**/commits*", fulfill)
 
 
+@given('the bay "{repo}" accepts writes')
+def step_bay_repo_accepts(context, repo):
+    step_bay_accepts(context, repo)
+
+
 @given("the bay accepts writes")
-def step_bay_accepts(context):
+def step_bay_accepts(context, repo="acme/bay"):
     """Capture every PUT to the bay; GET of a not-yet-written path 404s the
     way a fresh bay would. The manifest is served from what ship PUT there,
     so the manifest assertion reads what actually crossed the wire."""
@@ -48,7 +53,7 @@ def step_bay_accepts(context):
                                  body=base64.b64decode(raw).decode("utf-8"))
         return route.fulfill(status=404, content_type="application/json",
                              body='{"message":"Not Found"}')
-    context.page.route("**/api.github.com/repos/acme/bay/contents/**", handle)
+    context.page.route("**/api.github.com/repos/" + repo + "/contents/**", handle)
 
 
 @given('the bay manifest points "{app}" at "{sha}" with entry "{entry}"')
@@ -289,3 +294,11 @@ def step_ship_prefill(context, text):
 def step_ship_visible(context, shut, shown):
     expect(context.page.locator('.lc-ship[data-lc-id="%s"]' % shown)).to_be_visible(timeout=15_000)
     expect(context.page.locator('.lc-ship[data-lc-id="%s"]' % shut)).to_be_hidden()
+
+
+@then('the ship button links the site page "{path}", no key needed')
+def step_ship_site_link(context, path):
+    status = context.page.locator(".lc-ship .lc-ship-status").first
+    expect(status).to_contain_text("Shipped", timeout=15_000)
+    href = context.page.locator(".lc-ship .lc-ship-status a").first.get_attribute("href") or ""
+    assert href.endswith(path) and "#src=gh:" not in href, href

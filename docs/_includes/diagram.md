@@ -60,7 +60,8 @@ Auto-included by docs/_layouts/default.html.
     function renderOne(e, div, arg, sm) {
       e.run.call(e.mp, "import js\n_lc_dg_scope = " + arg
                        + "\njs.window._lcDiagramDot = to_dot(_lc_dg_scope, statemachines=" + sm
-                       + ") if (not _lc_dg_scope or _scope_set(_lc_dg_scope)) else ''\n");
+                       + ") if (not _lc_dg_scope or _scope_set(_lc_dg_scope)) else ''\n"
+                       + "js.window._lcDiagramTips = json.dumps(_LC_DOT_TIPS)\n");
       var dot = window._lcDiagramDot;
       if (!dot) {
         div.dataset.lcDiagramPending = "1";
@@ -75,6 +76,22 @@ Auto-included by docs/_layouts/default.html.
       }
       delete div.dataset.lcDiagramPending;
       div.innerHTML = e.viz.renderString(dot, { format: "svg" });
+      /* A TOOLTIP PER ROW (Michel, 2026-11-01): the record's look kept, each
+         row's text wears its own title — type, required, default, column;
+         a method's docstring with its emoji and its move */
+      var tips = {}; try { tips = JSON.parse(window._lcDiagramTips || "{}"); } catch (x) {}
+      div.querySelectorAll("svg g.node").forEach(function (g) {
+        var t = g.querySelector("title"), list = t && tips[t.textContent.trim()];
+        if (!list) return;
+        g.querySelectorAll("text").forEach(function (tx) {
+          var w = tx.textContent.trim(), hit = list.filter(function (r) { return String(r[0]).trim() === w; })[0];
+          if (!hit) return;
+          var tt = document.createElementNS("http://www.w3.org/2000/svg", "title");
+          tt.textContent = hit[1];
+          tx.appendChild(tt);
+          tx.setAttribute("data-lc-tip", hit[1]);
+        });
+      });
     }
 
     function upgradeDiagram(el) {

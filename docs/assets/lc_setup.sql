@@ -1,4 +1,4 @@
--- Lightcode lists on Supabase — the engine's door to a project, version 3.
+-- Lightcode lists on Supabase — the engine's door to a project, version 4.
 -- Where to run it: your project's dashboard → SQL Editor → new query → paste all of this → Run.
 -- Once per project; safe to run again (updates in place). The author's device offers this
 -- file under a grid (📋 Copy the setup SQL) when the door is missing or older than the engine.
@@ -61,7 +61,7 @@ begin
 end $$;
 
 -- 0 · which setup this project holds — the engine compares, the author's device is told
-create or replace function public.lc_version() returns int language sql immutable as $$ select 3 $$;
+create or replace function public.lc_version() returns int language sql immutable as $$ select 4 $$;
 
 -- 1 · the first device to claim becomes the author (delete from lc.authors to start over)
 create or replace function public.lc_claim(token text) returns boolean
@@ -136,7 +136,8 @@ begin
   execute format('alter table lc.%I add column if not exists _changed_at timestamptz not null default now(),
       add column if not exists _change text not null default ''insert'',
       add column if not exists _ip text, add column if not exists _country text,
-      add column if not exists _browser text', tbl);
+      add column if not exists _browser text,
+      add column if not exists _owner text', tbl);   -- v4: who made the row, stamped by a door on insert
   execute format('create or replace trigger lc_stamp before insert or update on lc.%I
       for each row execute function lc.stamp()', tbl);
   execute format('create or replace trigger lc_live after insert or update or delete on lc.%I
@@ -190,9 +191,14 @@ language plpgsql security definer set search_path = '' as $$
 declare cols text; sets text; r jsonb; n_ins int := 0; n_upd int := 0; n_del int := 0; k int;
 begin
   perform lc.open(share, tbl);
-  select string_agg(quote_ident(attname), ', ' order by attnum),
-         string_agg(format('%1$I = case when $1 ? %2$L then r.%1$I else t.%1$I end', attname, attname), ', ' order by attnum)
-    into cols, sets
+  -- v4: _owner goes in with a new row, never changes after (a door stamps it)
+  select string_agg(quote_ident(attname), ', ' order by attnum)
+    into cols
+    from pg_attribute
+   where attrelid = format('lc.%I', tbl)::regclass and attnum > 0 and not attisdropped
+     and attname <> 'id' and (left(attname, 1) <> '_' or attname in ('_sub', '_owner'));
+  select string_agg(format('%1$I = case when $1 ? %2$L then r.%1$I else t.%1$I end', attname, attname), ', ' order by attnum)
+    into sets
     from pg_attribute
    where attrelid = format('lc.%I', tbl)::regclass and attnum > 0 and not attisdropped
      and attname <> 'id' and (left(attname, 1) <> '_' or attname = '_sub');

@@ -124,6 +124,11 @@ def step_click_mypy(context, run_id):
     context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-mypy").click()
 
 
+@when('I press PEP 8 in the "{run_id}" editor')
+def step_click_pep8(context, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-pep8").click()
+
+
 @then('the "{run_id}" editor\'s tests read "{text}"')
 def step_tests_read(context, run_id, text):
     summary = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-test-summary")
@@ -133,6 +138,7 @@ def step_tests_read(context, run_id, text):
 @when('I replace "{old}" with "{new}" in the "{run_id}" editor')
 def step_replace_in_editor(context, old, new, run_id):
     ta = _ta(context, run_id)
+    old, new = old.replace("\\n", "\n"), new.replace("\\n", "\n")   # "\n" in a step is a line break, as in the pad's twin
     v = ta.input_value()
     assert old in v, "no %r in the editor" % old
     ta.evaluate("(el, v) => { el.value = v; el.dispatchEvent(new Event('input')); }", v.replace(old, new, 1))
@@ -498,3 +504,19 @@ def step_file_block(context, name):
     assert context.page.inner_text(sel).strip() == "📄 " + name
     text = context.page.evaluate("(n) => window.lcFileText(n)", name)
     assert text and text.startswith("note,beats"), text
+
+
+@when('I answer "{value}" in the "{run_id}" editor\'s console')
+def step_answer_console(context, value, run_id):
+    """A program that asks input() stops and asks in its own console; the
+    answer replays it from the top (pyrun's input queue)."""
+    box = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-ask-box").first
+    box.wait_for(timeout=30_000)
+    box.fill(value)
+    box.press("Enter")
+
+
+@then('the "{run_id}" console shows "{text}"')
+def step_console_shows(context, run_id, text):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    expect(out).to_contain_text(text, timeout=30_000)

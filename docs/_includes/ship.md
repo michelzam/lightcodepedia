@@ -411,8 +411,8 @@ Auto-included by docs/_layouts/default.html.
           });
       })
       .then(function () {
-        var link = (window.lcHref ? window.lcHref("/run.html") : "/run.html") +
-                   "#src=gh:" + bay.repo + "/" + folder + "/" + shaped[0];
+        var link = pageOf(bay.repo, folder + "/" + shaped[0]) || ((window.lcHref ? window.lcHref("/run.html") : "/run.html") +
+                   "#src=gh:" + bay.repo + "/" + folder + "/" + shaped[0]);
         status.innerHTML = "";
         var strong = document.createElement("strong");
         var same = unchanged.length && unchanged.length === shaped.length - skipped.length;
@@ -441,9 +441,18 @@ Auto-included by docs/_layouts/default.html.
      button should have a nice little panel to access them, especially the
      last one after a refresh in canvas"): the last copy, one click away, and
      the earlier ones folded under it — read from the bay's ledger. */
+  /* A BAY IN THIS SITE'S OWN docs/ (Michel, 2026-11-01: "with another
+     browser I (zamm-student) don't have access to the client app"): a copy
+     under docs/ is a page of the site itself — unlisted, no key — while the
+     runner's gh: road reads the repo, and a private repo wants a key. */
+  var SITE_REPO = {{ site.github.repository_nwo | default: "" | jsonify }};
+  function pageOf(repo, path) {
+    if (!SITE_REPO || repo !== SITE_REPO || !/^docs\//.test(path)) return "";
+    return (window.lcHref ? window.lcHref("/") : "/") + path.replace(/^docs\//, "").replace(/\.md$/i, "");
+  }
   function copyLink(bay, app, h) {
-    return (window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + bay.repo + "/" +
-      (bay.base ? bay.base + "/" : "") + app + "_" + h.sha + "/" + h.entry;
+    var path = (bay.base ? bay.base + "/" : "") + app + "_" + h.sha + "/" + h.entry;
+    return pageOf(bay.repo, path) || ((window.lcHref ? window.lcHref("/run.html") : "/run.html") + "#src=gh:" + bay.repo + "/" + path);
   }
   function when(at) {
     try { return new Date(at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }); }

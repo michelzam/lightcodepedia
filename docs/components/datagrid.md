@@ -4,6 +4,16 @@ Sort, filter, and scroll through data — no Python, no server, no setup. Drop a
 
 **This page is the tutorial.** Click 📽️ at the bottom-left to enter slide mode.
 
+
+## ↔️ Columns in the reader's order
+
+A reader drags a column's header sideways to move it — a mouse at once, a
+finger after a short press (a quick swipe still scrolls). The order is kept
+on that device for that grid; the page's `columns=` stays the first order,
+and **↺** in the grid's corner puts it back (the widths too). Display only:
+nothing changes in the list, the class or anyone else's grid.
+`reorder="false"` keeps a grid's columns where the page put them.
+
 ## 👀 Try it now
 
 Click a column header to sort. Hover the **☰** icon to filter. Drag a column border to resize.

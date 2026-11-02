@@ -92,6 +92,10 @@ Auto-included by docs/_layouts/default.html.
    a + round little button"): + always, ↻ on hover, the save state always */
 .lc-datagrid { position: relative; }
 .lc-dg-corner { position: absolute; top: .3em; right: .4em; z-index: 2; display: flex; gap: .3em; align-items: center; }
+/* a column on the move: the header lifts, a thin line says where it lands */
+.lc-dg-th-held, .lc-dg-th-drag { background: color-mix(in srgb, #0066cc 10%, transparent); cursor: grabbing; }
+.lc-dg-colmark { position: absolute; width: 2px; background: #0066cc; z-index: 50; pointer-events: none; }
+.lc-datagrid th[data-col] { touch-action: pan-y; }
 .lc-dg-cbtn { width: 1.65em; height: 1.65em; border-radius: 50%; border: 1px solid #c7d2e0; background: #fff; color: #475569;
   font: inherit; font-size: .9em; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .lc-dg-cbtn:hover, .lc-dg-cbtn:focus-visible { border-color: #0066cc; color: #0066cc; background: #eff6ff; }
@@ -260,6 +264,43 @@ Auto-included by docs/_layouts/default.html.
   /* ONE DOOR for New, an edit and a verb: the page's runtime — or, when the
      class came through a link (lc://), the channel to the page that owns it
      (Michel, 2026-10-20). The grid and the form never knew the difference. */
+  /* a class's transitions in the order they are declared (Michel, 2026-11-01:
+     "the buttons and methods should appear in the order of their declaration")
+     — the spec's torder; a dict's keys only when an older spec has none */
+  /* A DRESSED STATE (Michel, 2026-11-01): State("sold:green:🏷️") — the chip
+     wears the icon and a tint of the colour; the stored value stays "sold" */
+  window.lcStateLook = function (m, v) {
+    var d = (m && m.sdress && m.sdress[v]) || null, out = { icon: "", style: "", label: String(v == null ? "" : v) };
+    if (!d) return out;
+    out.icon = d.icon || "";
+    if (out.icon) out.label = out.icon + " " + out.label;
+    var c = d.color || "";
+    if (c && window.CSS && CSS.supports && CSS.supports("color", c))
+      /* a pastel tint, no border (Michel, 2026-11-01: "more discreet") */
+      out.style = "background:color-mix(in srgb, " + c + " 16%, transparent);color:inherit";
+    return out;
+  };
+  /* the login this device already knows, at once (Python's mine reads it) */
+  window.lcMeNow = function () {
+    try { var u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); return u && u.login ? String(u.login).toLowerCase() : ""; } catch (e) { return ""; }
+  };
+  /* who holds this device's GitHub key: asked once, kept as lc_gh_user */
+  window.lcMyLogin = function () {
+    try { var u = JSON.parse(localStorage.getItem("lc_gh_user") || "null"); if (u && u.login) return Promise.resolve(String(u.login).toLowerCase()); } catch (e) {}
+    var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    if (!pat) return Promise.resolve("");
+    return fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + pat } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (u) {
+        if (!u || !u.login) return "";
+        try { localStorage.setItem("lc_gh_user", JSON.stringify({ login: u.login, name: u.name || "", avatar_url: u.avatar_url || "" })); } catch (e) {}
+        return String(u.login).toLowerCase();
+      }, function () { return ""; });
+  };
+  window.lcTransOrder = function (m) {
+    var t = (m && m.transitions) || {}, o = (m && m.torder) || [];
+    return o.filter(function (n) { return t[n]; }).concat(Object.keys(t).filter(function (n) { return o.indexOf(n) < 0; }));
+  };
   window.lcModelOp = function (cls, op, code) {
     var m = (window.lcModels || {})[cls], ops = m && m.remote && (window.lcRemoteOps || {})[m.remote.prefix];
     if (ops) { op.cls = m.remote.cls; ops.send(op); return; }
@@ -640,6 +681,11 @@ Auto-included by docs/_layouts/default.html.
     if (!id) return;
     el.classList.add("lc-database");
     el.hidden = true;
+    /* the viewer's login, for mine = Mine(): asked once, then the classes republish */
+    if (!window.lcMeNow() && window.lcMyLogin && !window._lcMeAsked) {
+      window._lcMeAsked = true;
+      window.lcMyLogin().then(function (me) { if (me && window.lcPySend) window.lcPySend("_lc_publish_all()"); });
+    }
     window.lcDatabases[id] = { el: el, kind: m ? m[1] : "", name: m ? m[2] : "",
                                unlisted: el.getAttribute("unlisted") || "", title: a ? (a.textContent || "").trim() : id,
                                live: el.getAttribute("live") === "true" };
@@ -814,8 +860,11 @@ Auto-included by docs/_layouts/default.html.
       (m.order || Object.keys(m.fields || {})).forEach(function (f) {
         var d = (m.fields || {})[f];
         if (!d || d.src || d.computed || f === "id" || f.charAt(0) === "_" || !/^[a-z][a-z0-9_]{0,40}$/.test(f)) return;
-        if (!out.some(function (c) { return c.n === f; })) {
-          var col = { n: f, t: d.state ? "str" : (d.t || "str") };
+        /* column="…": the table's own name; a _note (_owner) is never made by a class */
+        var cn = d.col || f;
+        if (cn.charAt(0) === "_") return;
+        if (!out.some(function (c) { return c.n === cn; })) {
+          var col = { n: cn, t: d.state ? "str" : (d.t || "str") };
           if (d.was) col.was = d.was;
           if (d.req) col.req = true;
           out.push(col);
@@ -913,7 +962,16 @@ Auto-included by docs/_layouts/default.html.
       if (!u.share) return Promise.reject(new Error("paste the list's unlisted name first"));
       /* a save never changes the table's columns (Michel, 2026-10-17: typing
          "speed" left s, sp, spe… behind): ↻, 🧹 and the pad's save do */
-      return u.rpc("lc_save", { share: u.share, tbl: u.tbl, ins: ch.ins, upd: ch.upd, del: ch.del.map(Number) })
+      /* the author's own new rows are the author's (Michel, 2026-11-01: "show
+         ownership") — a class with read=/write= rules stamps _owner with the
+         signed-in login, as the door does for its clients (setup v4 keeps it) */
+      var ruledM = Object.keys(window.lcModels || {}).some(function (k) { var mm = window.lcModels[k]; return mm && mm.src === id && ((mm.read && mm.read !== "all") || (mm.write && mm.write !== "all")); });
+      var send = function (me) {
+        if (me) ch.ins = ch.ins.map(function (row) { var o = {}; for (var k in row) o[k] = row[k]; if (!o._owner) o._owner = me; return o; });
+        return u.rpc("lc_save", { share: u.share, tbl: u.tbl, ins: ch.ins, upd: ch.upd, del: ch.del.map(Number) });
+      };
+      /* unruled, the save leaves at once, as it always did */
+      return (ruledM && ch.ins.length ? window.lcMyLogin().then(send) : send(""))
         .then(function () { r.pull(); return ch; });
     }
     var H = r.db.headers({ "Content-Type": "application/json", Prefer: "return=minimal" });
@@ -1191,7 +1249,9 @@ Auto-included by docs/_layouts/default.html.
                clear"): the author's device asks once per visit; older than the
                engine's, or missing, the grid offers the script to copy */
             /* a class with a required attribute needs setup v3 (the table's blank check) */
-            var want = window.lcSetupVersion || ((unlCols(id) || []).some(function (c) { return c.req; }) ? 3 : 2), vk = window._lcSetupSeen = window._lcSetupSeen || {};
+            /* a class with read=/write= rules needs setup v4 (the door's _owner, 2026-11-01) */
+            var ruled = Object.keys(window.lcModels || {}).some(function (k) { var mm = window.lcModels[k]; return mm && mm.src === id && ((mm.read && mm.read !== "all") || (mm.write && mm.write !== "all")); });
+            var want = window.lcSetupVersion || (ruled ? 4 : (unlCols(id) || []).some(function (c) { return c.req; }) ? 3 : 2), vk = window._lcSetupSeen = window._lcSetupSeen || {};
             if (author && !vk[uProj]) {
               /* the answer is the project's, kept per project: a pad redraws
                  the class block and rebuilds the table's link, so the record
@@ -1587,6 +1647,7 @@ Auto-included by docs/_layouts/default.html.
     /* columns="topic, title": the table SHOWS these, in this order, and still
        PUBLISHES the whole row — a narrow list on the left of a bound card that
        reads every field (Michel, 2026-10-04, the stories example). */
+    var reorderOk = el.getAttribute("reorder") !== "false";   /* read before the wrap replaces el */
     var shownCols = (el.getAttribute("columns") || "").split(",")
       .map(function (c) { return c.trim(); }).filter(Boolean);
     /* dates="time": those columns print as a date and an hour, "Oct 23 12:00 PM" — a time
@@ -1647,6 +1708,17 @@ Auto-included by docs/_layouts/default.html.
 
     var sortCol = sortAttr, sortAsc = true, page = 0;
     var colW = {};   /* a column's width the reader dragged, kept across repaints */
+    /* COLUMNS IN THE READER'S ORDER (Michel, 2026-11-01: "the end user should
+       be able to change the columns' order with d&d"): dragged by the header,
+       kept on this device for this grid; columns= stays the default; ↺ in
+       the corner puts it back; reorder="false" keeps a grid fixed */
+    var orderKey = "lc_colorder:" + location.pathname + location.hash + ":" + (lcId || bindId);
+    var colOrder = null;
+    try { colOrder = JSON.parse(localStorage.getItem(orderKey) || "null"); } catch (e) { colOrder = null; }
+    var saveOrder = function (o) {
+      colOrder = o;
+      try { if (o) localStorage.setItem(orderKey, JSON.stringify(o)); else localStorage.removeItem(orderKey); } catch (e) {}
+    };
 
     /* grid-to-grid master/detail, the light-table half: the AG road had
        master= + filter="local=masterKey" and this road silently ignored
@@ -1782,6 +1854,11 @@ Auto-included by docs/_layouts/default.html.
         });
       }
       if (shownCols.length) cols = shownCols.filter(function (c) { return allCols.indexOf(c) >= 0; });
+      if (reorderOk && colOrder && colOrder.length) {
+        var dflt = cols.slice();
+        cols = colOrder.filter(function (c) { return dflt.indexOf(c) >= 0; })
+          .concat(dflt.filter(function (c) { return colOrder.indexOf(c) < 0; }));
+      }
       function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/'/g, "&#39;"); }
       /* REQUIRED (Michel, 2026-10-24): a blank value of a required attribute is
          marked, and its row waits — never saved blank, never refused on sight */
@@ -1816,11 +1893,13 @@ Auto-included by docs/_layouts/default.html.
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";
         var f = model.fields[c];
         if (f && f.state) {
-          var wide = (f.enum || []).reduce(function (m, s) { return Math.max(m, String(s).length); }, String(v).length);
+          var sm = (row._kind && (window.lcModels || {})[row._kind]) || model;
+          var look = window.lcStateLook(sm, v);
+          var wide = (f.enum || []).reduce(function (m, s) { return Math.max(m, window.lcStateLook(sm, s).label.length); }, look.label.length);
           /* the chip alone: the verbs live in the gutter, for every class
              (Michel, 2026-10-18: "we replaced this by the gutter already") */
-          return "<td class='lc-dg-state' data-row='" + idx + "'>"
-            + "<span class='lc-dg-chip' style='min-width:" + wide + "ch'>" + esc(v) + "</span></td>";
+          return "<td class='lc-dg-state' data-row='" + idx + "' data-state='" + esc(v) + "'>"
+            + "<span class='lc-dg-chip' style='min-width:" + wide + "ch;" + look.style + "'>" + esc(look.label) + "</span></td>";
         }
         /* a tap on a row SELECTS it; cells open for typing only when the
            grid says editable="true" — the detail form is where one edits
@@ -1939,6 +2018,7 @@ Auto-included by docs/_layouts/default.html.
             + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>" : "")
         + (!dbR && roRemote ? "<button class='lc-dg-cbtn lc-dg-refresh lc-dg-roreload' type='button' title='read it again — the list lives elsewhere' aria-label='read the list again'>↻</button>" : "")
         + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
+      if (reorderOk && colOrder) corner = "<button class='lc-dg-cbtn lc-dg-colreset' type='button' title='the columns in their first order' aria-label='the columns in their first order'>↺</button>" + corner;
       el.classList.toggle("lc-dg-cornered", !!corner);
       var dbBtns = "";
       /* an unlisted table: the name to paste, or — on the author's device —
@@ -2157,9 +2237,10 @@ Auto-included by docs/_layouts/default.html.
             var rm = (row._kind && (window.lcModels || {})[row._kind]) || model;
             var cur = String(row[rm.state] == null ? "" : row[rm.state]);
             var items = [];
-            Object.keys(rm.transitions).forEach(function (n) {
+            window.lcTransOrder(rm).forEach(function (n) {
               var tr = rm.transitions[n], ok = !tr.pre.length || tr.pre.indexOf(cur) >= 0;
-              items.push({ n: n, ok: ok, hint: ok ? ("→ " + (tr.post || cur)) : ("needs " + tr.pre.join(" / ")) });
+              var sl = function (x) { return window.lcStateLook(rm, x).label; };
+              items.push({ n: n, ok: ok, hint: ok ? ("→ " + sl(tr.post || cur)) : ("needs " + tr.pre.map(sl).join(" / ")) });
             });
             rm.verbs.forEach(function (n) { items.push({ n: n, ok: true, hint: "" }); });
             items.push({ n: "delete", ok: true, hint: "", label: "🗑 Delete", danger: true });
@@ -2171,7 +2252,7 @@ Auto-included by docs/_layouts/default.html.
               var dd = !it.label && window.lcDocOf ? window.lcDocOf(row._kind || bindId, it.n) : null;
               var label = it.label || ((dd && dd.icon ? dd.icon + " " : "") + (window.lcPrettifyKey ? window.lcPrettifyKey(it.n) : it.n));
               return "<button type='button' class='lc-dg-verb" + (it.ok ? "" : " lc-dg-off") + (it.danger ? " lc-dg-danger" : "")
-                + "' data-verb='" + it.n + "' data-ok='" + (it.ok ? 1 : 0) + "' title='" + esc((dd && dd.text) || it.hint) + "'>"
+                + "' data-verb='" + it.n + "' data-ok='" + (it.ok ? 1 : 0) + "' data-hint='" + esc(it.hint) + "' title='" + esc((dd && dd.text) || it.hint) + "'>"
                 + "<span>" + esc(label) + "</span>" + (it.hint ? "<small>" + esc(it.hint) + "</small>" : "") + "</button>";
             }).join("");
             /* on the body, fixed: a scrolling grid clipped the last row's
@@ -2186,7 +2267,7 @@ Auto-included by docs/_layouts/default.html.
               b.addEventListener("click", function (ev) {
                 ev.stopPropagation();
                 var verb = b.getAttribute("data-verb");
-                if (b.getAttribute("data-ok") !== "1") { closeMenu(); window.lcGridSay(bindId, "⛔ " + verb + " " + b.getAttribute("title")); return; }
+                if (b.getAttribute("data-ok") !== "1") { closeMenu(); window.lcGridSay(bindId, "⛔ " + verb + " " + (b.getAttribute("data-hint") || b.getAttribute("title"))); return; }   /* what it needs, never its docstring */
                 if (verb === "delete") {
                   /* the row as the reader sees it (Michel, 2026-10-17: "Delete
                      dog_1?" — an internal name, and not even the walk's own):
@@ -2420,8 +2501,62 @@ Auto-included by docs/_layouts/default.html.
           g.addEventListener("pointercancel", up);
         });
       });
+      var cr = el.querySelector(".lc-dg-colreset");
+      if (cr) cr.addEventListener("click", function (e) { e.stopPropagation(); saveOrder(null); colW = {}; render(window.lcDatasets[bindId] || data); });
+      /* a header dragged sideways moves its column: a mouse at once, a finger
+         after a short press (a quick swipe still scrolls the grid) */
+      if (reorderOk) el.querySelectorAll("th[data-col]").forEach(function (th) {
+        th.addEventListener("pointerdown", function (e) {
+          if (e.button > 0 || (e.target && e.target.classList && e.target.classList.contains("lc-dg-grip"))) return;
+          var x0 = e.clientX, y0 = e.clientY, touch = e.pointerType === "touch", armed = !touch, dragging = false, mark = null;
+          var hold = touch ? setTimeout(function () { armed = true; th.classList.add("lc-dg-th-held"); }, 280) : null;
+          var heads = [].slice.call(el.querySelectorAll("th[data-col]"));
+          var target = function (x) {
+            var i = heads.length;
+            heads.some(function (h, k) { var r = h.getBoundingClientRect(); if (x < r.left + r.width / 2) { i = k; return true; } return false; });
+            return i;
+          };
+          var move = function (ev) {
+            var dx = ev.clientX - x0, dy = ev.clientY - y0;
+            if (!armed) { if (Math.abs(dx) + Math.abs(dy) > 8) { clearTimeout(hold); end(); } return; }
+            if (!dragging && Math.abs(dx) < 6) return;
+            if (!dragging) {
+              dragging = true; th.classList.add("lc-dg-th-drag");
+              try { th.setPointerCapture(ev.pointerId); } catch (x) {}
+              mark = document.createElement("div"); mark.className = "lc-dg-colmark"; document.body.appendChild(mark);
+            }
+            ev.preventDefault();
+            var i = target(ev.clientX), ref = heads[Math.min(i, heads.length - 1)].getBoundingClientRect();
+            var tb = el.querySelector("table").getBoundingClientRect();
+            mark.style.left = ((i >= heads.length ? ref.right : ref.left) + window.scrollX - 1) + "px";
+            mark.style.top = (tb.top + window.scrollY) + "px";
+            mark.style.height = tb.height + "px";
+          };
+          var end = function () {
+            clearTimeout(hold);
+            th.removeEventListener("pointermove", move); th.removeEventListener("pointerup", up); th.removeEventListener("pointercancel", end);
+            th.classList.remove("lc-dg-th-held", "lc-dg-th-drag");
+            if (mark && mark.parentNode) mark.parentNode.removeChild(mark);
+          };
+          var up = function (ev) {
+            var was = dragging;
+            end();
+            if (!was) return;
+            th._lcDragged = true;   /* the click that ends a drag is no sort */
+            var order = heads.map(function (h) { return h.getAttribute("data-col"); });
+            var from = order.indexOf(th.getAttribute("data-col")), to = target(ev.clientX);
+            order.splice(from, 1); order.splice(to > from ? to - 1 : to, 0, th.getAttribute("data-col"));
+            saveOrder(order);
+            render(window.lcDatasets[bindId] || data);
+          };
+          th.addEventListener("pointermove", move);
+          th.addEventListener("pointerup", up);
+          th.addEventListener("pointercancel", end);
+        });
+      });
       el.querySelectorAll("th[data-col]").forEach(function (th) {
         th.addEventListener("click", function () {
+          if (th._lcDragged) { th._lcDragged = false; return; }
           var col = th.getAttribute("data-col");
           sortAsc = sortCol === col ? !sortAsc : true;
           sortCol = col; page = 0; render(window.lcDatasets[bindId] || data);

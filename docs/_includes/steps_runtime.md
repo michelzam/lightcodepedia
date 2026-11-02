@@ -246,7 +246,7 @@ class Attr:
 
     def __init__(self, typ=str, default=None, min=None, max=None, step=None,
                  enum=None, ro=False, unit="", hint="", secret=False, hidden=False, was=None,
-                 required=False):
+                 required=False, column=None):
         Attr._count[0] += 1
         self._ord = Attr._count[0]
         self.t = typ if isinstance(typ, str) else getattr(typ, "__name__", "str")
@@ -283,6 +283,13 @@ class Attr:
         # blank is kept as it is and waits on the page, never saved blank; the
         # table refuses blanks once every row has one (lc_ensure, setup v3)
         self.required = bool(required)
+        # column="_owner": the table's column this attribute reads, under the
+        # attribute's own name — no new column made (Michel, 2026-11-01: "map
+        # owner on the _owner column without creating a new one"). A column
+        # whose name starts with _ is the table's own note: read-only.
+        self.col = column or None
+        if self.col and self.col.startswith("_"):
+            self.ro = True
         self.is_state = False
         self.n = None
 
@@ -360,6 +367,8 @@ class Attr:
         d = {"n": self.n, "t": t, "d": dv,
              "ro": self.ro, "unit": self.unit, "hint": self.hint, "secret": self.secret,
              "field": True, "state": self.is_state}
+        if getattr(self, "col", None):
+            d["col"] = self.col
         if self.required:
             d["req"] = True
         if self.ref:
@@ -391,8 +400,38 @@ class State(Attr):
         if states is None and isinstance(initial, (list, tuple)):
             states = list(initial)
             initial = states[0]
-        Attr.__init__(self, "str", initial, enum=list(states), ro=True, hint=hint)
+        # DRESSED STATES (Michel, 2026-11-01): "sold:green:🏷️" — the value is
+        # the part before the first ":", then a colour and an icon, each
+        # optional ("draft::✏️", "canceled:gray"); only the value is stored
+        dress = {}
+        clean = []
+        for st in states:
+            parts = str(st).split(":")
+            n = parts[0].strip()
+            clean.append(n)
+            col = parts[1].strip() if len(parts) > 1 else ""
+            ico = ":".join(parts[2:]).strip() if len(parts) > 2 else ""
+            if col or ico:
+                dress[n] = {"color": col, "icon": ico}
+        initial = str(initial).split(":")[0].strip()
+        Attr.__init__(self, "str", initial, enum=clean, ro=True, hint=hint)
         self.is_state = True
+        self.dress = dress
+
+
+def Owner(hidden=False):
+    """owner: str = Owner() — the shortcut for Attr(str, column="_owner"):
+    the row's maker, stamped on insert by a door or the author's page."""
+    return Attr(str, column="_owner", hidden=hidden)
+
+
+def _lc_me():
+    """The viewer's GitHub login, as this device knows it (lc_gh_user)."""
+    try:
+        f = getattr(js.window, "lcMeNow", None)
+        return str(f() or "").lower() if f is not None else ""
+    except Exception:
+        return ""
 
 
 def _lc_isa(obj, cls_name):
@@ -477,6 +516,28 @@ def _lc_guard(name, fn, pre, post, sfn):
         _lc_push_obj(self)
         return r
     return w
+
+
+# a state's colour in a diagram: a pale fill and the colour itself as the
+# border — named colours through a small table, #hex as given
+_LC_DOT_PALE = {"red": ("#fde2e2", "#dc2626"), "green": ("#dcfce7", "#16a34a"),
+                "blue": ("#dbeafe", "#2563eb"), "gray": ("#eeeeee", "#6b7280"),
+                "grey": ("#eeeeee", "#6b7280"), "orange": ("#ffedd5", "#ea580c"),
+                "yellow": ("#fef9c3", "#ca8a04"), "purple": ("#f3e8ff", "#9333ea"),
+                "pink": ("#fce7f3", "#db2777"), "teal": ("#ccfbf1", "#0d9488"),
+                "brown": ("#efe4dc", "#92400e"), "black": ("#e5e5e5", "#111111")}
+
+
+def _lc_dot_color(c):
+    c = str(c or "").strip().lower()
+    if not c:
+        return None
+    if c in _LC_DOT_PALE:
+        return _LC_DOT_PALE[c]
+    if c.startswith("#") and len(c) in (4, 7):
+        full = c if len(c) == 7 else "#" + c[1] * 2 + c[2] * 2 + c[3] * 2
+        return (full + "33", full)
+    return ("white", c)
 
 
 def _lc_harvest(cls):
@@ -660,6 +721,7 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
             "states": list(states) or (list(statef.enum)
                       if statef is not None and statef in getattr(cls, "_lc_own", [])
                       else []),
+            "sdress": dict(getattr(statef, "dress", None) or {}) if statef is not None else {},
         }
         cls._spec = spec          # SSOT lives on the class itself
         _MODEL[cls.__name__] = spec
@@ -831,6 +893,21 @@ class Object:
     def id(self):
         return self._attr("data-lc-id") or ""
 
+    @classmethod
+    def me(cls):
+        """The viewer's GitHub login on this device, "" when not signed in —
+        self.me() in any method (Michel, 2026-11-01: "I need a scope … since
+        every single thing we build is an Object", no global). Read-only,
+        asked afresh at each call."""
+        return _lc_me()
+
+    @property
+    def owner(self):
+        # who made the row — the microserver stamps the table's _owner on insert
+        # (Michel, 2026-11-01, "go owners"); read-only, hidden in a grid
+        # unless its columns= names it
+        return getattr(self, "_lc_owner", "") or ""
+
     @property
     def text(self):
         # every wrapped element exposes its text — _q/_qq return Objects, so
@@ -872,37 +949,96 @@ class Object:
     # ── per-class diagram contribution (SSOT = cls._spec, set by @component) ──
     @classmethod
     def _dot_node(cls, sel=None):
-        # Plain record label (like the original ModuleDecorator): {title|attrs|meths}
+        # THE CLASS RECORD (Michel, 2026-11-01: "the property is not visible
+        # … default value or required … read/write and the docstring in the
+        # tooltip", then "you've changed the border style … go back"): the
+        # original record — title · attributes (* required, = default, then
+        # the properties as "<type> / name") · methods — and a tooltip per row.
         sp = cls._spec
-        title = ((sp["icon"] + " ") if sp["icon"] else "") + cls.__name__
+        cn = cls.__name__
+        def doc(m=None):
+            # the docstring with its emoji (🎁 Offers) — the tooltip says both
+            fn = getattr(js.window, "lcDocOf", None)
+            try:
+                d = fn(cn, m) if (fn is not None and m) else (fn(cn) if fn is not None else None)
+                if d is None:
+                    return ""
+                return " ".join([x for x in [str(getattr(d, "icon", "") or ""), str(getattr(d, "text", "") or "")] if x])
+            except Exception:
+                return ""
+        tips = []
+        def row(text, tip):
+            # a record row, as the original drew it; its tooltip is kept aside
+            # and hung on the row's text once the SVG is drawn (diagram.md)
+            tips.append([text, tip or text])
+            return _dot_esc(text) + "\\l"
+        title = ((sp["icon"] + " ") if sp["icon"] else "") + cn
         for b in sp["bases"]:                          # ➭ <icon> for root bases
             if b in _DOT_ROOT_BASES:
                 title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
+        rules = []
+        if getattr(cls, "_lc_read", None) or getattr(cls, "_lc_write", None):
+            rules.append("read=" + getattr(cls, "_lc_read", "all") + " · write=" + getattr(cls, "_lc_write", "all"))
+        ttip = " — ".join([x for x in [cn, doc(), " ".join(rules)] if x])
+        tips.append([title, ttip])
         rows = ""
         if sp.get("states") and not any(a.get("state") for a in sp["attrs"]):
-            rows += ICON["fsm"] + " state\\l"
+            rows += row(ICON["fsm"] + " state", "the state")
         for a in sp["attrs"]:
             # DRY: a reference drawn as an association edge is not repeated as
             # an attribute row — the row only appears when the target class is
             # outside the diagram, so the reference is never silently lost.
             if a.get("ref") and (sel is None or a["ref"] in sel):
                 continue
-            rows += _attr_icon(a) + " " + _disp(a["n"]) + "\\l"
+            text = _attr_icon(a) + " " + str(a["n"]).replace("_", " ")
+            if a.get("req"):
+                text += " *"
+            dv = a.get("d")
+            if not a.get("state") and dv not in (None, "", 0, 0.0, False) and not a.get("ref"):
+                shown = str(dv).split(".")[-1] + "()" if str(dv).endswith(".now") else str(dv)
+                text += " = " + (shown[:12] + "…" if len(shown) > 13 else shown)
+            tip = [a["n"] + ": " + str(a.get("t", ""))]
+            if a.get("req"):
+                tip.append("required")
+            if dv not in (None, "") and not a.get("state"):
+                tip.append("default " + str(dv))
+            if a.get("col"):
+                tip.append("column " + a["col"])
+            if a.get("ro"):
+                tip.append("read-only")
+            if a.get("hint"):
+                tip.append(str(a["hint"]))
+            rows += row(text, " · ".join(tip))
+        # a property: its type's icon, then / (derived), then its name — on
+        # the attributes' floor (Michel, 2026-11-01: "the / does the job")
+        try:
+            pt = getattr(js.window, "lcPropType", None)
+            for n in _lc_props(cls):
+                t = str(pt(cn, n) or "") if pt is not None else ""
+                ico = _attr_icon({"t": t}) if t else "📦"
+                rows += row(ico + " / " + n.replace("_", " "),
+                            " — ".join([x for x in [n + ": " + (t or "any") + ", computed", doc(n)] if x]))
+        except Exception:
+            pass
         meth = ""
         for e in sp["events"]:
-            meth += ICON["event"] + " " + _disp(e) + "\\l"
+            meth += row(ICON["event"] + " " + str(e).replace("_", " "), e)
         for m in sp["methods"]:
             lead = ICON["guard"] if m["pre"] else ICON["method"]   # ▹ guarded / ▸ plain
-            line = lead + " " + _disp(m["n"])
+            line = lead + " " + str(m["n"]).replace("_", " ")
             if m["post"]:
                 line += " " + ICON["trans"]                         # trailing ▹ = transition
-            meth += line + "\\l"
+            how = ""
+            if m["post"]:
+                how = (" / ".join(m["pre"]) if m["pre"] else "any state") + " → " + str(m["post"])
+            meth += row(line, " — ".join([x for x in [m["n"] + "()", how, doc(m["n"])] if x]))
+        _LC_DOT_TIPS[cn] = tips
         comps = [_dot_esc(title)]                   # only non-empty compartments
         if rows:
             comps.append(rows)
         if meth:
             comps.append(meth)
-        return "  " + cls.__name__ + ' [label="{' + "|".join(comps) + '}"]'
+        return "  " + cn + ' [tooltip="' + ttip.replace('"', "'") + '", label="{' + "|".join(comps) + '}"]'
 
     @classmethod
     def _dot_states(cls):
@@ -932,17 +1068,55 @@ class Object:
              ' fontsize=10, penwidth=0.3]',
              '    edge [style=solid, arrowhead=vee, penwidth=0.2,'
              ' arrowsize=0.7, fontsize=8]']
-        for i, s in enumerate(states):
-            name = _disp(s)
+        # FROM ANY STATE (Michel, 2026-11-01: "If a method operates a transition
+        # from every state (ex cancel), then the arrow should go from the
+        # superstate and end in the final state"): @transition([], "canceled")
+        # draws one arrow out of a dashed superstate holding every other state
+        anys = [m for m in sp["methods"] if m["post"] and m["post"] in states
+                and not [p for p in m["pre"] if p in states]]
+        ends = [m["post"] for m in anys]
+        inner = [s for s in states if s not in ends]
+        dress = sp.get("sdress") or {}
+        loops = {}
+        for m in anys:
+            loops.setdefault(m["post"], []).append(_disp(m["n"]))
+        def node(i, s):
+            d = dress.get(s) or {}
+            name = ((d.get("icon") + " ") if d.get("icon") else "") + _disp(s)
             lbl = (ICON["init"] + " " + name) if i == 0 else name
-            L.append("    " + sid(s) + ' [label="' + lbl + '"]')
+            if s in loops:
+                lbl += "\\n↺ " + ", ".join(loops[s])
+            look = ""
+            col = _lc_dot_color(d.get("color") or "")
+            if col:
+                look = ', fillcolor="' + col[0] + '", color="' + col[1] + '", penwidth=0.8'
+            return sid(s) + ' [label="' + lbl + '"' + look + ']'
+        if anys and inner:
+            L.append("    subgraph cluster_super_" + cn + " {")
+            L.append('      label=""; style="dashed,rounded"; color="gray60"; fillcolor="gray94"; margin=8;')
+            for i, s in enumerate(states):
+                if s in inner:
+                    L.append("      " + node(i, s))
+            L.append("    }")
+        for i, s in enumerate(states):
+            if not (anys and inner) or s not in inner:
+                L.append("    " + node(i, s))
         L.append("  }")
         for m in sp["methods"]:
             if m["post"] and m["post"] in states:
-                froms = [p for p in m["pre"] if p in states] or [states[0]]
+                froms = [p for p in m["pre"] if p in states]
+                tail = ""
+                if not froms:
+                    if not inner:
+                        continue
+                    froms = [inner[-1]]
+                    tail = " ltail=cluster_super_" + cn + ","
+                    # …and from the target itself (Michel, 2026-11-01: "cancel
+                    # accepts also canceled"): the loop is written in the
+                    # state's box (↺ cancel) — an orthogonal loop drew a frame
                 for p in froms:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
-                             + ' [xlabel="' + _disp(m["n"]) + '", fontsize=8,'
+                             + ' [' + tail + ' xlabel="' + _disp(m["n"]) + '", fontsize=8,'
                              + ' color="gray45", fontcolor="gray45",'
                              + ' minlen=2, constraint=false]')
         # tie the cluster below its class (dashed, no arrow); constraint keeps it
@@ -3338,6 +3512,8 @@ def _lc_rows_of(cls):
             for n in _lc_props(type(o)):
                 if n not in row:
                     row[n] = _lc_prop_value(o, n)
+            if "owner" not in row and _lc_isdb(getattr(cls, "_lc_source", None) or ""):
+                row["owner"] = o.owner       # hidden; owner: str = Attr(str, column="_owner") shows it
             rows.append(row)
     return rows
 
@@ -3361,6 +3537,12 @@ def _lc_publish_class(cls):
                 if isinstance(o, cls) and getattr(o, "_js", None) is not None:
                     for f in cls._lc_fields:
                         v = o._v.get(f.n, f.d)
+                        fc = getattr(f, "col", None)
+                        if fc and fc.startswith("_"):
+                            continue      # the table's own note (_owner…): read, never written back
+                        if fc:
+                            setattr(o._js, fc, _lc_cell(f, v))   # column="…": written under the table's name
+                            continue
                         if f.n == "id" and db:
                             # the table gives the id; a new object has none — never a
                             # default (Michel, 2026-10-17: a new Sprint got id 0, read
@@ -3440,7 +3622,11 @@ def _lc_model_spec_push(cls, subs=True):
         fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
                        "src": bool(getattr(f, "src", False)), "hidden": dbid or bool(getattr(f, "hidden", False)),
                        "ref": f.t if f.ref else None, "was": getattr(f, "was", None),
-                       "req": bool(getattr(f, "required", False))}
+                       "req": bool(getattr(f, "required", False)),
+                       "col": getattr(f, "col", None),
+                       # a plain default travels (a door gives it to a new row);
+                       # a function (datetime.now) runs on the server page only
+                       "d": f.d if isinstance(f.d, (str, int, float, bool)) and not f.is_state else None}
     # A COMPUTED COLUMN (Michel, 2026-10-17: "add an example of a computed
     # column — @property?"): each property is a read-only column, worked out
     # from the object, never stored
@@ -3460,6 +3646,11 @@ def _lc_model_spec_push(cls, subs=True):
                         + " — under @" + n + ".setter write def " + n + "(self, value):")
             fields[n] = {"t": "str", "enum": None, "ro": ro, "state": False, "src": False,
                          "hidden": False, "ref": None, "was": None, "computed": True}
+    # who made the row (the table's _owner): a hidden column unless the class
+    # declares owner: str = Attr(str, column="_owner") (Michel, 2026-11-01)
+    if "owner" not in fields and _lc_isdb(getattr(cls, "_lc_source", None) or ""):
+        fields["owner"] = {"t": "str", "enum": None, "ro": True, "state": False, "src": False,
+                           "hidden": True, "ref": None, "was": None, "computed": True, "owner": True}
     trans = {}
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
@@ -3467,7 +3658,11 @@ def _lc_model_spec_push(cls, subs=True):
     verbs = [n for n in _lc_verbs(cls) if n not in tmeta]
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
+            "sdress": dict(getattr(statef, "dress", None) or {}) if statef else {},
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
+            # MicroPython's dict keeps no order: the transitions as declared
+            "torder": [n for n in sorted(tmeta, key=lambda k: tmeta[k][3])],
+            "read": getattr(cls, "_lc_read", "all"), "write": getattr(cls, "_lc_write", "all"),
             "was": getattr(cls, "was", None) if isinstance(getattr(cls, "was", None), str) else None,
             "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields] + [n for n in props if n not in fmap0]}
     setattr(js.window.lcModels, cls.__name__, js.window.JSON.parse(json.dumps(spec)))
@@ -3579,6 +3774,25 @@ def _lc_forget_class(name):
         js.Reflect.deleteProperty(w.lcDatasets, name)
 
 
+_LC_RULE_WORDS = ("all", "signed_in", "own")
+
+
+def _lc_rules(cls_name, read, write):
+    """class Item(Object, read="all", write="own"): who reads and who writes
+    the class's rows through a door (lc-door) — all · signed_in · own. The
+    page itself (its author) is never held by them."""
+    cls = globals().get(cls_name)
+    if not isinstance(cls, type):
+        return
+    for k, v in (("read", read), ("write", write)):
+        if v and v not in _LC_RULE_WORDS:
+            raise ValueError(cls_name + ": " + k + "=\"" + v + "\" — one of all, signed_in, own")
+        if v:
+            setattr(cls, "_lc_" + k, v)
+    if getattr(cls, "_lc_fields", None):
+        _lc_model_spec_push(cls)
+
+
 def _lc_source_bind(cls_name, src):
     cls = globals().get(cls_name)
     if not isinstance(cls, type):
@@ -3674,6 +3888,9 @@ def _lc_source_sync(src):
             _lc_row_mark(row, nm)
             g[nm] = inst
         inst._js = row
+        if db:
+            # who made the row: the microserver stamps it, the page only reads it
+            inst._lc_owner = str(getattr(row, "_owner", "") or "")
         # a subclass's row reads its own attributes too (a Sprint's laps) — on
         # top of the base class's, which hold the table's id
         # …and what the subclass declares wins over a column the base only
@@ -3687,7 +3904,7 @@ def _lc_source_sync(src):
             elif getattr(fl[at[0]], "src", False) and not getattr(f, "src", False):
                 fl[at[0]] = f
         for f in fl:
-            v = getattr(row, f.n, None)
+            v = getattr(row, getattr(f, "col", None) or f.n, None)   # column="…": the table's own name
             if v is None:
                 continue
             if f.ref and db:
@@ -3938,6 +4155,58 @@ def _lc_remote_bind(prefix, name, classes_json, funcs_json):
     globals()[prefix] = r
 
 
+class _LcRowView:
+    """A client's row seen as an object for its class's display properties:
+    the row's fields as attributes, me() the viewer's login."""
+
+    def __init__(self, row):
+        self._row = row
+
+    def __getattr__(self, k):
+        if k.startswith("_"):
+            raise AttributeError(k)
+        v = getattr(self._row, k, None)
+        return "" if v is None else v
+
+    @classmethod
+    def me(cls):
+        return _lc_me()
+
+
+def _lc_client_props(dsid, cls_name, src):
+    """CLIENT PROPERTIES (Michel, 2026-11-01: "go client properties"): the
+    server's display properties, shipped as text, run on this client's own
+    rows — mine is the viewer's, computed here. Display only: a row is read,
+    never written back to the server."""
+    ns = {"_LcRowView": _LcRowView}
+    try:
+        exec("class _LcP(_LcRowView):\n" + src, ns)
+    except Exception as e:
+        _lc_say(dsid, "⚠️ " + cls_name + "'s properties do not run here: " + str(e))
+        return
+    P = ns["_LcP"]
+    names = [n for n in dir(P) if not n.startswith("_") and isinstance(getattr(P, n, None), property)]
+    arr = getattr(js.window.lcDatasets, dsid, None)
+    if arr is None:
+        return
+    for i in range(int(arr.length)):
+        row = arr[i]
+        o = P(row)
+        for n in names:
+            try:
+                v = getattr(o, n)
+            except Exception:
+                v = ""
+            if not (v is None or isinstance(v, (str, int, float, bool))):
+                v = str(v)
+            setattr(row, n, v)
+    js.window._lcModelWriting = 1
+    try:
+        js.window.lcSetDataset(dsid, arr)
+    finally:
+        js.window._lcModelWriting = 0
+
+
 def _lc_export_call(name, cid, fn, args_json):
     """The server runs an exported function for a client and answers."""
     f = globals().get(fn)
@@ -4169,12 +4438,15 @@ def _attr_icon(a):
     return ico
 
 
+_LC_DOT_TIPS = {}   # class → [[row text, tooltip], …] for the drawn diagram
+
+
 def _dot_legend():
     # Reproduces the original ModuleDecorator legend verbatim (record label).
     types_ = ("🔤 str or 🔡 long str\\l🔢 int or float\\l🔘 bool\\l🕗 datetime\\l"
               "🔒 password\\l🔤 ⦙ list of 🔤\\l◻️ Object from kore\\l📦 any\\l"
               "🐟 custom type Fish\\l /  derived\\l _  private\\l"
-              " =  default value\\l⤴️ reflexive reference\\l"
+              " =  default value\\l *  required\\l⤴️ reflexive reference\\l"
               "↩️ ⦙ reflexive collection\\l ♢ composite or owned\\l")
     behav = ("⚡️ event or code\\l ▸ method\\l ▹ conditionnal method\\l"
              " ▹ with transition ▹\\l")
@@ -4274,7 +4546,7 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # Graph/node/edge defaults mirror ModuleDecorator.get_diagram exactly:
     # square filled records, sans-serif @12, hairline edges.
     L = ["digraph component_model {",
-         "  rankdir=BT; nodesep=0.25;",
+         "  rankdir=BT; nodesep=0.25; compound=true;",
          '  graph [penwidth=0.1, splines=ortho, fontsize=10,'
          ' fontname="Source Sans Pro, sans-serif"];',
          '  node [fontname="Source Sans Pro, sans-serif", penwidth=0.3, shape=record,'
@@ -4820,6 +5092,33 @@ _inject_store()
     var m = EMOJI.exec(t);
     return m ? { icon: m[1], text: m[2].trim() } : { icon: "", text: t.trim() };
   }
+  /* a class's @property blocks, as written, for a client to run (display
+     only); a block that reaches beyond its row is not sent */
+  var PROP_UNSAFE = /\bimport\b|\bjs\b|__|\beval\b|\bexec\b|\bopen\s*\(|\bglobals\b|\blocals\b|\bgetattr\b|\bsetattr\b|\bcompile\b/;
+  function propsSrcOf(code, cls) {
+    var lines = String(code || "").split("\n"), out = [], inCls = false, clsInd = 0, i = 0;
+    for (; i < lines.length; i++) {
+      var c = /^(\s*)class\s+(\w+)/.exec(lines[i]);
+      if (c) { inCls = c[2] === cls; clsInd = c[1].length; continue; }
+      if (!inCls) continue;
+      if (lines[i].trim() && (lines[i].match(/^\s*/)[0].length <= clsInd)) { inCls = false; continue; }
+      if (!/^\s*@property\s*$/.test(lines[i])) continue;
+      /* @property, its def, then every line indented deeper than the def */
+      var ind = lines[i].match(/^\s*/)[0].length, block = [lines[i]], j = i + 1;
+      if (j < lines.length && /^\s*def\s/.test(lines[j])) { block.push(lines[j]); j++; }
+      for (; j < lines.length; j++) {
+        var L = lines[j];
+        if (L.trim() && L.match(/^\s*/)[0].length <= ind) break;
+        block.push(L);
+      }
+      while (block.length && !block[block.length - 1].trim()) { block.pop(); j--; }
+      var text = block.join("\n");
+      if (!PROP_UNSAFE.test(text.replace(/("""|\'\'\')[\s\S]*?\1/g, ""))) out.push(text.replace(new RegExp("^ {" + ind + "}", "mg"), "    "));
+      i = j - 1;
+    }
+    return out.join("\n");
+  }
+  window.lcPropsSrcOf = propsSrcOf;
   function readDocs(code) {
     var lines = code.split("\n"), cur = null;
     var docAfter = function (i) {
@@ -4843,7 +5142,12 @@ _inject_store()
         var d2 = docAfter(i); if (d2 != null) DOCS[cur].m[f[1]] = docSplit(d2);
         /* @property on the line above: a computed column, in the order written */
         for (var b = i - 1; b >= 0 && /^\s*@/.test(lines[b]); b--) {
-          if (/^\s*@property\s*$/.test(lines[b]) && DOCS[cur].props.indexOf(f[1]) < 0) DOCS[cur].props.push(f[1]);
+          if (/^\s*@property\s*$/.test(lines[b]) && DOCS[cur].props.indexOf(f[1]) < 0) {
+            DOCS[cur].props.push(f[1]);
+            /* def mine(self) -> bool: the diagram draws the type's icon */
+            var rt = /\)\s*->\s*([\w.]+)\s*:/.exec(ln);
+            if (rt) (DOCS[cur].ptypes = DOCS[cur].ptypes || {})[f[1]] = rt[1];
+          }
           /* @who.setter: the column is typed in, through the setter */
           /* …and only when its def keeps the property's name: @who.setter over
              def setwho makes a second property, who stays read-only (Michel,
@@ -4855,6 +5159,12 @@ _inject_store()
       }
     });
   }
+  /* a property's return hint (-> bool), up the bases, or "" */
+  window.lcPropType = function (cls, prop) {
+    var d = DOCS[cls], n = 0;
+    while (d && n++ < 8) { if (d.ptypes && d.ptypes[prop]) return d.ptypes[prop]; d = DOCS[d.base]; }
+    return "";
+  };
   /* the @property names a class (and its bases) declare, as written */
   window.lcPropsOf = function (cls) {
     var out = [], d = DOCS[cls], n = 0;
@@ -4877,6 +5187,13 @@ _inject_store()
     return false;
   };
   /* a class's doc, or a method's — found up the class's bases */
+  /* an imported class wears its server's docstrings — icons and words of the
+     class and of each verb travel with the spec (Michel, 2026-11-01: "how
+     come the icons are not available in the client, while the new method is?") */
+  window.lcSetDoc = function (name, doc) {
+    if (!doc || typeof doc !== "object") return;
+    DOCS[name] = { icon: doc.icon || "", text: doc.text || "", base: "", m: doc.m || {}, props: doc.props || [] };
+  };
   window.lcDocOf = function (cls, method) {
     var d = DOCS[cls], n = 0;
     while (d && n++ < 8) {
@@ -4903,9 +5220,22 @@ _inject_store()
        source="reservations") — MicroPython takes no keyword on a class line,
        so the runner lifts it: the class is declared plain, then bound to its
        list; the list's later moves (arrival, a bare edit) re-sync the objects. */
-    var sourced = [];
-    code = code.replace(/^([ \t]*)class\s+(\w+)\s*\(([^)]*?),\s*source\s*=\s*(["'])([^"']+)\4\s*\)\s*:/mg,
-      function (_, ind, name, bases, q, src) { sourced.push([name, src]); return ind + "class " + name + "(" + bases + "):"; });
+    var sourced = [], rules = [];
+    /* the class line's knobs — source=, and who reads and who writes its rows
+       through a door: read= / write= = all · signed_in · own (Michel,
+       2026-11-01, "go owners"). MicroPython takes no keyword on a class
+       line: they are lifted here and set after the body. */
+    code = code.replace(/^([ \t]*)class\s+(\w+)\s*\(([^)]*)\)\s*:/mg, function (all, ind, name, inside) {
+      var kw = {}, rest = [];
+      inside.split(",").forEach(function (part) {
+        var k = /^\s*(source|read|write)\s*=\s*(["'])([^"']*)\2\s*$/.exec(part);
+        if (k) kw[k[1]] = k[3]; else if (part.trim()) rest.push(part.trim());
+      });
+      if (!kw.source && !kw.read && !kw.write) return all;
+      if (kw.source) sourced.push([name, kw.source]);
+      if (kw.read || kw.write) rules.push([name, kw.read || "", kw.write || ""]);
+      return ind + "class " + name + "(" + rest.join(", ") + "):";
+    });
     /* A MODEL ON A DATABASE (Michel, 2026-10-17, register P3):
        {: .model source="shelter" } — each class of Object is its table
        (Walk ↔ walk, FosterFamily ↔ foster_family); source= names the table
@@ -4940,7 +5270,8 @@ _inject_store()
         return _;
       });
     }
-    var bind = sourced.map(function (p) { return "\n_lc_source_bind(" + JSON.stringify(p[0]) + ", " + JSON.stringify(p[1]) + ")"; }).join("");
+    var bind = rules.map(function (r) { return "\n_lc_rules(" + r.map(function (x) { return JSON.stringify(x); }).join(", ") + ")"; }).join("") +
+      sourced.map(function (p) { return "\n_lc_source_bind(" + JSON.stringify(p[0]) + ", " + JSON.stringify(p[1]) + ")"; }).join("");
     sourced.forEach(function (p) {
       var L = window.lcDatasetListeners = window.lcDatasetListeners || {};
       var sync = function () {
@@ -5037,6 +5368,8 @@ _inject_store()
     if (el.dataset.lcServerDone) return;
     el.dataset.lcServerDone = "1";
     var lnk = el.querySelector("a[href^='lc://']"), m = lnk && /^lc:\/\/([\w.-]+)$/.exec(lnk.getAttribute("href") || "");
+    var dm = lnk && /^lc:\/\/([\w.-]+(?::\d+)?)\/([\w.-]+)$/.exec(lnk.getAttribute("href") || "");
+    if (dm) { doorServer(el, dm[1], dm[2]); return; }
     if (!m) { if (window.lcWarn) window.lcWarn(el, "a server is a link: [the demo](lc://<name>) {: .server #id model=\"<model id>\" }"); return; }
     var sid = el.id || ("_server" + (++INS_N));
     el.setAttribute("data-lc-id", sid); el.classList.add("lc-server");
@@ -5086,6 +5419,63 @@ _inject_store()
       if (!want && !me && pagesId && tries > 4) { serveModel(el, m[1], sid, function () { return null; }, pagesId); return; }
       setTimeout(wait, 250);
     })();
+  }
+  /* A SERVER ON A DOOR (Michel, 2026-11-01: "a server side with a distant
+     db, a business class exposing a model; a client pointing to the server
+     with a grid on a class the server exposes"). [the shop](lc://<door>/shop)
+     {: .server #shop model="shop_model" } — the address names a door (one
+     Worker for every server page, packages/lc-door), not this tab: the page
+     serves nothing itself; 🚀 ship registers the model there, with the
+     shipper's GitHub token, and each class's table (the database line's
+     address, public key and unlisted name). Clients import the same link. */
+  function doorServer(el, host, name) {
+    var sid = el.id || ("_server" + (++INS_N));
+    el.setAttribute("data-lc-id", sid); el.classList.add("lc-server");
+    el.setAttribute("data-lc-door", host + "/" + name);
+    var a = el.querySelector("a");
+    var say = el.querySelector(".lc-door-say");
+    if (!say) { say = document.createElement("span"); say.className = "lc-door-say"; el.appendChild(document.createTextNode(" ")); el.appendChild(say); }
+    if (a) a.textContent = "📡 lc://" + host + "/" + name;
+    say.textContent = "— on the microserver: 🚀 ship registers the model";
+    var base = (/^https?:\/\//.test(host) ? host : location.protocol + "//" + host) + "/lc/" + name;
+    el._lcDoorRegister = function () {
+      var want = el.getAttribute("model") || "";
+      var mEl = want ? document.querySelector(".lc-model[data-lc-id='" + want + "']")
+                     : [].slice.call(document.querySelectorAll(".lc-model")).filter(function (e) { return !e.hasAttribute("data-lc-remote"); })[0];
+      var names = (mEl && mEl._lcModelNames) || [], classes = {}, tables = {}, contract = [], miss = [];
+      names.forEach(function (n) {
+        var s = (window.lcModels || {})[n]; if (!s) return;
+        var dc = window.lcDocOf ? window.lcDocOf(n) : null;
+        classes[n] = Object.assign({}, s, { doc: dc ? { icon: dc.icon, text: dc.text, m: dc.m } : null,
+                                            props_src: propsSrcOf(mEl && mEl._lcModelCode, n) });
+        var u = ((window.lcRemote || {})[s.src] || {}).unl;
+        if (!u || !u.share || !u.base) { miss.push(n); return; }
+        tables[n] = { base: u.base, key: u.key || "", share: u.share, tbl: u.tbl };
+        var f = s.fields || {};
+        contract.push({ name: n, kind: "class", signature: n + "(" + (s.order || Object.keys(f)).filter(function (k) { return f[k] && !f[k].hidden; }).join(", ") + ")" });
+        window.lcTransOrder(s).forEach(function (v) { var t = s.transitions[v]; contract.push({ name: n + "." + v, kind: "verb", signature: n + "." + v + "()  " + (t.pre || []).join("/") + " → " + (t.post || "") }); });
+      });
+      if (!names.length) return Promise.reject(new Error("no model to serve" + (want ? ": #" + want : "")));
+      if (miss.length) return Promise.reject(new Error(miss.join(", ") + ": not on a database yet — {: .model source=\"<database>\" }, its table read once"));
+      var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+      if (!pat) return Promise.reject(new Error("sign in first: the microserver takes the model from its owner's GitHub token"));
+      return fetch(base + "/register", { method: "POST", headers: { "Content-Type": "application/json", Authorization: "Bearer " + pat },
+                                         body: JSON.stringify({ classes: classes, tables: tables, contract: contract }) })
+        .then(function (r) { return r.json().catch(function () { return { ok: false, error: "HTTP " + r.status }; }); })
+        .then(function (j) { if (!j.ok) throw new Error(j.error || "refused"); return j; });
+    };
+    var hhmm = function () { var d = new Date(), p = function (k) { return (k < 10 ? "0" : "") + k; }; return p(d.getHours()) + ":" + p(d.getMinutes()); };
+    var onShip = function () {
+      if (!el.isConnected) { window.removeEventListener("lc_shipped", onShip); return; }
+      say.textContent = "— registering…";
+      el._lcDoorRegister().then(function (j) {
+        say.textContent = "— ✅ on the microserver, version " + j.version + " · " + j.classes.join(", ") + " · " + hhmm();
+        el.setAttribute("data-lc-door-version", String(j.version));
+      }, function (e) { say.textContent = "— ⚠️ " + e.message; el.setAttribute("data-lc-door-error", e.message); });
+    };
+    if (el._lcDoorShip) window.removeEventListener("lc_shipped", el._lcDoorShip);
+    el._lcDoorShip = onShip;
+    window.addEventListener("lc_shipped", onShip);
   }
   /* THE PAGES A SERVER SERVES (Michel, 2026-10-22): rows of path and file,
      like today's site — a path is a page, or a folder whose index.md answers
@@ -5163,7 +5553,7 @@ _inject_store()
       Object.keys(classes).forEach(function (c) {
         var m = classes[c], fields = (m.order || Object.keys(m.fields || {})).filter(function (k) { return m.fields[k] && !m.fields[k].hidden; });
         rows.push({ name: c, kind: "class", signature: c + "(" + fields.join(", ") + ")", doc: doc(c) });
-        Object.keys(m.transitions || {}).forEach(function (v) { rows.push({ name: c + "." + v, kind: "verb", signature: c + "." + v + "()  " + (m.transitions[v].pre || []).join("/") + " → " + (m.transitions[v].post || ""), doc: doc(c, v) }); });
+        window.lcTransOrder(m).forEach(function (v) { rows.push({ name: c + "." + v, kind: "verb", signature: c + "." + v + "()  " + (m.transitions[v].pre || []).join("/") + " → " + (m.transitions[v].post || ""), doc: doc(c, v) }); });
         (m.verbs || []).forEach(function (v) { rows.push({ name: c + "." + v, kind: "verb", signature: c + "." + v + "()", doc: doc(c, v) }); });
       });
       funcs.forEach(function (f) { rows.push({ name: f.n, kind: "function", signature: f.sig, doc: "" }); });
@@ -5172,7 +5562,12 @@ _inject_store()
     function spec() {
       var mEl = modelOf(), names = (mEl && mEl._lcModelNames) || [], classes = {}, rows = {};
       names.forEach(function (n) {
-        if ((window.lcModels || {})[n]) { classes[n] = window.lcModels[n]; rows[n] = (window.lcDatasets || {})[n] || []; }
+        if ((window.lcModels || {})[n]) {
+          var dc = window.lcDocOf ? window.lcDocOf(n) : null;
+          classes[n] = Object.assign({}, window.lcModels[n], { doc: dc ? { icon: dc.icon, text: dc.text, m: dc.m } : null,
+                                                             props_src: propsSrcOf(mEl && mEl._lcModelCode, n) });
+          rows[n] = (window.lcDatasets || {})[n] || [];
+        }
       });
       var funcs = funcsOf(mEl && mEl._lcModelCode), contract = contractOf(classes, funcs);
       /* exports="totals,cities": datasets and query results handed out by name, as on a host */
@@ -5275,9 +5670,9 @@ _inject_store()
      "here" is the origin this page was served from. Same messages, same
      answers — one request per message, the spec on a stream — so a client
      page never knows which carrier it rides. */
-  function lcNetChan(where, name) {
+  function lcNetChan(where, name, token) {
     var base = (where === "here" ? location.origin : (/^https?:\/\//.test(where) ? where : location.protocol + "//" + where)) + "/lc/" + name;
-    var self = { onmessage: null, closed: false }, es = null, origin = base.replace(/\/lc\/[\w.-]+$/, "");
+    var self = { onmessage: null, closed: false }, es = null, origin = base.replace(/\/lc\/[\w.-]+$/, ""), poll = null;
     var deliver = function (d) {
       /* a page the host serves lives on the host: its path resolves there, not
          against the site the served page is based on (Michel, 2026-10-23: the
@@ -5292,20 +5687,32 @@ _inject_store()
     }
     self.postMessage = function (msg) {
       if (self.closed) return;
-      if (msg.t === "follow" && !es) listen();
+      /* SIGNED IN (sign_in="true", a door with read=/write= rules, 2026-11-01):
+         a stream cannot carry the token, so a signed client asks again every
+         20 s instead — the rows it reads are the ones its login may see */
+      if (msg.t === "follow" && token && !poll) poll = setInterval(function () { if (!self.closed) self.postMessage({ t: "follow", from: msg.from }); }, 20000);
+      else if (msg.t === "follow" && !token && !es) listen();
       /* a request the network drops (a connection closed under it — Safari)
          is sent once more before silence means nobody (Michel, 2026-10-22) */
-      var send = function () { return fetch(base, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg) }); };
+      var hd = { "Content-Type": "application/json" };
+      if (token) hd.Authorization = "Bearer " + token;
+      var send = function () { return fetch(base, { method: "POST", headers: hd, body: JSON.stringify(msg) }); };
       send().catch(function () { return send(); })
         .then(function (r) { return r.json(); }).then(deliver).catch(function () {});
     };
-    self.close = function () { self.closed = true; if (es) { try { es.close(); } catch (e) {} es = null; } };
+    self.close = function () { self.closed = true; if (poll) { clearInterval(poll); poll = null; } if (es) { try { es.close(); } catch (e) {} es = null; } };
     return self;
   }
   function importModel(el, href) {
     var m = /^lc:\/\/(?:([\w.-]+(?::\d+)?)\/)?([\w.-]+)$/.exec(href);
     if (!m) { if (window.lcWarn) window.lcWarn(el, "a remote model is a link: lc://<name>, or lc://<host:port>/<name> for a host on the network"); return; }
-    var name = m[2], prefix = el.id || "m", ch = m[1] ? lcNetChan(m[1], name) : lcChan(name), me = "";
+    /* sign_in="true": the client's GitHub token goes with every message, so a
+       door knows who asks (read=/write= own · signed_in). Only to the address
+       this line names, only when the line says so: a door reads the login and
+       keeps nothing (lc-door, 2026-11-01). */
+    var tok = "";
+    if (m[1] && el.getAttribute("sign_in") === "true") { try { tok = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {} }
+    var name = m[2], prefix = el.id || "m", ch = m[1] ? lcNetChan(m[1], name, tok) : lcChan(name), me = "";
     /* the tab's id survives a reload: the same tab reads as the same client
        (Michel, 2026-10-20: "why a refresh on a tab would create a new entry") */
     try { me = sessionStorage.getItem("lc_tab") || ""; if (!me) { me = "tab-" + Math.random().toString(36).slice(2, 7); sessionStorage.setItem("lc_tab", me); } }
@@ -5350,10 +5757,26 @@ _inject_store()
         Object.keys(d.datasets || {}).forEach(function (k) { window.lcSetDataset(prefix + "." + k, d.datasets[k] || []); });
         Object.keys(d.classes).forEach(function (n) {
           var s = d.classes[n]; s.remote = { name: name, cls: n, prefix: prefix };
+          if (s.doc) window.lcSetDoc(prefix + "." + n, s.doc);
           window.lcModels[prefix + "." + n] = s;
           if (known.indexOf(n) < 0) known.push(n);
           window.lcSetDataset(prefix + "." + n, d.rows[n] || []);
         });
+        /* the server's display properties run here, on these rows, for this viewer */
+        var withProps = Object.keys(d.classes).filter(function (n) { return d.classes[n].props_src; });
+        if (withProps.length) {
+          var runProps = function () {
+            mpReady().then(function (mp) {
+              var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
+              var pre = window._lcModelPreIn === mp ? "" : preamble + "\n";
+              window._lcModelPreIn = mp;
+              runPy(mp, pre + withProps.map(function (n) {
+                return "_lc_client_props(" + JSON.stringify(prefix + "." + n) + "," + JSON.stringify(n) + "," + JSON.stringify(d.classes[n].props_src) + ")";
+              }).join("\n"));
+            }).catch(function (e) { console.error("[lc client props]", e); });
+          };
+          if (tok && !window.lcMeNow() && window.lcMyLogin) window.lcMyLogin().then(runProps); else runProps();
+        }
         mpReady().then(function (mp) {
           /* a client page may run no Python of its own yet: the runtime goes in first, once */
           var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
@@ -5372,6 +5795,13 @@ _inject_store()
         window.lcSetDataset(prefix + ".page", [{ path: d.path || "", file: ok ? (d.file || "") : "", url: ok ? (d.url || "") : "", via: d.via || "", error: ok ? "" : (d.result || "") }]);
         var w = asked[d.id]; delete asked[d.id];
         if (w) { clearTimeout(w.quiet); ok ? w.ok(d) : w.no(new Error(d.result || "not served")); }
+        return;
+      }
+      /* a door refuses an edit or a verb by its rule (lc-door, 2026-11-01): the
+         grid says why and reads the spec again, so the cell shows what holds */
+      if (d.t === "refused" && d.cls && !d.id) {
+        if (window.lcGridSay) window.lcGridSay(prefix + "." + d.cls, "⛔ " + (d.result || "refused"));
+        lastSpec = ""; follow();
         return;
       }
       if ((d.t === "done" || d.t === "refused") && typeof d.id === "string" && d.id.indexOf(me + "#") === 0) {

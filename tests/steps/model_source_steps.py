@@ -1630,3 +1630,227 @@ def step_list_put(context, did, n, what, value):
     rows = context.page.evaluate("(d) => window.lcDatasets[d]", did)
     hit = [r for r in rows if r.get("what") == what]
     assert hit and str(hit[0].get("value")) == value, rows
+
+
+def _svg(context):
+    d = context.page.locator(".lc-diagram svg").first
+    expect(d).to_be_attached(timeout=30000)
+    context.page.wait_for_function("() => { const s = document.querySelector('.lc-diagram svg'); return s && /cluster_states_/.test(s.innerHTML); }", timeout=30000)
+    return d
+
+
+@then('the diagram holds "{states}" in a superstate of "{cls}"')
+def step_diagram_super(context, states, cls):
+    svg = _svg(context)
+    titles = svg.locator("g.cluster > title").evaluate_all("ts => ts.map(t => t.textContent)")
+    assert "cluster_super_" + cls in titles, titles
+    # every named state sits inside the superstate's box, the target outside
+    box = svg.locator("g.cluster", has=context.page.locator("title", has_text="cluster_super_" + cls)).first.bounding_box()
+    for st in [x.strip() for x in states.split(",")]:
+        n = svg.locator("g.node", has=context.page.locator("title", has_text="st_" + cls + "_" + st)).first.bounding_box()
+        assert box["x"] <= n["x"] and n["x"] + n["width"] <= box["x"] + box["width"] + 1, (st, box, n)
+    context.diagram_cls = cls
+
+
+@then('the diagram\'s "{verb}" arrow ends in "{state}" and starts from no single state')
+def step_diagram_any(context, verb, state):
+    svg = _svg(context)
+    cls = context.diagram_cls
+    edges = [e.replace("&#45;&gt;", "->") for e in svg.locator("g.edge > title").evaluate_all("ts => ts.map(t => t.textContent)")]
+    # from the target itself too (2026-11-01, 4a): written in its box, ↺ cancel
+    node = svg.locator("g.node", has=context.page.locator("title", has_text="st_" + cls + "_" + state)).first
+    expect(node).to_contain_text("↺ " + verb, timeout=30000)
+    into = [e for e in edges if e.endswith("st_" + cls + "_" + state)]
+    assert len(into) == 1, edges          # one arrow, not one per state
+    assert not into[0].startswith("st_" + cls + "_draft"), into   # never from the first state
+    # it leaves the superstate's border: its first point lies on the box's edge
+    box = svg.locator("g.cluster", has=context.page.locator("title", has_text="cluster_super_" + cls)).first.bounding_box()
+    path = svg.locator("g.edge", has=context.page.locator("title", has_text=into[0])).first.locator("path").bounding_box()
+    right = box["x"] + box["width"]
+    assert abs(path["x"] - right) < 6 or abs(path["x"] + path["width"] - box["x"]) < 6, (box, path)
+
+
+def _row_of(context, gid, name):
+    return context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] tbody tr", has_text=name).first
+
+
+@then('the state chip of "{name}" in "{gid}" reads "{label}" on a tint of "{color}"')
+def step_dressed_chip(context, name, gid, label, color):
+    chip = _row_of(context, gid, name).locator(".lc-dg-chip")
+    expect(chip).to_have_text(label, timeout=30000)
+    assert color in (chip.get_attribute("style") or ""), chip.get_attribute("style")
+
+
+@then('the state chip of "{name}" in "{gid}" reads "{label}" with no tint')
+def step_dressed_chip_plain(context, name, gid, label):
+    chip = _row_of(context, gid, name).locator(".lc-dg-chip")
+    expect(chip).to_have_text(label, timeout=30000)
+    assert "color-mix" not in (chip.get_attribute("style") or ""), chip.get_attribute("style")
+
+
+@then('the list "{ds}" keeps "{a}" and "{b}", bare')
+def step_dressed_bare(context, ds, a, b):
+    vals = context.page.evaluate("id => (window.lcDatasets[id] || []).map(r => r.stage)", ds)
+    assert a in vals and b in vals and not any(":" in str(v) for v in vals), vals
+
+
+@then('the ⋯ of "{name}" in "{gid}" offers "{verb}" with the hint "{hint}"')
+def step_dressed_hint(context, name, gid, verb, hint):
+    _row_of(context, gid, name).locator("td.lc-dg-gut button").click()
+    b = context.page.locator(".lc-dg-menu button[data-verb='" + verb + "']")
+    expect(b).to_contain_text(hint, timeout=30000)
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)
+
+
+@then('the diagram draws the state "{state}" with "{icon}"')
+def step_dressed_diagram(context, state, icon):
+    context.page.wait_for_function(
+        "([s, i]) => [...document.querySelectorAll('.lc-diagram svg g.node')].some(g => { const t = g.querySelector('title'); return t && t.textContent.endsWith('_' + s) && g.textContent.indexOf(i) >= 0; })",
+        arg=[state, icon], timeout=30000)
+
+
+@when('I tap the row "{name}" in "{gid}"')
+def step_dressed_tap(context, name, gid):
+    _row_of(context, gid, name).locator("td").nth(1).click()
+
+
+@then('the card "{fid}" shows the chip "{label}"')
+def step_dressed_card(context, fid, label):
+    expect(context.page.locator("[data-lc-id='" + fid + "'] .lc-dg-chip, #" + fid + " .lc-dg-chip").first).to_have_text(label, timeout=30000)
+
+
+def _heads(context, gid):
+    g = context.page.locator(".lc-datagrid[data-lc-id='" + gid + "']")
+    expect(g.locator("tbody tr").first).to_be_visible(timeout=30000)
+    return [re.sub(r"[^A-Za-z]", "", h) for h in g.locator("thead th").all_inner_texts()]
+
+
+@then('the grid "{gid}" heads "{want}" and nothing of "{nope}"')
+def step_heads_not(context, gid, want, nope):
+    hs = [h.lower() for h in _heads(context, gid)]
+    for w in [x.strip().lower() for x in want.split(",")]:
+        assert w in hs, hs
+    for w in [x.strip().lower() for x in nope.split(",")]:
+        assert w not in hs, hs
+
+
+@then('the grid "{gid}" heads "{want}"')
+def step_heads(context, gid, want):
+    hs = [h.lower() for h in _heads(context, gid)]
+    for w in [x.strip().lower() for x in want.split(",")]:
+        assert w in hs, hs
+
+
+@then('the row "{name}" of "{gid}" shows "{text}"')
+def step_row_shows(context, name, gid, text):
+    expect(context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] tbody tr", has_text=name).first).to_contain_text(text, timeout=30000)
+
+
+@given('this device knows me as "{login}"')
+def step_device_me(context, login):
+    context.page.add_init_script("localStorage.setItem('lc_gh_user', JSON.stringify({ login: %r }))" % login)
+
+
+@then('the ⋯ of "{name}" in "{gid}" offers no "{verb}"')
+def step_no_verb(context, name, gid, verb):
+    _row_of(context, gid, name).locator("td.lc-dg-gut button").click()
+    menu = context.page.locator(".lc-dg-menu")
+    expect(menu).to_be_visible(timeout=30000)
+    assert menu.locator("button[data-verb='" + verb + "']").count() == 0, menu.inner_text()
+    context.page.keyboard.press("Escape")
+    context.page.mouse.click(5, 5)
+
+
+def _svg_tips(context):
+    _svg(context)
+    context.page.wait_for_function("() => document.querySelector('.lc-diagram svg text[data-lc-tip]')", timeout=30000)
+    return context.page.evaluate("""() => [...document.querySelectorAll('.lc-diagram svg text[data-lc-tip]')].map(t =>
+        [t.textContent.replace(/\\s+/g, ' ').trim(), t.getAttribute('data-lc-tip') || ''])""")
+
+
+@then('the diagram\'s class "{cls}" shows the row "{text}" with the tooltip "{tip}"')
+def step_diagram_row_tip(context, cls, text, tip):
+    rows = _svg_tips(context)
+    hit = [r for r in rows if text in r[0] and tip in r[1]]
+    assert hit, rows
+
+
+@then('the diagram\'s class "{cls}" wears the tooltip "{tip}"')
+def step_diagram_class_tip(context, cls, tip):
+    rows = _svg_tips(context)
+    assert any(tip in r[1] for r in rows), rows
+
+
+@then('the diagram\'s legend reads "{text}"')
+def step_diagram_legend(context, text):
+    expect(context.page.locator(".lc-diagram svg").first).to_contain_text(text, timeout=30000)
+
+
+def _heads_in_order(context, gid):
+    g = context.page.locator(".lc-datagrid[data-lc-id='" + gid + "']")
+    expect(g.locator("tbody tr").first).to_be_visible(timeout=30000)
+    return [re.sub(r"[^A-Za-z]", "", h) for h in g.locator("thead th[data-col]").all_inner_texts()]
+
+
+@then('the grid "{gid}" heads in order "{want}"')
+def step_heads_order(context, gid, want):
+    want = [w.strip() for w in want.split(",")]
+    for _ in range(30):
+        if _heads_in_order(context, gid) == want:
+            return
+        context.page.wait_for_timeout(200)
+    assert _heads_in_order(context, gid) == want, _heads_in_order(context, gid)
+
+
+@when('I drag the header "{col}" of "{gid}" before "{other}"')
+def step_drag_header(context, col, gid, other):
+    g = context.page.locator(".lc-datagrid[data-lc-id='" + gid + "']")
+    src = g.locator("thead th[data-col]", has_text=col).first.bounding_box()
+    dst = g.locator("thead th[data-col]", has_text=other).first.bounding_box()
+    m = context.page.mouse
+    m.move(src["x"] + src["width"] / 3, src["y"] + src["height"] / 2)
+    m.down()
+    m.move(src["x"] + src["width"] / 3 - 10, src["y"] + src["height"] / 2, steps=3)
+    m.move(dst["x"] + 4, dst["y"] + dst["height"] / 2, steps=8)
+    m.up()
+
+
+@when('I click the header "{col}" of "{gid}"')
+def step_click_header(context, col, gid):
+    context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] thead th[data-col]", has_text=col).first.click()
+
+
+@then('the first row of "{gid}" reads "{text}"')
+def step_first_row(context, gid, text):
+    expect(context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] tbody tr").first).to_contain_text(text, timeout=30000)
+
+
+@when('I press ↺ on "{gid}"')
+def step_col_reset(context, gid):
+    context.page.locator(".lc-datagrid[data-lc-id='" + gid + "'] .lc-dg-colreset").click()
+
+
+def _touch_drag(context, col, gid, other, hold_ms):
+    context.page.evaluate("""async ([gid, col, other, hold]) => {
+        const g = document.querySelector(`.lc-datagrid[data-lc-id='${gid}']`);
+        const th = [...g.querySelectorAll('thead th[data-col]')].find(h => h.textContent.includes(col));
+        const dst = [...g.querySelectorAll('thead th[data-col]')].find(h => h.textContent.includes(other));
+        const a = th.getBoundingClientRect(), b = dst.getBoundingClientRect();
+        const ev = (type, x) => th.dispatchEvent(new PointerEvent(type, { bubbles: true, cancelable: true,
+            pointerId: 7, pointerType: 'touch', isPrimary: true, clientX: x, clientY: a.top + a.height / 2 }));
+        ev('pointerdown', a.left + a.width / 3);
+        await new Promise(r => setTimeout(r, hold));
+        for (let k = 1; k <= 8; k++) ev('pointermove', a.left + a.width / 3 + (b.left + 4 - a.left - a.width / 3) * k / 8);
+        ev('pointerup', b.left + 4);
+    }""", [gid, col, other, hold_ms])
+
+
+@when('I swipe the header "{col}" of "{gid}" quickly toward "{other}"')
+def step_touch_swipe(context, col, gid, other):
+    _touch_drag(context, col, gid, other, 30)
+
+
+@when('I press and drag the header "{col}" of "{gid}" before "{other}" with a finger')
+def step_touch_drag(context, col, gid, other):
+    _touch_drag(context, col, gid, other, 400)

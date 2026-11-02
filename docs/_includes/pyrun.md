@@ -1271,6 +1271,21 @@ Auto-included by docs/_layouts/default.html.
       });
     }
 
+    /* 🛁 PEP 8 (lite) — pycodestyle's codes read from the text (pycheck.md;
+       Michel, 2026-11-02, Python Module 10); nothing runs, so it answers
+       before the runtime loads */
+    var pep8Btn = root.querySelector(".lc-pyrun-pep8");
+    if (pep8Btn && window.lcPep8Report) {
+      pep8Btn.addEventListener("click", function () {
+        clearTests();
+        var r = window.lcPep8Report(codeEl.value, { file: ID + ".py" });
+        setOut(r.total === 0 ? "✅ PEP 8 (lite): all clean"
+                             : "❌ PEP 8 (lite): " + r.total + " issue" + (r.total > 1 ? "s" : "") + "\n" + r.lines.join("\n"), r.total !== 0);
+        root.setAttribute("data-lc-pep8", r.total === 0 ? "clean" : String(r.total));
+        status.textContent = r.total === 0 ? "style clean" : "style issues";
+      });
+    }
+
     clearBtn.addEventListener("click", function(){
       out.textContent = "click ▶ Run to execute";
       out.classList.add("lc-empty");
@@ -1317,6 +1332,7 @@ Auto-included by docs/_layouts/default.html.
     html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button>' +
       '<button class="lc-pyrun-test lc-pyrun-icon" title="Test — run the >>> examples in the docstrings" aria-label="Test">🧪</button>' +
       (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy lc-pyrun-icon" title="Dr. mypy (lite) — check the type hints" aria-label="Dr. mypy">🩺</button>' : '') +
+      (opts.pep8 && opts.pep8 !== "false" ? '<button class="lc-pyrun-pep8 lc-pyrun-icon" title="PEP 8 (lite) — check the style, pycodestyle\'s way" aria-label="PEP 8">🛁</button>' : '') +
       '<button class="lc-pyrun-clear" title="Clear the output">Clear</button>' +
       '<button class="lc-pyrun-subs-btn lc-pyrun-switch" role="switch" aria-checked="false" title="Subtitles — what each part of the program is" aria-label="Subtitles"><span class="lc-pyrun-track"><span class="lc-pyrun-knob"></span></span>💬</button>' +
       '<button class="lc-pyrun-sound lc-pyrun-icon" hidden title="Sound check — the notes this run queued, and the audio state; tap to hear one note at once" aria-label="Sound check"></button>' +
@@ -1530,6 +1546,7 @@ Auto-included by docs/_layouts/default.html.
       folded: el.hasAttribute("folded") && el.getAttribute("folded") !== "false",
       expected: el.getAttribute("expected") || "",
       mypy: el.getAttribute("mypy") || "",    /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
+      pep8: el.getAttribute("pep8") || "",    /* "true": a 🛁 PEP 8 (lite) button, pycodestyle's codes */
       subtitles: el.getAttribute("subtitles") || "",  /* "on": the 💬 subtitles start shown */
       readonly: el.getAttribute("readonly") || ""      /* "true": a program to read and run, not to edit (the sounds module) */
     };

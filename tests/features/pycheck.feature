@@ -166,3 +166,35 @@ Feature: The course's files run as written — doctest and Dr. mypy in the page
     When I replace "    >>> jump(1, -1)\n    2" with "    >>> jump(1, -1)\n    0" in the "doctest_pad" pad
     Then the "doctest_pad" pad counts "2/2" examples passing
     And the "doctest_pad" pad marks no line as an error
+
+  Scenario: The slides' pycodestyle recipe runs unchanged and finds what pycodestyle finds
+    Michel, 2026-11-02, Python Module 10: "a new page in the py code editor to
+    check pep8, inspired by the slides (pycodestyle)". His people.py: two
+    classes one blank line apart, and "Person=spouse" — the deck's console
+    shows E302, E302, E225; so does the page.
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-pep8_demo .lc-pyrun-code"
+    And I click Run in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output shows:
+      '''
+      🔍 Checking PEP 8 style...
+      pep8_demo.py:8:1: E302 expected 2 blank lines, found 1
+      pep8_demo.py:11:1: E302 expected 2 blank lines, found 1
+      pep8_demo.py:14:28: E225 missing whitespace around operator
+      ❌ 3 issues found.
+      '''
+
+  Scenario: The 🛁 button gives pycodestyle's verdict without running, and clean code is all clean
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-pep8_demo .lc-pyrun-pep8"
+    And I press PEP 8 in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output shows "❌ PEP 8 (lite): 3 issues"
+    And the "pep8_demo" editor's output shows "pep8_demo.py:14:28: E225 missing whitespace around operator"
+    When I replace "\n\nclass Person:\n    pass\n\nclass" with "\n\n\nclass Person:\n    pass\n\n\nclass" in the "pep8_demo" editor
+    And I replace "Person=spouse" with "Person = spouse" in the "pep8_demo" editor
+    And I press PEP 8 in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output shows "✅ PEP 8 (lite): all clean"
+    When I click Run in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output shows "✅ All clean!"

@@ -329,7 +329,9 @@ Auto-included by docs/_layouts/default.html.
       if (opts.chips && opts.chips.indexOf(params.data._key) >= 0) {
         var ch = document.createElement("span");
         ch.className = "lc-dg-chip";
-        ch.textContent = (v == null ? "" : String(v));
+        var lk = window.lcStateLook && opts.model ? window.lcStateLook(opts.model, v) : null;
+        ch.textContent = lk ? lk.label : (v == null ? "" : String(v));
+        if (lk && lk.style) ch.setAttribute("style", lk.style);
         return ch;
       }
 
@@ -436,9 +438,10 @@ Auto-included by docs/_layouts/default.html.
     var bar = document.createElement("div");
     bar.className = "lc-form-verbs";
     var items = [];
-    Object.keys(model.transitions).forEach(function (n) {
+    (window.lcTransOrder ? window.lcTransOrder(model) : Object.keys(model.transitions)).forEach(function (n) {
       var t = model.transitions[n], ok = !t.pre.length || t.pre.indexOf(cur) >= 0;
-      items.push({ n: n, ok: ok, hint: ok ? "→ " + (t.post || cur) : "needs " + t.pre.join(" / ") });
+      var sl = function (x) { return window.lcStateLook ? window.lcStateLook(model, x).label : x; };
+      items.push({ n: n, ok: ok, hint: ok ? "→ " + sl(t.post || cur) : "needs " + t.pre.map(sl).join(" / ") });
     });
     model.verbs.forEach(function (n) { items.push({ n: n, ok: true, hint: "" }); });
     items.forEach(function (it) {
@@ -781,7 +784,7 @@ Auto-included by docs/_layouts/default.html.
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
             locked: locked, chips: chips, options: model ? picks : undefined, required: required,
-            refs: model ? refNames : undefined,
+            refs: model ? refNames : undefined, model: model || undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
             onChange: function(o, k, v){

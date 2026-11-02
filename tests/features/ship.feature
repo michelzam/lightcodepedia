@@ -47,6 +47,31 @@ Feature: 🚀 Ship — the author-designed deployment component
     And the bay manifest now points "spike_dogs" at "cafebabe12345678"
     And the ship button reports the shipped link
 
+  Scenario: A bay in the site's own docs/ — the shipped link is the site's page, no key needed
+    Michel, 2026-11-01: "with another browser I (zamm-student) don't have
+    access to the client app" — the link read the copy through the runner's
+    gh: road, and the lab repo is private; under docs/ the copy is a page of
+    the site itself, unlisted.
+
+    Given I am signed in with a course key
+    And the GitHub contents API serves "courses/demo/assignment.md" with the document:
+      """
+      # Assignment
+
+      [Ship it](#)
+      {: .ship app="spike_dogs" files="_ship_app.md" bay="michelzam/lightcodelab/docs/share/bays" }
+      """
+    And the GitHub contents API serves "courses/demo/_ship_app.md" with the document:
+      """
+      # 🐕 Spike dogs
+      """
+    And the bench HEAD commit is "cafebabe12345678"
+    And the bay "michelzam/lightcodelab" accepts writes
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
+    And I wait for the page to be interactive
+    And I press the ship button
+    Then the ship button links the site page "/share/bays/spike_dogs_cafebabe12345678/_ship_app", no key needed
+
   Scenario: With comment="true", 🚀 Ship it… asks one line, and the ledger keeps it
     Michel, 2026-10-29: "the ship's time machine shows no comments for the
     commits — I would follow the mdpad example". The line rides the copy's

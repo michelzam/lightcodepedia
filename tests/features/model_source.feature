@@ -380,6 +380,197 @@ Feature: A class wears a dataset — the grid dresses the rows
     And I wait for the page to be interactive
     Then the diagram in the section accordion names "Family, Company, address, meet"
 
+  Scenario: A transition from any state leaves a superstate, not the first state
+    Michel, 2026-11-01: "If a method operates a transition from every state
+    (ex cancel), then the arrow should go from the superstate and end in the
+    final state (canceled), but not from the initial state to cancel".
+
+    Given the GitHub contents API serves "courses/demo/module_06/cancel.md" with the document:
+      """
+      # Cancel
+
+      ```csv
+      name,stage
+      pen,draft
+      ```
+      {: .dataset #orders }
+
+      ```python
+      class Order(Object, source="orders", read="all", write="own"):
+          label = Attr(str, required=True, default="a rather long default label")
+          stage = State("draft", "offered", "sold", "canceled")
+
+          @property
+          def tag(self) -> bool:
+              ''' 🏷 the label of the order '''
+              return self.label
+
+          @transition("draft", "offered")
+          def offer(self):
+              pass
+
+          @transition("offered", "sold")
+          def sell(self):
+              pass
+
+          @transition([], "canceled")
+          def cancel(self):
+              pass
+      ```
+      {: .model }
+
+      [the orders, drawn](#)
+      {: .diagram scope="Order" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/cancel.md"
+    And I wait for the page to be interactive
+    Then the diagram holds "draft, offered, sold" in a superstate of "Order"
+    And the diagram's "cancel" arrow ends in "canceled" and starts from no single state
+    # the class as a table (Michel, 2026-11-01: "go diagram"): a properties floor,
+    # * required and = default, a tooltip per row (docstring, read/write)
+    And the diagram's class "Order" shows the row "label * = a rather lon…" with the tooltip "required"
+    And the diagram's class "Order" shows the row "🔘 / tag" with the tooltip "🏷 the label of the order"
+    And the diagram's class "Order" shows the row "offer" with the tooltip "draft → offered"
+    And the diagram's class "Order" wears the tooltip "read=all · write=own"
+    And the diagram's legend reads "required"
+
+  Scenario: A dressed state — an icon and a colour on the chip, the bare value in the list
+    Michel, 2026-11-01: State("draft::✏️", "offered", "sold:green:🏷️",
+    "canceled:gray") — "the stored value should be just the first part, but
+    the other 2 parts are convenient for the display in grids, method
+    pickup, forms, etc".
+
+    Given the GitHub contents API serves "courses/demo/module_06/dressed.md" with the document:
+      """
+      # Dressed
+
+      ```csv
+      name,stage
+      pen,draft
+      cup,sold
+      ```
+      {: .dataset #goods }
+
+      ```python
+      class Good(Object, source="goods"):
+          stage = State("draft::✏️", "offered", "sold:green:🏷️", "canceled:gray")
+
+          @transition("draft", "offered")
+          def offer(self):
+              pass
+
+          @transition("offered", "sold")
+          def sell(self):
+              pass
+      ```
+      {: .model }
+
+      [the goods](#)
+      {: .datagrid source="Good" #good_grid }
+
+      [one good](#)
+      {: .form master="good_grid" #good_card }
+
+      [the goods, drawn](#)
+      {: .diagram scope="Good" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/dressed.md"
+    And I wait for the page to be interactive
+    Then the state chip of "cup" in "good_grid" reads "🏷️ sold" on a tint of "green"
+    And the state chip of "pen" in "good_grid" reads "✏️ draft" with no tint
+    And the list "goods" keeps "sold" and "draft", bare
+    And the ⋯ of "pen" in "good_grid" offers "offer" with the hint "→ offered"
+    And the diagram draws the state "sold" with "🏷️"
+    When I tap the row "cup" in "good_grid"
+    Then the card "good_card" shows the chip "🏷️ sold"
+
+  Scenario: An attribute on another column — column="_owner" reads the table's note, read-only, hidden on demand
+    Michel, 2026-11-01: "Attr could have a special parameter to indicate the
+    column name in the table … map owner on the _owner column without
+    creating a new column" → "go Attr(column=…), without Mine()".
+
+    Given the GitHub contents API serves "courses/demo/module_06/owned.md" with the document:
+      """
+      # Owned
+
+      ```csv
+      name,_owner,made_by
+      pen,ana,Ana B.
+      ```
+      {: .dataset #notes }
+
+      ```python
+      class Note(Object, source="notes"):
+          name = Attr(str)
+          owner = Attr(str, column="_owner", hidden=True)
+          author = Attr(str, column="made_by")
+
+          @property
+          def tag(self):
+              return "mine" if self.owner == self.me() else "by " + (self.owner or "nobody")
+      ```
+      {: .model }
+
+      [the notes](#)
+      {: .datagrid source="Note" #note_grid }
+
+      [the notes, with their makers](#)
+      {: .datagrid source="Note" columns="name, owner" #note_full }
+      """
+    And this device knows me as "ana"
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/owned.md"
+    And I wait for the page to be interactive
+    Then the grid "note_grid" heads "Name, Author, Tag" and nothing of "Owner"
+    # Object.me(): the viewer's login, scoped to the class — no global (Michel, 2026-11-01)
+    And the row "pen" of "note_grid" shows "mine"
+    And the ⋯ of "pen" in "note_grid" offers no "me"
+    And the row "pen" of "note_grid" shows "Ana B."
+    And the grid "note_full" heads "Name, Owner"
+    And the row "pen" of "note_full" shows "ana"
+
+  Scenario: The reader reorders the columns by dragging a header — kept on reload, ↺ puts them back, a click still sorts
+    Michel, 2026-11-01: "in a grid, the end user should be able to change
+    the columns' order (with d&d)" → "go column drag".
+
+    Given the GitHub contents API serves "courses/demo/module_06/cols.md" with the document:
+      """
+      # Columns
+
+      ```csv
+      name,price,town
+      pen,2,Paris
+      cup,5,Lyon
+      ```
+      {: .dataset #goods }
+
+      [the goods](#)
+      {: .datagrid source="goods" #goods_grid }
+
+      [the goods, fixed](#)
+      {: .datagrid source="goods" reorder="false" #fixed_grid }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_06/cols.md"
+    And I wait for the page to be interactive
+    Then the grid "goods_grid" heads in order "Name, Price, Town"
+    When I drag the header "Town" of "goods_grid" before "Name"
+    Then the grid "goods_grid" heads in order "Town, Name, Price"
+    And the grid "fixed_grid" heads in order "Name, Price, Town"
+    When I reload the page
+    And I wait for the page to be interactive
+    Then the grid "goods_grid" heads in order "Town, Name, Price"
+    When I click the header "Price" of "goods_grid"
+    Then the grid "goods_grid" heads in order "Town, Name, Price"
+    And the first row of "goods_grid" reads "Paris"
+    When I press ↺ on "goods_grid"
+    Then the grid "goods_grid" heads in order "Name, Price, Town"
+    When I drag the header "Town" of "fixed_grid" before "Name"
+    Then the grid "fixed_grid" heads in order "Name, Price, Town"
+    # a finger: a short press, then the drag — a quick swipe never moves a column
+    When I swipe the header "Price" of "goods_grid" quickly toward "Name"
+    Then the grid "goods_grid" heads in order "Name, Price, Town"
+    When I press and drag the header "Price" of "goods_grid" before "Name" with a finger
+    Then the grid "goods_grid" heads in order "Price, Name, Town"
+
   Scenario: The x-ray draws the grid, its class and the class's list together
     Michel, 2026-10-16: "sometimes we see the model, other times the
     dataset — they should both be there (the model has Family using the
