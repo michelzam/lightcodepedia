@@ -67,7 +67,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-subs { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; background: #fafafa; color: #111; overflow: auto; white-space: pre; box-sizing: border-box; z-index: 2; }
 .lc-pyrun-subs[hidden] { display: none; }
 .lc-pyrun-subtitled .lc-pyrun-code { pointer-events: none; }
-.lc-pyrun-subs .lc-sub { border-bottom: 1px dotted #8250df; cursor: help; border-radius: 2px; }
+/* THE SUBTITLES KEEP THE EDITOR'S LINES (Michel, 2026-11-02, Safari: "the editor lines become higher
+   … it flicks … and the line numbers in the gutter are not aligned anymore"): the dotted line is a
+   text decoration, which takes no room, and each subtitled line is exactly one editor line high —
+   WebKit lets a taller glyph (an emoji) or a border grow a line box; a fixed height does not. */
+.lc-pyrun-subs .lc-sub { text-decoration: underline dotted #8250df; text-decoration-thickness: 1px; text-underline-offset: 3px; cursor: help; border-radius: 2px; line-height: inherit; }
 .lc-pyrun-subs .lc-sub-kw { color: #cf222e; font-weight: 700; }
 .lc-pyrun-subs .lc-sub-string { color: #0a3069; }
 .lc-pyrun-subs .lc-sub-number { color: #0550ae; }
@@ -77,7 +81,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-subs .lc-sub-punct { color: #9aa0a6; }
 .lc-pyrun-readonly .lc-pyrun-code, .lc-pyrun-readonly .lc-pyrun-editor { background: #f7f7f9; }
 .lc-pyrun-readonly .lc-pyrun-grip { display: none; }
-.lc-pyrun-subs .lc-sub-line { display: block; min-height: 1.5em; }
+.lc-pyrun-subs .lc-sub-line { display: block; height: 1.5em; line-height: 1.5; overflow: visible; }
 .lc-pyrun-subs .lc-sub-line.lc-sub-hidden { display: none; }
 .lc-pyrun-folds { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
 .lc-pyrun-folds[hidden] { display: none; }

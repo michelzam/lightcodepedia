@@ -551,3 +551,29 @@ def step_output_not(context, run_id, text):
     out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
     context.page.wait_for_timeout(1500)
     assert text not in (out.inner_text() or ""), out.inner_text()
+
+
+@when('a taller glyph sits on line {n:d} of the "{run_id}" editor\'s subtitles')
+def step_taller_glyph(context, n, run_id):
+    """What WebKit does with an emoji or a border, done on purpose in any
+    browser: one inline box taller than the editor's line."""
+    context.page.evaluate("""([rid, n]) => {
+      const l = document.querySelector('#lc-pyrun-' + rid + ' .lc-sub-line[data-l="' + n + '"]');
+      const big = document.createElement('span'); big.textContent = '❤️'; big.style.fontSize = '1.8em';
+      l.appendChild(big);
+    }""", [run_id, n])
+
+
+@then('every subtitled line of the "{run_id}" editor sits where its editor line sits')
+def step_subs_aligned(context, run_id):
+    got = context.page.evaluate("""(rid) => {
+      const r = document.querySelector('#lc-pyrun-' + rid), ta = r.querySelector('.lc-pyrun-code');
+      const lh = parseFloat(getComputedStyle(ta).lineHeight);
+      const L = [...r.querySelectorAll('.lc-sub-line:not(.lc-sub-hidden)')], t0 = L[0].getBoundingClientRect().top;
+      const off = L.map((l, i) => Math.abs(l.getBoundingClientRect().top - t0 - i * lh)).filter(d => d > 0.5);
+      const border = L.flatMap(l => [...l.querySelectorAll('.lc-sub')]).some(s => getComputedStyle(s).borderBottomStyle !== 'none');
+      return [L.length, off.length, border];
+    }""", run_id)
+    assert got[0] > 2, "no subtitled lines"
+    assert got[1] == 0, "%d subtitled lines drifted off their editor line" % got[1]
+    assert not got[2], "a subtitle wears a border, which takes room — use a text decoration"

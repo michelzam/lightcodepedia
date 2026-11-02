@@ -189,3 +189,13 @@ Feature: The run editor types like a text field
       """
     And I click Run in the "reads_file" editor
     Then the "reads_file" editor's output reads "caught: No such file on this page: nowhere.csv" then "4 lines"
+
+  Scenario: Subtitles keep the editor's line height, even beside a taller glyph
+    Michel, 2026-11-02, on Safari: "when subtitles are active, the editor lines become higher than
+    usual … it flicks with the normal line height … and the line numbers in the gutter are not
+    aligned anymore". WebKit lets an emoji or a border grow a line; here a taller glyph is put there
+    on purpose, in any browser.
+    When I wait for the selector "#lc-pyrun-subtitled .lc-pyrun-subs .lc-sub"
+    Then every subtitled line of the "subtitled" editor sits where its editor line sits
+    When a taller glyph sits on line 2 of the "subtitled" editor's subtitles
+    Then every subtitled line of the "subtitled" editor sits where its editor line sits
