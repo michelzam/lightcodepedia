@@ -198,3 +198,56 @@ Feature: The course's files run as written — doctest and Dr. mypy in the page
     Then the "pep8_demo" editor's output shows "✅ PEP 8 (lite): all clean"
     When I click Run in the "pep8_demo" editor
     Then the "pep8_demo" editor's output shows "✅ All clean!"
+
+  Scenario: The console's line:col is a link — click it and the cursor is there
+    Michel, 2026-11-02: "the doctest response in the pane should be clickable to move cursor on the
+    right line/col; clean (codestyle) should also … lead to the right line/col in the editor".
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-pep8_demo .lc-pyrun-pep8"
+    And I press PEP 8 in the "pep8_demo" editor
+    And I click "pep8_demo.py:14:28:" in the "pep8_demo" editor's console
+    Then the "pep8_demo" editor's cursor is on line 14, column 28
+    When I click Run in the "pep8_demo" editor
+    And I click "pep8_demo.py:11:1:" in the "pep8_demo" editor's console
+    Then the "pep8_demo" editor's cursor is on line 11, column 1
+
+  Scenario: A doctest failure points at its example, in the console and in the test rows
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-first_run .lc-pyrun-code"
+    And I replace the "first_run" editor's program with:
+      '''
+      def jump(start: int, leap: int) -> int:
+          """
+          Makes an absolute jump from start.
+
+          >>> jump(2, 3)
+          5
+          >>> jump(1, -1)
+          2
+          """
+          return start + leap
+
+
+      if __name__ == "__main__":
+          import doctest
+          doctest.testmod()
+          print("done")
+      '''
+    And I click Run in the "first_run" editor
+    And I click "File \"first_run.py\", line 7" in the "first_run" editor's console
+    Then the "first_run" editor's cursor is on line 7, column 5
+    When I click Test in the "first_run" editor
+    And I click the test row "line 7" in the "first_run" editor
+    Then the "first_run" editor's cursor is on line 7, column 5
+
+  Scenario: 🧪 Test imports the program — its main block waits for ▶ Run, as python -m doctest does
+    Michel, 2026-11-02: "the doctest calls clean. Normal?" — the main block ran under 🧪.
+    When I navigate to "/components/run"
+    And I wait for the page to be interactive
+    And I wait for the selector "#lc-pyrun-pep8_demo .lc-pyrun-code"
+    And I click Test in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output does not show "Checking PEP 8"
+    When I click Run in the "pep8_demo" editor
+    Then the "pep8_demo" editor's output shows "Checking PEP 8"

@@ -92,6 +92,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-grip { height: 0.75em; cursor: ns-resize; touch-action: none; display: flex; align-items: center; justify-content: center; background: #f3f4f6; border-top: 1px solid #e8e8e8; }
 .lc-pyrun-grip::before { content: ""; width: 3.2em; height: 4px; border-radius: 3px; background: #c4c9d4; }
 .lc-pyrun-grip:hover::before, .lc-pyrun[data-lc-resizing] .lc-pyrun-grip::before { background: #0066cc; }
+.lc-pyrun .lc-pyrun-goto { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
+.lc-pyrun .lc-pyrun-goto:hover { text-decoration-style: solid; }
 .lc-pyrun-bar .lc-pyrun-icon { background: transparent; color: #333; padding: 0.25em 0.45em; font-size: 1em; border: 1px solid transparent; }
 .lc-pyrun-bar .lc-pyrun-icon:hover:not(:disabled) { background: #e5e5e5; border-color: #d0d0d0; }
 .lc-pyrun-bar .lc-pyrun-icon:disabled { background: transparent; opacity: 0.5; }
@@ -599,7 +601,71 @@ Auto-included by docs/_layouts/default.html.
       } else {
         out.textContent = text;
       }
+      linkLines(out, false);
     }
+
+    /* THE PANE POINTS AT THE CODE (Michel, 2026-11-02: "the doctest response
+       in the pane should be clickable to move cursor on the right line/col;
+       clean (codestyle) should also … lead to the right line/col"): every
+       place the output names a line of THIS program — pycodestyle's and
+       mypy's path:line:col:, a traceback's or doctest's File "…", line N,
+       a 🧪 row's "line N" — becomes a link that puts the cursor there. */
+    var LINE_RE = /File "([^"]+)", line (\d+)|([\w.\/<>-]+\.py|<stdin>):(\d+):(?:(\d+):)?/g;
+    function ownFile(f) {
+      f = String(f || "");
+      return f === "<stdin>" || f === ID + ".py" || /\/[^\/]*$/.test(f) && f.split("/").pop() === ID + ".py";
+    }
+    function gotoLink(text, line, col) {
+      var a = document.createElement("a");
+      a.className = "lc-pyrun-goto";
+      a.href = "#";
+      a.setAttribute("data-line", line);
+      a.setAttribute("data-col", col || 0);
+      a.title = "Go to line " + line + (col ? ", column " + col : "") + " in the editor";
+      a.textContent = text;
+      return a;
+    }
+    function linkLines(box, rows) {
+      if (!box || !document.createTreeWalker) return;
+      var walker = document.createTreeWalker(box, NodeFilter.SHOW_TEXT, null), nodes = [], n;
+      while ((n = walker.nextNode())) if (!(n.parentNode && n.parentNode.closest && n.parentNode.closest(".lc-pyrun-goto"))) nodes.push(n);
+      nodes.forEach(function (node) {
+        var t = node.nodeValue, re = rows ? /\bline (\d+)\b/g : new RegExp(LINE_RE.source, "g"), m, last = 0, frag = null;
+        while ((m = re.exec(t))) {
+          var line, col = 0;
+          if (rows) line = m[1];
+          else if (m[1] !== undefined) { if (!ownFile(m[1])) continue; line = m[2]; }
+          else { if (!ownFile(m[3])) continue; line = m[4]; col = m[5] || 0; }
+          frag = frag || document.createDocumentFragment();
+          frag.appendChild(document.createTextNode(t.slice(last, m.index)));
+          frag.appendChild(gotoLink(m[0], line, col));
+          last = m.index + m[0].length;
+        }
+        if (!frag) return;
+        frag.appendChild(document.createTextNode(t.slice(last)));
+        node.parentNode.replaceChild(frag, node);
+      });
+    }
+    function gotoLine(line, col) {
+      var lines = codeEl.value.split("\n"), ln = Math.max(1, Math.min(lines.length, line | 0));
+      var off = 0;
+      for (var i = 0; i < ln - 1; i++) off += lines[i].length + 1;
+      var text = lines[ln - 1] || "", c = col > 0 ? Math.min(col - 1, text.length) : /^\s*/.exec(text)[0].length;
+      try { codeEl.focus({ preventScroll: true }); } catch (e) { codeEl.focus(); }
+      codeEl.setSelectionRange(off + c, off + Math.min(c + 1, text.length));   /* the character pointed at, selected: visible on every screen */
+      var cs = getComputedStyle(codeEl), lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize) * 1.5;
+      var y = (parseFloat(cs.paddingTop) || 0) + (ln - 1) * lh;
+      if (codeEl.scrollHeight > codeEl.clientHeight + 2) codeEl.scrollTop = Math.max(0, y - codeEl.clientHeight / 3);
+      var top = codeEl.getBoundingClientRect().top + (window.pageYOffset || 0) + y - codeEl.scrollTop - window.innerHeight / 3;
+      try { window.scrollTo({ top: Math.max(0, top), behavior: "smooth" }); } catch (e) { window.scrollTo(0, Math.max(0, top)); }
+      root.setAttribute("data-lc-cursor", ln + ":" + (c + 1));
+    }
+    root.addEventListener("click", function (ev) {
+      var a = ev.target && ev.target.closest ? ev.target.closest(".lc-pyrun-goto") : null;
+      if (!a || !root.contains(a)) return;
+      ev.preventDefault();
+      gotoLine(parseInt(a.getAttribute("data-line"), 10), parseInt(a.getAttribute("data-col"), 10) || 0);
+    });
 
     function clearTests() {
       if (testsEl) testsEl.innerHTML = "";
@@ -1199,7 +1265,15 @@ Auto-included by docs/_layouts/default.html.
              test button"; a test checks what a function returns) */
           window._lcPlayMuted = ID;
           setTimeout(function () { if (window._lcPlayMuted === ID) window._lcPlayMuted = null; }, 0);   /* the whole test pass is synchronous: the doctests' own play() calls stay silent too */
-          var ok = runUserCode(m);
+          /* 🧪 IMPORTS THE PROGRAM, AS python -m doctest DOES (Michel,
+             2026-11-02: "the doctest calls clean. Normal?" — no): __name__
+             is the runner's id for the pass, so what sits under
+             if __name__ == "__main__": (pycodestyle, testmod, a demo) waits
+             for ▶ Run */
+          try { m.runPython("__name__ = " + JSON.stringify(ID)); } catch (e) { }
+          var ok;
+          try { ok = runUserCode(m); }
+          finally { try { m.runPython("__name__ = '__main__'"); } catch (e) { } }
           if (!ok) {
             status.textContent = "error in code";
             return;
@@ -1246,6 +1320,7 @@ Auto-included by docs/_layouts/default.html.
             testsEl.appendChild(row);
           });
           summary.textContent = passed + " passed, " + (rows.length - passed) + " failed";
+          linkLines(testsEl, true);
           /* THE TALLY IS ON THE BLOCK (Michel, 2026-10-27: "the doctests could
              verify stuff, and the proof can verify the doctests are green"):
              a page's proof reads self.page.<id>.doctests, never a selector */

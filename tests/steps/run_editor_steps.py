@@ -520,3 +520,34 @@ def step_answer_console(context, value, run_id):
 def step_console_shows(context, run_id, text):
     out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
     expect(out).to_contain_text(text, timeout=30_000)
+
+
+@when('I click "{text}" in the "{run_id}" editor\'s console')
+def step_click_console_link(context, text, run_id):
+    """A line the console names is a link to the editor (Michel, 2026-11-02)."""
+    link = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-goto", has_text=text.replace('\\"', '"')).first
+    link.wait_for(timeout=30_000)
+    link.click()
+
+
+@when('I click the test row "{text}" in the "{run_id}" editor')
+def step_click_test_row_link(context, text, run_id):
+    link = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-tests .lc-pyrun-goto, #lc-pyrun-" + run_id + " .lc-pyrun-test-row .lc-pyrun-goto", has_text=text).first
+    link.wait_for(timeout=30_000)
+    link.click()
+
+
+@then('the "{run_id}" editor\'s cursor is on line {line:d}, column {col:d}')
+def step_cursor_at(context, run_id, line, col):
+    ta = _ta(context, run_id)
+    context.page.wait_for_timeout(200)
+    got = ta.evaluate("el => { const b = el.value.slice(0, el.selectionStart).split('\\n'); return [b.length, b[b.length - 1].length + 1, document.activeElement === el]; }")
+    assert got[0] == line and got[1] == col, "the cursor is on line %d, column %d" % (got[0], got[1])
+    assert got[2], "the editor does not have the focus"
+
+
+@then('the "{run_id}" editor\'s output does not show "{text}"')
+def step_output_not(context, run_id, text):
+    out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
+    context.page.wait_for_timeout(1500)
+    assert text not in (out.inner_text() or ""), out.inner_text()
