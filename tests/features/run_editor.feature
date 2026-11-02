@@ -199,3 +199,27 @@ Feature: The run editor types like a text field
     Then every subtitled line of the "subtitled" editor sits where its editor line sits
     When a taller glyph sits on line 2 of the "subtitled" editor's subtitles
     Then every subtitled line of the "subtitled" editor sits where its editor line sits
+
+  Scenario: An outside_in runner opens on its 🧩 UI — globals, a form per function, a 📞 Call through the console
+    Michel, 2026-11-02: "an alternate tab to the py editor, even open by default, with the ui … for global
+    variables an input field, in a form called global … for functions: a form too, with fields for
+    attributes … generate on the fly a md string using our lc components" — "activable with a knob
+    (outside_in), with default=False".
+    When I wait for the selector "#lc-pyrun-oi_demo .lc-pyrun-ui-body .lc-form"
+    Then the "oi_demo" editor opens on its 🧩 UI
+    And the 🧩 UI of "oi_demo" shows "🔤 word" = "python" in its "globals" form
+    And the 🧩 UI of "oi_demo" shows "🔢 tries" = "6" in its "globals" form
+    And the "first_run" editor has no 🧩 UI tab
+    When in the 🧩 UI of "oi_demo", I type "______" in "clue" of its "f_update" form
+    And in the 🧩 UI of "oi_demo", I type "python" in "secret" of its "f_update" form
+    And in the 🧩 UI of "oi_demo", I type "h" in "g" of its "f_update" form
+    And I press 📞 Call update in the "oi_demo" UI
+    Then the "oi_demo" editor's output shows "📞 update(\"python\", \"______\", \"h\")"
+    And the "oi_demo" editor's output shows "→ '___h__'"
+
+  Scenario: A globals field edits the program — the UI writes the code
+    When I wait for the selector "#lc-pyrun-oi_demo .lc-pyrun-ui-body .lc-form"
+    And in the 🧩 UI of "oi_demo", I type "pytest" in "word" of its "globals" form
+    Then the "oi_demo" editor's code reads "word: str = \"pytest\"" on line 8
+    When in the 🧩 UI of "oi_demo", I type "six" in "tries" of its "globals" form
+    Then the "oi_demo" editor's code reads "tries: int = 6" on line 9

@@ -6,6 +6,11 @@ from playwright.sync_api import expect
 
 
 def _ta(context, run_id):
+    """The editor's text area — on an outside_in runner showing its 🧩 UI,
+    the 🐍 Code tab is opened first, as a reader would."""
+    root = context.page.locator("#lc-pyrun-" + run_id + ".lc-pyrun-oi-ui")
+    if root.count():
+        context.page.locator("#lc-pyrun-" + run_id + ' .lc-pyrun-tab[data-oi="code"]').click()
     return context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code")
 
 
@@ -519,7 +524,7 @@ def step_answer_console(context, value, run_id):
 @then('the "{run_id}" console shows "{text}"')
 def step_console_shows(context, run_id, text):
     out = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-out")
-    expect(out).to_contain_text(text, timeout=30_000)
+    expect(out).to_contain_text(text.replace('\\"', '"'), timeout=30_000)
 
 
 @when('I click "{text}" in the "{run_id}" editor\'s console')
@@ -577,3 +582,50 @@ def step_subs_aligned(context, run_id):
     assert got[0] > 2, "no subtitled lines"
     assert got[1] == 0, "%d subtitled lines drifted off their editor line" % got[1]
     assert not got[2], "a subtitle wears a border, which takes room — use a text decoration"
+
+
+
+# ── 🧩 outside-in: the program as forms (Michel, 2026-11-02) ────────────
+
+@then('the "{run_id}" editor opens on its 🧩 UI')
+def step_oi_open(context, run_id):
+    root = context.page.locator("#lc-pyrun-" + run_id)
+    expect(root).to_have_class(re.compile(r"\blc-pyrun-oi-ui\b"), timeout=20_000)
+    expect(root).to_have_attribute("data-lc-ui", "drawn", timeout=20_000)
+    assert not context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").is_visible(), "the code shows over the UI"
+
+
+@then('the "{run_id}" editor has no 🧩 UI tab')
+def step_oi_none(context, run_id):
+    assert context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-tab").count() == 0
+
+
+@then('the 🧩 UI of "{run_id}" shows "{label}" = "{value}" in its "{form}" form')
+def step_oi_field(context, run_id, form, label, value):
+    f = context.page.locator("#lc-pyrun-" + run_id + ' .lc-form[data-lc-id="oi_' + run_id + "_" + form + '"]')
+    row = f.locator(".ag-row", has_text=label).first
+    expect(row).to_contain_text(value, timeout=20_000)
+
+
+@when('in the 🧩 UI of "{run_id}", I type "{value}" in "{label}" of its "{form}" form')
+def step_oi_type(context, run_id, value, label, form):
+    f = context.page.locator("#lc-pyrun-" + run_id + ' .lc-form[data-lc-id="oi_' + run_id + "_" + form + '"]')
+    cell = f.locator(".ag-row", has_text=label).first.locator('[col-id="value"]')
+    cell.click()
+    context.page.keyboard.press("Control+a")
+    context.page.keyboard.type(value)
+    context.page.keyboard.press("Enter")
+    context.page.wait_for_timeout(300)
+
+
+@when('I press 📞 Call {fname} in the "{run_id}" UI')
+def step_oi_call(context, fname, run_id):
+    context.page.locator("#lc-pyrun-" + run_id + ' .lc-pyrun-ui a[href="#oi-call-' + fname + '"]').click()
+
+
+@then('the "{run_id}" editor\'s code reads "{line}" on line {n:d}')
+def step_code_line(context, run_id, line, n):
+    v = context.page.locator("#lc-pyrun-" + run_id + " .lc-pyrun-code").input_value()
+    got = v.split("\n")[n - 1]
+    line = line.replace('\\"', '"')
+    assert got == line, "line %d reads %r" % (n, got)

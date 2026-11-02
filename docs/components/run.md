@@ -425,6 +425,44 @@ if __name__ == "__main__":
 
 Press ▶ Run: three issues, the same three pycodestyle finds. Add a blank line above each `class`, put spaces around the `=` on line 14, and press 🛁 PEP 8: all clean.
 
+## 🧩 Outside-in — the program as forms first
+
+A beginner meets a program first as something they already know how to use: a form. `outside_in="true"` gives the runner a **🧩 UI** tab, open first, next to **🐍 Code**. The UI is a markdown page the runner writes from the program, using our own components:
+
+- the top-level variables become one `.form` called **globals**, each labelled with its name and its type as an icon (`🔤 word`, `🔢 tries`). Changing a value there rewrites that line of the code;
+- every `input()` becomes a line of an **input()** form: what the program asks, and which function asks it;
+- every function becomes a `.form` titled with its signature, with a field per parameter (prefilled from a default, or from a call the program makes), and a **📞 Call** button. The call runs through this editor, so its `print` lines and its `input()` questions go to the console below.
+
+**📝 The markdown behind this UI** shows the page it wrote: forms are markdown a learner can write too. The knob is off unless a page asks for it. Loops as grids will come with the step-by-step trace.
+
+```python
+"""
+For careful guessers
+Who want to see a clue grow
+Our app rebuilds the clue one letter at a time
+While the secret stays hidden
+"""
+
+word: str = "python"
+tries: int = 6
+
+
+def update(secret: str, clue: str, g: str) -> str:
+    """ rebuild clue by scanning secret """
+    i: int = 0
+    while i < len(secret):
+        if secret[i] == g:
+            clue = clue[:i] + g + clue[i+1:]
+        i += 1
+    return clue
+
+
+print(update(word, "_" * len(word), "h"))
+```
+{: .run #oi_demo outside_in="true" }
+
+Fill `update`'s form (secret `python`, clue `______`, g `h`) and press 📞 Call update: the console shows the call and `→ '___h__'`. Change `word` in **globals**, then open 🐍 Code: the first variable line now holds your word.
+
 ## ⌨️ REPL — line-by-line exploration
 
 The REPL[^repl] is the interactive prompt — type a Python expression, press Enter, see the result immediately. Great for exploration; not for multi-line `def`/`class`/`for` (use a `.run` block for those).

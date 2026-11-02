@@ -471,7 +471,21 @@ Auto-included by docs/_layouts/default.html.
   }
   /* a required attribute wears ✱ on its label, and its blank value is marked
      (Michel, 2026-10-24: "go required") */
-  function labelOf(k, opts) { return prettifyKey(k) + ((opts && opts.required || []).indexOf(k) >= 0 ? " ✱" : ""); }
+  /* hints="name: str; age: int" — the label is the variable's own name with
+     its type as an icon, "🔤 name" (Michel, 2026-11-02, the outside-in UI:
+     "🔤 temp as label"): code, so never prettified */
+  var HINT_ICON = { int: "🔢", str: "🔤", float: "🧮", bool: "🔘", None: "∅", list: "📋", tuple: "📋", dict: "📒" };
+  function hintIcon(h) {
+    var b = String(h || "").replace(/\s*\|\s*None$/, "").split("[")[0].trim();
+    return HINT_ICON[b] || (b ? "🏷️" : "");
+  }
+  function labelOf(k, opts) {
+    if (opts && opts.hints && Object.prototype.hasOwnProperty.call(opts.hints, k)) {
+      var ic = hintIcon(opts.hints[k]);
+      return (ic ? ic + " " : "") + k;
+    }
+    return prettifyKey(k) + ((opts && opts.required || []).indexOf(k) >= 0 ? " ✱" : "");
+  }
   function renderFormBody(bodyEl, obj, opts) {
     opts = opts || {};
     /* A NEW ROW, THE SAME CARD (Michel, 2026-10-16: "changing lines in the
@@ -689,6 +703,13 @@ Auto-included by docs/_layouts/default.html.
         step: p.length > 3 ? parseFloat(p[3]) : _sstep
       };
     });
+    var hintsMap = null;
+    (el.getAttribute("hints") || "").split(";").forEach(function (part) {
+      var c = part.indexOf(":");
+      if (c < 0) return;
+      var f = part.slice(0, c).trim();
+      if (f) { hintsMap = hintsMap || {}; hintsMap[f] = part.slice(c + 1).trim(); }
+    });
     /* options="field=a|b|c; field2=x|y" renders those fields as pick-list dropdowns */
     var optionsMap = {};
     (el.getAttribute("options") || "").split(";").forEach(function (part) {
@@ -714,7 +735,7 @@ Auto-included by docs/_layouts/default.html.
         .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status + " fetching " + fileRef); return r.text(); })
         .then(function (text) { return parseDatagridText(text, fileFmt); })
         .then(derive)
-        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap }); })
+        .then(function (obj) { renderFormBody(fbody, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap, hints: hintsMap }); })
         .catch(function (e) { fbody.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>'; });
       return;
     }
@@ -811,7 +832,7 @@ Auto-included by docs/_layouts/default.html.
     try { dataPromise = parseDatagridText(raw, format); }
     catch (e) { dataPromise = Promise.reject(new Error(format.toUpperCase() + " parse error: " + e.message)); }
     dataPromise.then(derive).then(function(obj){
-      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap });
+      renderFormBody(body, obj, { editable: editable, persist: persistScope, formId: id, sliders: slidersMap, options: optionsMap, hints: hintsMap });
       if (!title) setFormTitle(wrapper, inferFormTitle(obj) || "Form");
     }).catch(function(e){
       body.innerHTML = '<div class="lc-form-err">' + escapeHtml(e.message || String(e)) + '</div>';

@@ -96,6 +96,16 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-grip { height: 0.75em; cursor: ns-resize; touch-action: none; display: flex; align-items: center; justify-content: center; background: #f3f4f6; border-top: 1px solid #e8e8e8; }
 .lc-pyrun-grip::before { content: ""; width: 3.2em; height: 4px; border-radius: 3px; background: #c4c9d4; }
 .lc-pyrun-grip:hover::before, .lc-pyrun[data-lc-resizing] .lc-pyrun-grip::before { background: #0066cc; }
+.lc-pyrun-tabs { display: flex; gap: 2px; padding: 0.35em 0.6em 0; background: #f3f4f6; border-bottom: 1px solid #d0d0d0; }
+.lc-pyrun-tab { font: 600 0.85em system-ui, sans-serif; padding: 0.35em 0.9em; border: 1px solid transparent; border-bottom: none; border-radius: 6px 6px 0 0; background: transparent; color: #555; cursor: pointer; margin-bottom: -1px; }
+.lc-pyrun-tab[aria-selected="true"] { background: #fafafa; color: #111; border-color: #d0d0d0; }
+.lc-pyrun-ui { display: none; padding: 0.6em 0.9em; background: #fafafa; }
+.lc-pyrun-oi-ui .lc-pyrun-ui { display: block; }
+.lc-pyrun-oi-ui .lc-pyrun-editor, .lc-pyrun-oi-ui .lc-pyrun-grip { display: none; }
+.lc-pyrun-ui-body > blockquote { margin: 0 0 0.6em; padding: 0.3em 0.8em; border-left: 3px solid #8250df; color: #3b2a63; background: #faf5ff; }
+.lc-pyrun-ui-body .button { font-size: 0.9em; padding: 0.35em 0.9em; margin: 0.2em 0 0.8em; }
+.lc-pyrun-ui-md summary { cursor: pointer; font-size: 0.8em; color: #616161; }
+.lc-pyrun-ui-md pre { font: 0.8em/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; background: #f3f4f6; padding: 0.6em; border-radius: 6px; overflow-x: auto; white-space: pre; }
 .lc-pyrun .lc-pyrun-goto { color: inherit; text-decoration: underline dotted; text-underline-offset: 2px; cursor: pointer; }
 .lc-pyrun .lc-pyrun-goto:hover { text-decoration-style: solid; }
 .lc-pyrun-bar .lc-pyrun-icon { background: transparent; color: #333; padding: 0.25em 0.45em; font-size: 1em; border: 1px solid transparent; }
@@ -593,6 +603,9 @@ Auto-included by docs/_layouts/default.html.
       if (!BOUND || !mp) return;
       try { mp.runPython("_render_bound(" + JSON.stringify(BOUND) + ")"); } catch (e) { }
     }
+
+    var srcOverride = null;   /* 🧩 📞 Call runs the definitions and one call, not the program */
+    function runSrc() { return srcOverride != null ? srcOverride : codeEl.value; }
 
     function setOut(text, isErr) {
       out.classList.remove("lc-empty");
@@ -1174,11 +1187,11 @@ Auto-included by docs/_layouts/default.html.
          runs once into a namespace (__name__ = its id, so a main guard keeps
          its demo quiet) and sys.modules holds it. The bootstrap's _lc_module
          reads the source through lcRunSource; imports chain. */
-      try { m.runPython("_lc_imports(" + JSON.stringify(codeEl.value) + ")"); } catch (e) { if (window.console) console.warn("[lc import]", e.message || e); }
+      try { m.runPython("_lc_imports(" + JSON.stringify(runSrc()) + ")"); } catch (e) { if (window.console) console.warn("[lc import]", e.message || e); }
       try {
         /* the deck's files run as written: doctest, __doc__, help(),
            mypy.api — read from the program's text (pycheck.md) */
-        m.runPython(desugarFstrings(window.lcPyBefore ? window.lcPyBefore(m, codeEl.value, ID + ".py") : codeEl.value));
+        m.runPython(desugarFstrings(window.lcPyBefore ? window.lcPyBefore(m, runSrc(), ID + ".py") : runSrc()));
         if (window.lcFrames.has(buf)) {
           /* an animation: play it, and keep the last screen as THE output */
           var raw = buf;
@@ -1239,11 +1252,11 @@ Auto-included by docs/_layouts/default.html.
       soundBtn.textContent = (st === "running" ? "🔈" : "🔇") + " " + st;
     });
     runBtn.addEventListener("pointerdown", function () { if (window.lcPlayWarm) window.lcPlayWarm(); });
-    runBtn.addEventListener("click", function(){
+    function runNow() {
       if (window.lcPlayWarm) window.lcPlayWarm();      /* inside the gesture: Safari and iOS allow sound from here only */
       window._lcPlayMuted = null;
       var playedBefore = parseInt(root.getAttribute("data-lc-played") || "0", 10) || 0;
-      loadMp().then(function(m){
+      return loadMp().then(function(m){
         clearTests();
         status.textContent = "running…";
         status.style.color = "";
@@ -1253,11 +1266,83 @@ Auto-included by docs/_layouts/default.html.
           soundCheck(playedBefore);
           repaintBound();
           checkExpected(ok);
+          return ok;
         });
       }).catch(function(e){
         setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
       });
-    });
+    }
+    runBtn.addEventListener("click", function () { srcOverride = null; runNow(); });
+
+    /* 🧩 THE UI TAB (outside_in.md writes the markdown, the page's own
+       renderer draws it — the same pipeline as a pad's preview) */
+    var oiTabs = root.querySelectorAll(".lc-pyrun-tab"), oiBody = root.querySelector(".lc-pyrun-ui-body"),
+        oiSrc = root.querySelector(".lc-pyrun-ui-md pre"), oiMd = null, oiCode = null;
+    function oiRender() {
+      if (!oiBody || !window.lcOutsideIn) return;
+      var mdText = window.lcOutsideIn.md(window.lcOutsideIn.read(codeEl.value), ID);
+      oiCode = codeEl.value;
+      if (mdText === oiMd) return;
+      oiMd = mdText;
+      if (oiSrc) oiSrc.textContent = mdText;
+      var draw = function () {
+        if (!window.marked) { oiBody.textContent = mdText; return; }
+        var norm = window.lcNormIAL ? window.lcNormIAL(mdText) : mdText;
+        var html = window.marked.parse(norm);
+        oiBody.innerHTML = window.lcInlineIAL ? window.lcInlineIAL(html) : html;
+        if (window.lcApplyIAL) window.lcApplyIAL(oiBody);
+        if (window.lcScanElement) window.lcScanElement(oiBody);
+        root.setAttribute("data-lc-ui", "drawn");
+      };
+      if (window.marked || !window.lcLoadMarked) draw(); else window.lcLoadMarked(draw);
+    }
+    function oiShow(which) {
+      var ui = which === "ui";
+      root.classList.toggle("lc-pyrun-oi-ui", ui);
+      [].forEach.call(oiTabs, function (t) { t.setAttribute("aria-selected", t.getAttribute("data-oi") === which ? "true" : "false"); });
+      if (ui) oiRender();
+      else if (typeof updateGutter === "function") { try { updateGutter(); } catch (e) {} }
+    }
+    if (oiBody) {
+      [].forEach.call(oiTabs, function (t) { t.addEventListener("click", function () { oiShow(t.getAttribute("data-oi")); }); });
+      /* 📞 Call: the program's definitions, then the call, through this
+         editor's own run — input() asks in its console, as ▶ Run does */
+      oiBody.addEventListener("click", function (ev) {
+        var a = ev.target && ev.target.closest ? ev.target.closest('a[href^="#oi-call-"]') : null;
+        if (!a) return;
+        ev.preventDefault(); ev.stopPropagation();
+        var fname = a.getAttribute("href").slice("#oi-call-".length);
+        var form = oiBody.querySelector('.lc-form[data-lc-id="' + window.lcOutsideIn.id(ID, "f_" + fname) + '"]');
+        var values = {};
+        try { values = JSON.parse((form && form.getAttribute("data-lc-value")) || "{}"); } catch (e) { }
+        var c = window.lcOutsideIn.callSource(codeEl.value, fname, values);
+        if (!c.ok) { setOut("📞 " + fname + ": " + c.why, true); return; }
+        srcOverride = c.src;
+        root.setAttribute("data-lc-called", fname);
+        runNow().then(function () { srcOverride = null; }, function () { srcOverride = null; });
+      }, true);
+      /* a globals field edits the code: its literal is rewritten, in the
+         learner's own quotes; a value of the wrong type leaves the code as is */
+      document.addEventListener("lc-model-changed", function () {
+        var form = oiBody.querySelector('.lc-form[data-lc-id="' + window.lcOutsideIn.id(ID, "globals") + '"]');
+        if (!form) return;
+        var vals = {};
+        try { vals = JSON.parse(form.getAttribute("data-lc-value") || "{}"); } catch (e) { return; }
+        var src = codeEl.value, changed = false;
+        window.lcOutsideIn.read(src).globals.forEach(function (g) {
+          if (!Object.prototype.hasOwnProperty.call(vals, g.name) || String(vals[g.name]) === String(g.value)) return;
+          var r = window.lcOutsideIn.setGlobal(src, g.name, vals[g.name]);
+          if (r.ok) { src = r.src; changed = true; }
+        });
+        if (!changed) return;
+        codeEl.value = src;
+        codeEl.dispatchEvent(new Event("input", { bubbles: true }));
+        oiMd = window.lcOutsideIn.md(window.lcOutsideIn.read(src), ID);   /* the form already shows it: no redraw under the learner's hands */
+        oiCode = src;
+        if (oiSrc) oiSrc.textContent = oiMd;
+      });
+      oiShow("ui");
+    }
 
     if (testBtn) {
       testBtn.addEventListener("click", function(){
@@ -1400,6 +1485,17 @@ Auto-included by docs/_layouts/default.html.
       html += '<details class="lc-pyrun-fold"><summary>🐍 Edit &amp; run Python</summary>';
     } else {
       html += '<div class="lc-pyrun-title">🐍 <span>' + (opts.readonly && opts.readonly !== "false" ? "Python module <code>" + id + "</code> — read it, run it, import it" : "Python runner") + '</span><span class="lc-pyrun-lang">' + (opts.readonly && opts.readonly !== "false" ? "read only" : "python") + '</span></div>';
+    }
+    /* 🧩 OUTSIDE-IN (Michel, 2026-11-02: "an alternate tab to the py editor,
+       even open by default, with the ui … activable with a knob (outside_in),
+       default=False"): the program first as the page a beginner would use —
+       forms written in our own markdown (outside_in.md) — and the code one
+       tab away */
+    var OI = opts.outside_in && opts.outside_in !== "false";
+    if (OI) {
+      div.className += " lc-pyrun-oi lc-pyrun-oi-ui";
+      html += '<div class="lc-pyrun-tabs" role="tablist" aria-label="View"><button class="lc-pyrun-tab" role="tab" data-oi="ui" aria-selected="true">🧩 UI</button><button class="lc-pyrun-tab" role="tab" data-oi="code" aria-selected="false">🐍 Code</button></div>';
+      html += '<div class="lc-pyrun-ui" role="tabpanel"><div class="lc-pyrun-ui-body"></div><details class="lc-pyrun-ui-md"><summary>📝 The markdown behind this UI</summary><pre></pre></details></div>';
     }
     html += '<div class="lc-pyrun-editor"><div class="lc-pyrun-gutter"><div class="lc-pyrun-gutter-inner"></div></div><div class="lc-pyrun-codewrap"><pre class="lc-pyrun-marks" aria-hidden="true"><code></code></pre><pre class="lc-pyrun-hl" aria-hidden="true" tabindex="-1"><code class="language-python"></code></pre><textarea class="lc-pyrun-code" rows="' + rows + '" spellcheck="false" aria-label="Python editor"' + (opts.readonly && opts.readonly !== "false" ? ' readonly' : '') + '></textarea><pre class="lc-pyrun-subs" hidden aria-label="Subtitles: what each part of the program is"></pre></div></div>';
     /* THE BAR SPEAKS SOFTLY (Michel, 2026-10-27: "make the buttons more
@@ -1626,6 +1722,7 @@ Auto-included by docs/_layouts/default.html.
       expected: el.getAttribute("expected") || "",
       mypy: el.getAttribute("mypy") || "",    /* "true": a 🩺 Dr. mypy (lite) button, strict as the deck runs it */
       pep8: el.getAttribute("pep8") || "",    /* "true": a 🛁 PEP 8 (lite) button, pycodestyle's codes */
+      outside_in: el.getAttribute("outside_in") || "",   /* "true": a 🧩 UI tab, open first, beside 🐍 Code */
       subtitles: el.getAttribute("subtitles") || "",  /* "on": the 💬 subtitles start shown */
       readonly: el.getAttribute("readonly") || ""      /* "true": a program to read and run, not to edit (the sounds module) */
     };
