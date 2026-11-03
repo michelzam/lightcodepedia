@@ -197,5 +197,5 @@ def test_the_little_markdown_an_intro_needs():
     assert "<p>Hope <strong>all</strong> is <em>well</em> — see <a href=\"x\">the map</a>.</p>" in html, html
     assert "<h2>Parts</h2>" in html
     assert "<ul><li>one</li><li>two &amp; three</li></ul>" in html, html
-    assert "<iframe src=\"u\"></iframe>" in html
+    assert "<iframe src=\"u\" allow=\"display-capture; camera; microphone\"></iframe>" in html, html   # framed pages may record
     assert html.endswith("<p>Bye.</p>")

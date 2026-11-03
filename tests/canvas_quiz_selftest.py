@@ -338,6 +338,27 @@ def test_a_pipe_inside_a_cell_survives():
     assert cq._cells(r"| a \| b | c |") == ["a | b", "c"]
 
 
+def test_a_checkin_frame_reaches_canvas_as_a_frame_that_may_record():
+    """The quiz file's own <iframe> line: html in, a granted frame out — never the tag as text."""
+    html = cq.grant_frames(cq.md_html('<iframe src="https://lightcodepedia.org/go?p=module_07/_recap&focus=1" width="100%" height="900"></iframe>\n\nTwo boxes, *your* words.'))
+    assert html.startswith('<iframe src="https://lightcodepedia.org/go?p=module_07/_recap&focus=1"'), html
+    assert "&lt;iframe" not in html, html
+    assert 'allow="display-capture; camera; microphone"' in html, html
+    assert html.endswith("<p>Two boxes, <em>your</em> words.</p>"), html
+
+
+def test_every_frame_a_gate_sends_may_record():
+    """2026-11-03: 📍 Assignment 07's frame could not record, the Activity's could."""
+    g = cq.grant_frames
+    out = g('<p><iframe src="https://lightcodepedia.org/go?p=module_07/_recap&amp;focus=1" width="100%" height="900"></iframe> Two boxes.</p>')
+    assert 'allow="display-capture; camera; microphone"' in out, out
+    assert out.count("allow=") == 1
+    mine = '<iframe src="x" allow="fullscreen"></iframe>'
+    assert g(mine) == mine, "an author's own allow= is theirs"
+    assert g("<p>no frame</p>") == "<p>no frame</p>"
+    assert "allow=" in g('<IFRAME src="y"/>'), g('<IFRAME src="y"/>')
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):
