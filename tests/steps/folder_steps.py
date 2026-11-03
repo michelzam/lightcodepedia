@@ -644,6 +644,13 @@ def step_here_passing(context, n):
     expect(card.locator(".lc-feat-passing")).to_contain_text(n, timeout=10_000)
 
 
+@then('the page shows {n:d} module recap')
+def step_n_recaps(context, n):
+    context.page.wait_for_timeout(1500)   # a later module, had it been kept, draws by now
+    got = context.page.locator(".lc-recap-head").count()
+    assert got == n, f"{got} module recaps on the page, expected {n}"
+
+
 @then('the course score reads "{text}"')
 def step_course_score(context, text):
     expect(context.page.locator(".lc-recap-score").first).to_contain_text(text, timeout=20_000)

@@ -272,6 +272,12 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
   window.lcCardTagList = cardTagList;
   window.lcBuildCardHtml = buildCardHtml;
 
+  /* the progress range a framing link asks for: ?upto=7 → 7, absent → null */
+  function lcUpto() {
+    var m = /[?&]upto=(\d+)/.exec(location.search || "");
+    return m ? parseInt(m[1], 10) : null;
+  }
+
   function upgradeFolder(el) {
     if (el.dataset.lcUpgraded) return;
     el.dataset.lcUpgraded = "1";
@@ -288,6 +294,15 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
        — what the reader earned there, what they missed, what is left, and a
        link to finish it. Same items, same records, module-scoped. */
     var recapView = (el.getAttribute("view") || "") === "recap";
+    /* ?upto=N on the address: only modules 00..N are drawn and counted
+       (Michel, 2026-11-03: a module's Canvas intro shows the modules before
+       it, the milestone "up to module 7 included"). One progress page, the
+       range said by the link that frames it. */
+    var upto = lcUpto();
+    if (recapView && upto !== null) {
+      var mm = /module_(\d+)/.exec(el.getAttribute("path") || (a.getAttribute("href") || ""));
+      if (mm && parseInt(mm[1], 10) > upto) { el.parentNode.removeChild(el); return; }
+    }
     /* view="score": ONE NUMBER OVER EVERY RECAP ON THE PAGE (Michel,
        2026-10-29: "a global score of done pages, all modules considered, as
        a % — so everyone sees their own score on the first page of the
@@ -304,7 +319,8 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         Object.keys(all).forEach(function (k) { done += all[k].done; n += all[k].n; });
         var pct = n ? Math.round(100 * done / n) : 0;
         box.setAttribute("data-lc-done", String(done)); box.setAttribute("data-lc-total", String(n)); box.setAttribute("data-lc-pct", String(pct));
-        box.innerHTML = "<div class='lc-recap-score-head'>🎯 Course — " + done + " of " + n + " pages done · <b>" + pct + "%</b></div>" + sourceLine();
+        var range = upto !== null ? " · modules 00–" + (upto < 10 ? "0" : "") + upto : "";
+        box.innerHTML = "<div class='lc-recap-score-head'>🎯 Course" + range + " — " + done + " of " + n + " pages done · <b>" + pct + "%</b></div>" + sourceLine();
       };
       drawScore();
       document.addEventListener("lc-recap-drawn", drawScore);

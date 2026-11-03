@@ -51,7 +51,7 @@ the LMS keeps framing one URL per page and nothing else.
                   crumb: el.getAttribute("crumb") || "",
                   hub: el.getAttribute("session") || "",
                   open: "gh:" + vault + "/" + (course.split("/")[0] || "courses") + "/*" };
-    var pass = ["focus", "editable", "navigable", "open", "crumb", "hub", "up", "strict"]
+    var pass = ["focus", "editable", "navigable", "open", "crumb", "hub", "up", "strict", "upto"]
       .filter(function (k) { return q[k] !== undefined || flags[k]; })
       .map(function (k) {
         return k + "=" + encodeURIComponent(q[k] !== undefined ? q[k] : flags[k]);
