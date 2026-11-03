@@ -39,6 +39,9 @@ Auto-included by docs/_layouts/default.html.
 /* view="recap": one factual line per page, module-scoped */
 .lc-recap { display: block !important; }
 .lc-recap-head, .lc-recap-score-head { font-weight: 600; margin: 0 0 0.5em; }
+.lc-recap-src { font-size: 0.85em; color: #555; margin: -0.2em 0 0.5em; }
+.lc-recap-refresh { font: inherit; border: 1px solid #c8d6e5; background: #f4f8fc; color: #1d4f7c; border-radius: 999px; padding: 0.1em 0.7em; cursor: pointer; }
+.lc-recap-refresh:disabled { opacity: 0.6; cursor: progress; }
 .lc-recap-score-head { font-size: 1.05em; }
 .lc-recap-row { padding: 0.25em 0; border-top: 1px solid #f0f0f0; font-size: 0.92em; }
 .lc-recap-row a { color: inherit; text-decoration: none; font-weight: 600; }
@@ -301,10 +304,19 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         Object.keys(all).forEach(function (k) { done += all[k].done; n += all[k].n; });
         var pct = n ? Math.round(100 * done / n) : 0;
         box.setAttribute("data-lc-done", String(done)); box.setAttribute("data-lc-total", String(n)); box.setAttribute("data-lc-pct", String(pct));
-        box.innerHTML = "<div class='lc-recap-score-head'>🎯 Course — " + done + " of " + n + " pages done · <b>" + pct + "%</b></div>";
+        box.innerHTML = "<div class='lc-recap-score-head'>🎯 Course — " + done + " of " + n + " pages done · <b>" + pct + "%</b></div>" + sourceLine();
       };
       drawScore();
       document.addEventListener("lc-recap-drawn", drawScore);
+      document.addEventListener("lc-progress-loaded", drawScore);
+      box.addEventListener("click", function (ev) {
+        var b = ev.target && ev.target.closest ? ev.target.closest(".lc-recap-refresh") : null;
+        if (!b || b.disabled || !window.lcProgress || !window.lcProgress.refresh) return;
+        b.disabled = true; b.textContent = "Reading your bench…";
+        window.lcProgress.refresh().then(function (r) {   /* the recaps redraw on lc-progress-loaded, and this block with them */
+          if (!(r && r.ok)) { b.disabled = false; b.textContent = "🔄 Refresh from my bench"; b.title = (r && r.why) || ""; }
+        });
+      });
       return;
     }
     /* Rendered INSIDE a bench (a runner render stamps its repo/path on the
@@ -1075,6 +1087,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         var Q = it.quizzes || 0, A = Math.min(Q, s.total || 0), W = Math.min(A, s.won || 0);
         var F = feats.length;
         var G = feats.filter(function (f) { return f && f.remembered && f.status === "passing"; }).length;
+        if (s.feats === F && (s.green || 0) > G) G = Math.min(F, s.green);   /* the bench's count, when it counted the same proofs */
         var pts = W + G, max = Q + F;
         var state = (max && pts === max) ? "done" : (A || G) ? "going" : "fresh";
         return { title: it.title, url: it.url, tags: cardTagList(feats), Q: Q, A: A, W: W,
@@ -1120,6 +1133,30 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         return (m && m.title) || fallback;
       }).catch(function () { return fallback; });
     }
+    /* 🖥 / 📦 — where these numbers come from, and the one way to bring the
+       bench's in (progress.md: source, refresh) */
+    function sourceLine() {
+      var src = window.lcProgress && window.lcProgress.source ? window.lcProgress.source() : { bench: "" };
+      var when = function (iso) {
+        try { return new Date(iso).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }); }
+        catch (e) { return ""; }
+      };
+      var say = src.bench && src.read
+        ? "📦 Includes your bench" + (src.saved ? ", saved " + escapeHtml(when(src.saved)) : "")
+        : "🖥 Counted in this browser";
+      var btn = src.bench ? " · <button type='button' class='lc-recap-refresh'>🔄 Refresh from my bench</button>" : "";
+      return "<div class='lc-recap-src' data-src='" + (src.bench && src.read ? "bench" : "browser") + "'>" + say + btn + "</div>";
+    }
+    document.addEventListener("click", function (ev) {
+      var b = ev.target && ev.target.closest ? ev.target.closest(".lc-recap-refresh") : null;
+      if (!b || b.disabled || !window.lcProgress || !window.lcProgress.refresh) return;
+      if (wrap && !wrap.contains(b)) return;
+      b.disabled = true; b.textContent = "Reading your bench…";
+      window.lcProgress.refresh().then(function (r) {
+        if (r && r.ok) { if (_recapItems) renderRecap(_recapItems); }
+        else { b.disabled = false; b.textContent = "🔄 Refresh from my bench"; b.title = (r && r.why) || ""; var line = b.parentNode; if (line) line.setAttribute("data-why", (r && r.why) || ""); }
+      });
+    });
     var _recapItems = null;
     function renderRecap(items) {
       _recapItems = items;
@@ -1141,6 +1178,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       /* the key's life, where a learner checks their points (Michel, 2026-09-07) */
       var kl = window.lcKey ? window.lcKey.line() : null;
       if (kl) h += "<div class='lc-recap-key lc-key-" + kl.cls + "'>" + kl.html + "</div>";
+      h += sourceLine();
       rows.forEach(function (r) {
         var icon = r.state === "done" ? "✅" : r.state === "going" ? "🟡" : "⬜";
         var parts = [];

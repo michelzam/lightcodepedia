@@ -200,10 +200,14 @@ Auto-included by docs/_layouts/default.html.
     var changed = false;
     Object.keys(map).forEach(function (k) {
       var r = map[k], s = scores[k] || { won: 0, total: 0 };
-      if ((r.won > (s.won || 0)) || (r.total > (s.total || 0))) {
+      /* the proofs travel as counts (the bench keeps no feature ids): the
+         recap reads them beside the browser's own (2026-11-03, a student's
+         "proofs not registering" on a second browser) */
+      if ((r.won > (s.won || 0)) || (r.total > (s.total || 0)) || ((r.green || 0) > (s.green || 0))) {
         scores[k] = { won: Math.max(s.won || 0, r.won),
                       total: Math.max(s.total || 0, r.total),
-                      quizzes: Math.max(s.quizzes || 0, r.total), ts: r.ts || s.ts };
+                      quizzes: Math.max(s.quizzes || 0, r.total), ts: r.ts || s.ts,
+                      green: Math.max(s.green || 0, r.green || 0), feats: Math.max(s.feats || 0, r.feats || 0) };
         changed = true;
       }
     });
@@ -242,11 +246,11 @@ Auto-included by docs/_layouts/default.html.
     var pre = (window.lcBench && window.lcBench.repair) ? window.lcBench.repair() : Promise.resolve(null);
     return pre.then(function () { return loadNow(); }, function () { return loadNow(); });
   }
-  function loadNow() {
+  function loadNow(force) {
     var t = benchTarget();
     if (!t) return Promise.resolve(false);
     var switched = lastBench() !== t.repo;
-    if (loaded || (readAlready() && !switched)) return Promise.resolve(false);
+    if (!force && (loaded || (readAlready() && !switched))) return Promise.resolve(false);
     loaded = true;
     if (switched) {
       forget(t.repo);
@@ -272,7 +276,10 @@ Auto-included by docs/_layouts/default.html.
       });
       keepOwners(own);
       var did = adopt(mine);
-      if (did) document.dispatchEvent(new CustomEvent("lc-progress-loaded"));
+      var saved = "";
+      Object.keys(mine).forEach(function (k) { if ((mine[k].ts || "") > saved) saved = mine[k].ts || ""; });
+      try { localStorage.setItem(SRC, JSON.stringify({ bench: t.repo, saved: saved, read: new Date().toISOString() })); } catch (e) {}
+      if (did || force) document.dispatchEvent(new CustomEvent("lc-progress-loaded"));
       return did;
     }).catch(function () { return false; });
   }
@@ -331,8 +338,30 @@ Auto-included by docs/_layouts/default.html.
   });
   window.addEventListener("pagehide", leaving);
 
+  /* WHERE THE NUMBERS COME FROM (Michel, 2026-11-03: "be explicit … bench
+     vs browser … add a refresh score from bench", frugal with GitHub): the
+     browser counts on its own; the bench is read once a session, and again
+     only when the learner asks. source() says which, refresh() is the ask —
+     one read of __progress.txt, merged max-per-page, nothing ever lowered. */
+  var SRC = "lc_progress_src";
+  function source() {
+    var t = benchTarget(), rec = null;
+    try { rec = JSON.parse(localStorage.getItem(SRC) || "null"); } catch (e) {}
+    if (rec && t && rec.bench !== t.repo) rec = null;
+    return { bench: t ? t.repo : "", saved: rec ? rec.saved || "" : "", read: rec ? rec.read || "" : "" };
+  }
+  function refresh() {
+    if (!benchTarget()) return Promise.resolve({ ok: false, why: "no bench connected" });
+    loaded = true;
+    return loadNow(true).then(function (changed) {
+      var src = source();
+      return src.read ? { ok: true, changed: !!changed } : { ok: false, why: "your bench has no record yet" };
+    }, function () { return { ok: false, why: "your bench could not be read" }; });
+  }
+
   window.lcProgress = { load: load, flush: flush, rows: rows, reclaim: reclaim,
-                        parse: parse, merge: merge, serialise: serialise, crc32: crc32 };
+                        parse: parse, merge: merge, serialise: serialise, crc32: crc32,
+                        source: source, refresh: refresh };
 
   if (document.readyState === "loading")
     document.addEventListener("DOMContentLoaded", function () { setTimeout(load, 600); });

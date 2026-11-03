@@ -657,3 +657,37 @@ Feature: Folder shelf — read posture and X-ray workbench
     Then the here-card shows "2" proofs pending and none passing
     When the proof "p1" on this page turns green on this device
     Then the here-card shows "1" proof passing
+
+  Scenario: The recap says where its numbers come from, and brings the bench's in on one click
+    Michel, 2026-11-03, after David's "quizzes & proofs not registering": the recap counted in his
+    browser while his bench held every page done. "be explicit … (bench vs browser) or add a
+    refresh score from bench" — frugal: the bench is read when the learner asks, not on every page.
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/mod" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags             |
+      | 01_first.md  | 📝 The Volunteer   | 3       | 1      | markdown         |
+      | 02_second.md | 🔥 North Burns     | 3       | 4      | agent, prompt    |
+    And the GitHub contents API serves "courses/demo/mod/_recap.md" with the document:
+      """
+      # Where you are
+
+      [this module](#)
+      {: .folder view="recap" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/_recap.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 2 pages done · 🏆 0 of 11 points"
+    And the recap says its numbers are "browser"
+    And the recap offers no refresh
+    When the bench "acme/bench" holds a progress record:
+      | page             | won | answered | green | proofs |
+      | 📝 The Volunteer | 3   | 3        | 1     | 1      |
+      | 🔥 North Burns   | 3   | 3        | 4     | 4      |
+    Then the recap says its numbers are "browser"
+    And the bench was read 0 times
+    When I press 🔄 Refresh from my bench
+    Then the recap head reads "2 of 2 pages done · 🏆 11 of 11 points"
+    And the recap says its numbers are "bench"
+    And the bench was read 1 time

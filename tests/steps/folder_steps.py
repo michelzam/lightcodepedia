@@ -647,3 +647,57 @@ def step_here_passing(context, n):
 @then('the course score reads "{text}"')
 def step_course_score(context, text):
     expect(context.page.locator(".lc-recap-score").first).to_contain_text(text, timeout=20_000)
+
+
+# ── 🖥 / 📦 where the numbers come from (Michel, 2026-11-03) ─────────────
+
+@then('the recap says its numbers are "{word}"')
+def step_recap_source(context, word):
+    """"browser" (🖥 Counted in this browser) or "bench" (📦 Includes your bench)"""
+    src = context.page.locator(".lc-recap-src").first
+    expect(src).to_have_attribute("data-src", word, timeout=20_000)
+    expect(src).to_contain_text("Counted in this browser" if word == "browser" else "Includes your bench")
+
+
+@then("the recap offers no refresh")
+def step_recap_no_refresh(context):
+    assert context.page.locator(".lc-recap-refresh").count() == 0
+
+
+@when('the bench "{repo}" holds a progress record')
+def step_bench_holds_record(context, repo):
+    """a paired bench whose __progress.txt holds these rows — the engine's own
+    read (lcProgress.refresh → lcBench.peek) does the rest; nothing is read
+    until the learner asks"""
+    rows = [{"page": r["page"].strip(), "won": int(r["won"]), "answered": int(r["answered"]),
+             "green": int(r["green"]), "feats": int(r["proofs"])} for r in context.table]
+    context.bench_peeks = context.page.evaluate("""([repo, rows]) => {
+      const map = {};
+      rows.forEach(r => {
+        const el = Array.from(document.querySelectorAll('.lc-recap-row')).find(e => e.textContent.indexOf(r.page) >= 0);
+        if (!el) throw new Error('no recap row for ' + r.page);
+        map[window.lcPageScores.norm(el.getAttribute('data-url'))] =
+          { won: r.won, total: r.answered, green: r.green, feats: r.feats, ts: '2026-11-03T04:06:37.742Z', bench: repo };
+      });
+      const text = window.lcProgress.serialise(map, repo);
+      window._lcPeeks = 0;
+      window.lcBench = Object.assign({}, window.lcBench || {}, {
+        target: () => ({ repo: repo, pat: 'ghp_test' }),
+        peek: (path) => { window._lcPeeks++; return Promise.resolve(/progress\\.txt$/.test(path) ? { text: text, sha: 'abc' } : null); },
+        repair: () => Promise.resolve(null)
+      });
+      document.dispatchEvent(new CustomEvent('lc-feature-result'));   /* the recap redraws: a bench is there now */
+      return 0;
+    }""", [repo, rows])
+
+
+@when("I press 🔄 Refresh from my bench")
+def step_press_refresh(context):
+    context.page.locator(".lc-recap-refresh").first.click()
+
+
+@then("the bench was read {n:d} time")
+@then("the bench was read {n:d} times")
+def step_bench_reads(context, n):
+    got = context.page.evaluate("() => window._lcPeeks || 0")
+    assert got == n, "the bench was read %d time(s), expected %d" % (got, n)
