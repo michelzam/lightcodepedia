@@ -160,7 +160,20 @@ def step_pitch_line_reads(context, cid, field, text):
 @then('the drift warning on "{cid}" names words from the card')
 def step_warn_names_words(context, cid):
     warn = _card(context, "pitch", cid).locator(".lc-pitch-warn")
-    expect(warn).to_contain_text("words on the card:", timeout=PS_TIMEOUT)
+    expect(warn).to_contain_text("e.g.", timeout=PS_TIMEOUT)
+
+
+@then('the drift warning on "{cid}" reads "{text}"')
+def step_warn_reads(context, cid, text):
+    warn = _card(context, "pitch", cid).locator(".lc-pitch-warn")
+    expect(warn).to_contain_text(text, timeout=PS_TIMEOUT)
+
+
+@then('the drift warning on "{cid}" never reads "{text}"')
+def step_warn_never_reads(context, cid, text):
+    warn = _card(context, "pitch", cid).locator(".lc-pitch-warn")
+    expect(warn).to_be_visible(timeout=PS_TIMEOUT)
+    assert text not in warn.text_content(), f"the warning reads {text!r}: {warn.text_content()!r}"
 
 
 def _editor_bar(context, cid):

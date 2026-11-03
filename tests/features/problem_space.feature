@@ -157,6 +157,19 @@ Feature: Problem space — persona, pitch, impact map
     Then the pitch "drifting" shows a drift warning
     And the drift warning on "drifting" names words from the card
 
+  Scenario: The drift warning says the Zim's name, no pronoun, and what to rewrite
+    Michel, 2026-11-03: Jay's pitch warned "Echo her goal" — a Zim is
+    anyone, so the warning names the card's owner and says what to do:
+    rewrite the need in their words, with no filler word offered.
+
+    When I navigate to "/components/pitch"
+    And I wait for the page to be interactive
+    Then the pitch "drifting" shows a drift warning
+    And the drift warning on "drifting" reads "Ana's card"
+    And the drift warning on "drifting" reads "Rewrite the need"
+    And the drift warning on "drifting" never reads " her "
+    And the drift warning on "drifting" never reads "that"
+
   Scenario: The editor offers a way back to the lesson's starter, and the versions
     Michel, 2026-10-01: "we lost the versioning and being able to reset the
     data". Under the editor: ↺ puts the starter back, 🕘 lists every saved

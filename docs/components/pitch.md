@@ -21,7 +21,10 @@ persona (dotted, not bold — nobody typed it), so the two documents
 cannot disagree about their audience, and a `who:` in the YAML is
 ignored while the knob is set. And it powers a soft check on what IS
 typed: when the `need` shares no words with the persona's goal, role or
-frustrations, the pitch shows a drift warning. A finding, not an error.
+frustrations, the pitch shows a drift warning: it names the persona, offers
+words from the card, and says what to do — rewrite the need in the
+persona's own words; the product's promise belongs in the benefit. A
+finding, not an error.
 
 ```yaml
 name: Ana

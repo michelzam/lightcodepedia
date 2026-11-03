@@ -470,12 +470,19 @@ Auto-included by docs/_layouts/default.html.
         var hit = mine.some(function (w) { return theirs.indexOf(w) >= 0; });
         warn.hidden = hit;
         if (!hit) {
+          /* no pronoun (a Zim is anyone: Jay got "her", 2026-11-03) and no
+             filler offered; the note says what to do, not only what is wrong */
+          var filler = ["with", "that", "this", "from", "have", "every", "they", "them", "their",
+                        "what", "when", "about", "into", "more", "than", "been", "were", "will",
+                        "your", "some", "just", "very", "make", "want", "wants"];
           var offer = [];
           words([persona.goal].concat(asList(persona.frustrations)).join(" ")).forEach(function (w) {
-            if (offer.indexOf(w) < 0 && offer.length < 5) offer.push(w);
+            if (filler.indexOf(w) < 0 && offer.indexOf(w) < 0 && offer.length < 5) offer.push(w);
           });
-          warn.textContent = "⚠️ the need shares no word with #" + ref + ". Echo her goal or a frustration" +
-            (offer.length ? " — words on the card: " + offer.join(", ") : "") + ".";
+          var who = persona.name ? persona.name + "'s" : "the #" + ref;
+          warn.textContent = "⚠️ The need shares no word with " + who + " card. Rewrite the need " +
+            "in " + (persona.name || "the persona") + "'s own words — echo the goal or a frustration" +
+            (offer.length ? ", e.g. " + offer.join(", ") : "") + ". Your promise belongs in the benefit.";
         }
       }
       function render() {
