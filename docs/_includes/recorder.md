@@ -43,6 +43,7 @@ Auto-included by docs/_layouts/default.html.
       '.lc-rec-btn.again{background:#eee;color:#333}.lc-rec-btn.again:hover{background:#ddd}',
       '.lc-rec-status{font-size:.82em;color:#888;margin-top:8px;min-height:1.2em}',
       '.lc-rec-status.ok{color:#1a7a1a}.lc-rec-status.err{color:#c00}',
+      '.lc-rec-status .lc-rec-ownTab{color:#0052a3;font-weight:600;text-decoration:underline}',
       '.lc-rec-ios{font-size:.84em;line-height:1.6;color:#444;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:10px 12px;margin-top:4px}',
       '.lc-rec-ios ol{margin:6px 0 0 16px;padding:0}',
       '.lc-rec-ios li{margin-bottom:2px}',
@@ -238,6 +239,24 @@ Auto-included by docs/_layouts/default.html.
     });
 
     function setStatus(msg, cls) { statEl.className = "lc-rec-status " + (cls||""); statEl.textContent = msg; }
+    /* THE WAY OUT IS A LINK (2026-11-03, a student's screenshot from a Canvas
+       quiz: "Open it in its own tab to record" — and nothing to click). A
+       frame whose host did not grant display-capture can never record, so
+       the recorder says it before anyone presses, and hands the page's own
+       address, to open in a tab of its own. */
+    function frameWayOut(lead) {
+      statEl.className = "lc-rec-status err";
+      statEl.textContent = lead + " ";
+      var a = document.createElement("a");
+      a.className = "lc-rec-ownTab";
+      a.href = location.href;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "↗ Open this page in its own tab";
+      statEl.appendChild(a);
+      statEl.appendChild(document.createTextNode(" — then record there."));
+    }
+    if (!screenCaptureAllowed()) frameWayOut("This page sits in a frame (Canvas) that does not allow screen recording.");
     function fmtTime(ms) {
       var s = Math.floor(ms/1000), m = Math.floor(s/60);
       return String(m).padStart(2,"0") + ":" + String(s%60).padStart(2,"0");
@@ -863,8 +882,7 @@ Auto-included by docs/_layouts/default.html.
                looks dead. We can add the attribute to our own embeds, but not to
                someone else's frame, so say what happened and offer the way out. */
             if (e.name === "NotAllowedError" && !screenCaptureAllowed()) {
-              setStatus("❌ This page is embedded in a frame that doesn't allow screen capture. "
-                      + "Open it in its own tab to record.", "err");
+              frameWayOut("❌ This page is embedded in a frame that doesn't allow screen capture.");
               return;
             }
             setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
