@@ -119,6 +119,7 @@ Auto-included by docs/_layouts/default.html.
       sum.appendChild(live);
       var body = document.createElement("div");
       body.className = "lc-ac-body";
+      if (eager) body.setAttribute("data-lc-eager", "1");   /* built with the page: its proofs tag the page (feature.md) */
       d.appendChild(sum);
       d.appendChild(body);
       function render() {

@@ -839,27 +839,31 @@ Registers with window.lcScanElement so the editor preview also renders cards.
      2026-08-12: *"I see no tag there!!!"*). They go INSIDE the h1, so the
      title keeps its line and the page keeps its shape. Read before the cards
      upgrade: upgrading replaces the block, taking the attribute with it. */
-  function paintTitleTags(root) {
+  /* ADDITIVE, so a section built later adds its own (Michel, 2026-11-04:
+     Empathise keeps both proofs in "!" accordion panels, rendered after the
+     page — the title showed no tags). `from` is where to read tags= (the
+     panel's body), `root` the page whose h1 wears them. */
+  function paintTitleTags(root, from) {
     var h1 = root.querySelector("main h1") || root.querySelector("h1");
-    if (!h1 || h1.querySelector(".lc-title-tags")) return;
+    if (!h1) return;
     var order = [];
-    root.querySelectorAll(".feature[tags]").forEach(function (el) {
+    (from || root).querySelectorAll(".feature[tags]").forEach(function (el) {
       (el.getAttribute("tags") || "").split(",").forEach(function (t) {
         var v = t.trim();
         if (v && order.indexOf(v) < 0) order.push(v);
       });
     });
     if (!order.length) return;
-    var span = document.createElement("span");
-    span.className = "lc-title-tags";
+    var span = h1.querySelector(".lc-title-tags");
+    if (!span) { span = document.createElement("span"); span.className = "lc-title-tags"; h1.appendChild(span); }
     order.forEach(function (v) {
+      if (span.querySelector(".lc-title-tag[data-tag='" + v.replace(/'/g, "") + "']")) return;
       var chip = document.createElement("span");
       chip.className = "lc-title-tag";
       chip.setAttribute("data-tag", v);
       chip.textContent = tagLabel(v);
       span.appendChild(chip);
     });
-    h1.appendChild(span);
   }
 
   /* ── src="other.md#proof_id" — ANOTHER LESSON'S PROOF, RUN HERE ─────────
@@ -1245,6 +1249,11 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        instead. Page-level render only (#lc-run): an embedded demo or an
        editor preview must never stamp its host page's title. */
     if (root && root.id === "lc-run") paintTitleTags(root);
+    /* a "!" accordion panel, built after its page: its proofs tag the page */
+    else if (root && root.getAttribute && root.getAttribute("data-lc-eager") === "1") {
+      var page = (root.closest && root.closest("#lc-run")) || document;
+      paintTitleTags(page, root);
+    }
     root.querySelectorAll(".feature").forEach(upgradeFeature);
     root.querySelectorAll(".steps").forEach(upgradeSteps);
     buildSuite(root);

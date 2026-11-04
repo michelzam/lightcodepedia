@@ -722,3 +722,33 @@ def step_press_refresh(context):
 def step_bench_reads(context, n):
     got = context.page.evaluate("() => window._lcPeeks || 0")
     assert got == n, "the bench was read %d time(s), expected %d" % (got, n)
+
+
+@given('the folder "{dirpath}" serves the page "{name}" with the document')
+def step_folder_one_page_doc(context, dirpath, name):
+    """a listing of one page, whose card reads this exact markdown"""
+    files = [{"type": "file", "name": name, "path": dirpath + "/" + name,
+              "download_url": "https://raw.example.org/" + dirpath + "/" + name,
+              "url": "https://api.github.com/repos/acme/demo/contents/" + dirpath + "/" + name}]
+    body = context.text
+    context.page.route("**/api.github.com/repos/**/contents/" + dirpath,
+                       lambda r: r.fulfill(status=200, content_type="application/json", body=json.dumps(files)))
+    context.page.route("**/raw.example.org/**",
+                       lambda r: r.fulfill(status=200, content_type="text/plain", body=body))
+
+
+@then('the card for "{title}" shows the tags "{names}"')
+def step_card_tags(context, title, names):
+    card = context.page.locator(".lc-card", has_text=title).first
+    expect(card).to_be_visible(timeout=15_000)
+    got = [t.strip() for t in card.locator(".lc-card-tag").all_text_contents()]
+    for n in [x.strip() for x in names.split(",")]:
+        assert n in got, f"missing {n!r} on the card; got {got}"
+
+
+@then('the card for "{title}" never shows the tag "{name}"')
+def step_card_no_tag(context, title, name):
+    card = context.page.locator(".lc-card", has_text=title).first
+    expect(card).to_be_visible(timeout=15_000)
+    got = [t.strip() for t in card.locator(".lc-card-tag").all_text_contents()]
+    assert name not in got, got

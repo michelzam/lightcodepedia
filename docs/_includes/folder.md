@@ -165,8 +165,44 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
 
   /* ── shared card pipeline (also used by related.md) ─────────────── */
   /* scan a page's markdown for its hidden .feature blocks → [{status, tags, id}] */
+  /* A FOLDED SECTION IS STILL THE PAGE. An accordion's or a tab's fence
+     holds the page's own proofs and quizzes — page 2 of module 08 keeps its
+     two proofs and two quizzes in accordions — and the scan stripped every
+     fence, so the card showed none of their tags and the recap counted none
+     of their points (Michel, 2026-11-04). Open those containers first; every
+     other fence (a pad's sample, a gherkin body) still goes. */
+  function unfoldContainers(text) {
+    /* line by line, so a fence closes only on its own marker. Tabs open
+       whole (every tab is the page); an accordion opens only its "!" sections
+       — rendered with the page, a proof or a form the page must reach. A
+       plain section is lazy, optional reading: its quizzes stay out of the
+       count, as they always were (the 410's think-slow panels). */
+    var lines = String(text).split("\n"), out = [], i = 0;
+    while (i < lines.length) {
+      var m = /^(`{3,})/.exec(lines[i]);
+      if (!m) { out.push(lines[i]); i++; continue; }
+      var f = m[1], j = i + 1;
+      while (j < lines.length && lines[j].replace(/\s+$/, "") !== f) j++;
+      if (j >= lines.length) { out = out.concat(lines.slice(i)); break; }
+      var ial = lines[j + 1] || "", body = lines.slice(i + 1, j);
+      if (/^\{:[^}]*\.tabs\b/.test(ial)) {
+        out = out.concat(unfoldContainers(body.join("\n")).split("\n"));
+      } else if (/^\{:[^}]*\.accordion\b/.test(ial)) {
+        var keep = false, kept = [];
+        body.forEach(function (l) {
+          if (/^###\s/.test(l)) { keep = /^###\s+!/.test(l); return; }
+          if (keep) kept.push(l);
+        });
+        out = out.concat(unfoldContainers(kept.join("\n")).split("\n"));
+      } else {
+        out = out.concat(lines.slice(i, j + 1));
+      }
+      i = j + 1;
+    }
+    return out.join("\n");
+  }
   function scanFeatures(text) {
-    var scanText = text
+    var scanText = unfoldContainers(text)
       .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
       .replace(/`[^`\n]+`/g, "``");
     var features = [], fRe = /\{:\s*\.feature\b([^}]*)\}/g, fm;
@@ -214,7 +250,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
   /* count the .quiz widgets on a page (skip code fences / inline code) so a
      card can show how many quizzes are still unanswered even before you visit */
   function countQuizzes(text) {
-    var scanText = text
+    var scanText = unfoldContainers(text)
       .replace(/(`{3,})[^\n]*\n[\s\S]*?\1/g, "")
       .replace(/`[^`\n]+`/g, "``");
     var n = 0, qRe = /\{:\s*\.quiz\b[^}]*\}/g;

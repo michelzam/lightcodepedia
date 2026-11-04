@@ -758,3 +758,58 @@ Feature: Folder shelf — read posture and X-ray workbench
     Then the recap head reads "2 of 2 pages done · 🏆 11 of 11 points"
     And the recap says its numbers are "bench"
     And the bench was read 1 time
+
+  Scenario: A proof folded in an accordion still tags its page's card; a lazy panel's quiz still does not count
+    Michel, 2026-11-04 (module 08, Empathise): "the tags from the features
+    encapsulated in accordions are not visible in the page's card". A "!"
+    section is built with the page — its proofs and quizzes are the page's.
+    A plain section is optional reading: it stays out, as it always did.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the folder "courses/demo/mod" serves the page "02_empathise.md" with the document
+      """
+      # 👤 Empathise
+
+      ````
+      ### !👤 Your Zim
+
+      ```gherkin
+      Feature: My Zim is a person
+        Scenario: x
+          Then y
+      ```
+      {: .feature #zim_proof tags="persona" status="pending" }
+
+      **Q:** Which one?
+
+      - [x] This one
+      - [ ] That one
+      {: .quiz #q1 }
+      ````
+      {: .accordion #zim_section }
+
+      ````
+      ### 📖 Optional reading
+
+      ```gherkin
+      Feature: Not this page's
+        Scenario: x
+          Then y
+      ```
+      {: .feature #other tags="optional" status="pending" }
+      ````
+      {: .accordion #more }
+      """
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # Shelf page
+
+      [Browse](#)
+      {: .folder }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    Then the card for "Empathise" shows the tags "persona"
+    And the card for "Empathise" never shows the tag "optional"
