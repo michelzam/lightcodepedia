@@ -496,7 +496,7 @@ Auto-included by docs/_layouts/default.html.
         && bodyEl._lcSig === formSig(obj, opts) && bodyEl.querySelector(".lc-form-grid")) {
       bodyEl._lcCur = { obj: obj, opts: opts };
       var api0 = bodyEl._lcGridApi, rows0 = Object.keys(obj).map(function (k) {
-        return { _key: k, label: labelOf(k, opts), value: obj[k], _type: typeOfValue(obj[k]) };
+        return { _key: k, label: labelOf(k, opts), value: obj[k], _type: (opts.numbers && opts.numbers[k] && obj[k] == null) ? "number" : typeOfValue(obj[k]) };
       });
       if (api0.setGridOption) api0.setGridOption("rowData", rows0); else api0.setRowData(rows0);
       var w0 = bodyEl.closest(".lc-form");
@@ -534,7 +534,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     var rows = keys.map(function(k){
-      return { _key: k, label: labelOf(k, opts), value: obj[k], _type: typeOfValue(obj[k]) };
+      return { _key: k, label: labelOf(k, opts), value: obj[k], _type: (opts.numbers && opts.numbers[k] && obj[k] == null) ? "number" : typeOfValue(obj[k]) };
     });
 
     /* publish the live object on the wrapper so Python (Form.field) can read it */
@@ -797,6 +797,22 @@ Auto-included by docs/_layouts/default.html.
           });
           if (model.state) chips.push(model.state);
         }
+        /* fields="headline, as_a, …, business_value: int": the card's fields
+           in this order, first; a listed field the row does not hold yet
+           shows empty, ready to type — an ": int" (or float) one takes a
+           number (Michel, 2026-11-04: "the headline should be the first
+           field. And the value is missing!"). The rest follow. */
+        var numbers = {}, shaped = row;
+        var fieldSpec = (el.getAttribute("fields") || "").split(",").map(function (f) { return f.trim(); }).filter(Boolean);
+        if (fieldSpec.length && !model) {
+          shaped = {};
+          fieldSpec.forEach(function (f) {
+            var p = f.split(":"), k = p[0].trim(), t = (p[1] || "").trim().toLowerCase();
+            if (/^(int|float|number)$/.test(t)) numbers[k] = 1;
+            shaped[k] = k in row ? row[k] : (numbers[k] ? null : "");
+          });
+          Object.keys(row).forEach(function (k) { if (!(k in shaped)) shaped[k] = row[k]; });
+        }
         /* no compute= → paint NOW, in the click's own tick: a check that
            clicks a row and reads the card at once found the previous row
            behind a promise (the Dataset page's card, red since 2026-10-08) */
@@ -804,7 +820,7 @@ Auto-included by docs/_layouts/default.html.
           if (mine !== turn) return;
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
-            locked: locked, chips: chips, options: model ? picks : undefined, required: required,
+            locked: locked, chips: chips, options: model ? picks : undefined, required: required, numbers: numbers,
             refs: model ? refNames : undefined, model: model || undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
@@ -819,7 +835,7 @@ Auto-included by docs/_layouts/default.html.
           setFormTitle(wrapper, title || inferFormTitle(shown) || "Form");
           if (model) renderVerbs(body, model, shown, cls, objName);
         };
-        if (compute) derive(row).then(paint); else paint(row);
+        if (compute) derive(shaped).then(paint); else paint(shaped);
       });
       return;
     }
