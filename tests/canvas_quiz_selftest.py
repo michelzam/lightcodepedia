@@ -359,6 +359,15 @@ def test_every_frame_a_gate_sends_may_record():
     assert "allow=" in g('<IFRAME src="y"/>'), g('<IFRAME src="y"/>')
 
 
+def test_module_08s_check_names_its_quiz_and_the_title_its_neighbours_wear():
+    """2026-11-04: Canvas listed "⚙️ Quiz 00…07" and then "08 · New Project — check".
+    retitle puts the spec's title on the quiz its id names — both must be there."""
+    spec = cq.load(os.path.join(os.path.dirname(__file__), "..", "courses", "micro_build_ai",
+                                "module_08", "__quiz", "canvas.md"))
+    assert spec["title"] == "⚙️ Quiz 08", spec["title"]
+    assert spec.get("quiz_id") == 2160533, spec.get("quiz_id")
+
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):

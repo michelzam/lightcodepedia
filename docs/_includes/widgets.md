@@ -647,11 +647,16 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
     /* the mode is a lens — it paints nothing until asked. A tour has no
        pointer to ask with, so draw the pipelines scene ourselves: the given
        subject, or the first wired component on the page. */
-    if (window.lcxReveal) window.lcxReveal(el);
+    /* `with: lens` — the loupe alone, one part's ghost and no pipes (Michel,
+       2026-11-04: the loupe first, then the pair); `with: 6` — the pipes,
+       back to read after six seconds; `with: lens 6` — both */
+    var a = String(arg == null ? "" : arg).trim(), lens = /^lens\b/i.test(a);
+    if (lens) { if (window.lcxLens) window.lcxLens(el); }
+    else if (window.lcxReveal) window.lcxReveal(el);
     /* and, on a named part, the ⚙️ on its corner — the tour has no pointer
        to hover with, so the verb shows what a hover would */
     if (el && window.lcxShowGear) window.lcxShowGear(el);
-    var s = parseFloat(arg);
+    var s = parseFloat(lens ? a.replace(/^lens\b[\s,]*/i, "") : a);
     clearTimeout(_lcXrayBack);
     if (s > 0) _lcXrayBack = setTimeout(function () {
       if (window.lcMode.current() === "xray") window.lcMode.set("read");

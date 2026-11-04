@@ -516,6 +516,11 @@ Auto-included by docs/_layouts/default.html.
           if (find && n.el) Object.keys(avs).forEach(aid => {
             const av = avs[aid];
             if (!av || !av.host || av.host === n.el) return;
+            /* THE GUIDE PERFORMING IS NOT A WIRE (Michel, 2026-11-04): while
+               a tour runs, its node would drag every at: of the script into
+               the scene — the teaser's flood over the whole page. The
+               pointers are drawn again once the guide is idle. */
+            if (av.playing) return;
             const lines = [].concat(av.script || [], av._tourScript || [],
               ...Object.values(av.stories || {}));
             if (!lines.some(l => l && l.at && find(String(l.at)) === n.el)) return;
@@ -743,6 +748,26 @@ Auto-included by docs/_layouts/default.html.
       _hold = true;
       const r = hit.el.getBoundingClientRect();
       update(hit, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, true);
+      return true;
+    };
+    /* THE LOUPE ALONE (Michel, 2026-11-04: "the xray for 1 component (the
+       loupe), then 2 with pipes"): the one-finger view, scripted — the ghost
+       of one part under the ring, no pipes, held until the mode exits or a
+       reveal follows. `do: xray, with: lens` (widgets.md). */
+    window.lcxLens = function (el) {
+      const hit = findSubject(el || null);
+      if (!hit) return false;
+      try { hit.el.scrollIntoView({ block: "center" }); } catch (e) {}
+      loadMP();
+      _hold = true;
+      const r = hit.el.getBoundingClientRect();
+      update(hit, { x: r.left + r.width / 2, y: r.top + r.height / 2 }, false);
+      /* a hand holds the loupe over the ghost; a script has no hand, so the
+         aperture opens on the ghost itself (its top, where the title is) */
+      const p0 = panel(0);
+      /* through update, not lensClip alone: a later refresh re-clips at the
+         last point seen, so that point must be the ghost's */
+      update(hit, { x: p0.offsetLeft + p0.offsetWidth / 2, y: p0.offsetTop + Math.min(p0.offsetHeight / 2, R - 20) }, false);
       return true;
     };
 

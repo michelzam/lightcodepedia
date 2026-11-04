@@ -99,9 +99,12 @@ section it is talking about, or flips the page into reel:
 - { at: desk_one, do: xray, say: "Here is the gear. Press it." }
 ```
 
-`do: xray` with an `at:` flips the page into X-ray, draws the lens on that
-part and shows the ⚙️ on its corner — the guide points at the door instead
-of describing where it is; the learner opens it.
+`do: xray` with an `at:` flips the page into X-ray, draws that part's pipes
+and shows the ⚙️ on its corner — the guide points at the door instead of
+describing where it is; the learner opens it. `with: lens` draws the **loupe**
+alone (one ghost, no pipes), so a tour can show what a part is before what
+feeds it; `with: 6` returns to reading after six seconds; `with: lens 6` both.
+While the guide performs, its own pointers stay out of the scene.
 
 The walk follows the verb's **subject**: with `do: open, with: "Why"` the
 avatar stands at that section's own title — not the whole accordion.
