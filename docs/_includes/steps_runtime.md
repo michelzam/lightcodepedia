@@ -1281,6 +1281,15 @@ class Dataset(Object):
             raise RuntimeError("this page cannot write rows")
         return bool(fn(self._id, json.dumps(row), key))
 
+    def replace(self, rows):
+        """Every row at once, in this order — the list becomes exactly these
+        (Michel, 2026-11-04: page 4's features mirror the map, one per
+        feature, nothing left over). The grid repaints; nothing is saved."""
+        fn = getattr(js.window, "lcDatasetReplace", None)
+        if fn is None:
+            raise RuntimeError("this page cannot write rows")
+        fn(self._id, json.dumps([dict(r) for r in rows]))
+
     def append(self, row):
         """One more row: on the page at once, and — when the list lives in a
         sheet that takes writes — in the sheet too, then read back

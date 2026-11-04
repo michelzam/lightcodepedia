@@ -192,7 +192,10 @@ A button can also **put** a row by its key: the row whose key matches
 takes the new fields, and when none matches, the row is added —
 `button.page.features.put({"what": "The gate", "value": 0.9}, key="what")`.
 The key keeps its own spelling; the match ignores capitals and spaces.
-Module 08 assigns a stakeholder's values to each feature this way. A
+Module 08 assigns a stakeholder's values to each feature this way. And
+**replace** makes the list exactly the rows given, in that order —
+`button.page.features.replace(rows)`: module 08 imports one row per
+feature of the map, keeping what was said about each, and nothing else. A
 sentence or an agent reads a whole list as **rows**: `{= wanted.rows }`.
 
 A list read from elsewhere is read again when the reader comes back to the

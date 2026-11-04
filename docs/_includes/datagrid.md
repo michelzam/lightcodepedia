@@ -253,8 +253,35 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         showError("Expected an array of objects; got: " + (data === null ? "null" : typeof data));
         return;
       }
+      /* the rows may have landed while AG Grid loaded (a learner's saved
+         copy read faster than the library): paint what the list holds NOW */
+      if (data.length === 0 && opts.bindId) {
+        var now = (window.lcDatasets || {})[opts.bindId];
+        if (Array.isArray(now) && now.length) data = now;
+      }
       if (data.length === 0) {
         showError(opts.empty || EMPTY_MSG);
+        /* AN EMPTY LIST IS A START, NOT AN ERROR. A bound list that begins
+           with no rows (module 08's features, filled by a button) once stayed
+           on this notice for good: the repaint hook is wired further down,
+           past this return. The first rows that arrive paint the grid — save
+           bar and all (Michel, 2026-11-04). */
+        if (opts.empty) {
+          var note = wrapper.querySelector(".lc-datagrid-err");
+          if (note) note.className = "lc-datagrid-status lc-datagrid-empty";
+        }
+        if (opts.bindId) {
+          var first = function (rows) {
+            if (wrapper._lcFilled || !Array.isArray(rows) || !rows.length) return;
+            wrapper._lcFilled = 1;
+            var old = wrapper.querySelector(".lc-datagrid-empty, .lc-datagrid-err");
+            if (old) old.remove();
+            renderGridInto(wrapper, Promise.resolve(rows), gridId, opts);
+          };
+          first._lcEl = wrapper;
+          window.lcDatasetListeners = window.lcDatasetListeners || {};
+          (window.lcDatasetListeners[opts.bindId] = window.lcDatasetListeners[opts.bindId] || []).push(first);
+        }
         return;
       }
       /* computed columns: seed them so they appear as (read-only) columns; a
@@ -272,6 +299,17 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       if (cols.length === 0) {
         showError("No columns inferred — rows must be objects with keys.");
         return;
+      }
+      /* columns="i_want, value": these show, in this order; the rows keep
+         every field, so a bound card and the save still see the whole row
+         (the dataset-bound table had it; this grid ignored it — module 08's
+         features showed six columns for three, Michel 2026-11-04) */
+      var shown = String(opts.columns || "").split(",").map(function (c) { return c.trim(); }).filter(Boolean);
+      if (shown.length) {
+        var byField = {};
+        cols.forEach(function (c) { byField[c.field] = c; });
+        /* a named column shows even before any row fills it (no value yet) */
+        cols = shown.map(function (f) { return byField[f] || { field: f, headerName: prettifyKey(f) }; });
       }
       if (computeSpecs.length) {
         cols.forEach(function (c) {
@@ -639,6 +677,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
       filterExpr: el.getAttribute(prefix + "filter") || "",
       compute: el.getAttribute(prefix + "compute") || "",
+      columns: el.getAttribute(prefix + "columns") || "",
       save: el.getAttribute(prefix + "save") || "",
       /* what this grid says when nothing arrives. The author knows why it
          might be empty ("Nothing arrives here yet.") far better than a

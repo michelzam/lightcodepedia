@@ -259,7 +259,7 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
         dots += "<span class='lc-feat-dot lc-feat-none' title='" + counts.none + " feature" + (counts.none > 1 ? "s" : "") + " (no status set)'>● " + counts.none + "</span>";
       var clickable = opts.clickableTags !== false;
       var tagsHtml = tagList.length ? "<div class='lc-card-tags'>" + tagList.map(function(t) {
-        return "<span class='lc-card-tag'" + (clickable ? " data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'" : "") + ">" + escapeHtml(t) + "</span>";
+        return "<span class='lc-card-tag'" + (clickable ? " data-tag='" + escapeHtml(t) + "' title='Filter by " + escapeHtml(t) + "'" : "") + ">" + escapeHtml(String(t).replace(/_/g, " ")) + "</span>";   /* impact_map reads "impact map", as the title's chips do (Michel, 2026-11-04) */
       }).join("") + "</div>" : "";
       var dotsHtml = dots ? "<div class='lc-card-features'>" + dots + "</div>" : "";
       if (tagsHtml || dotsHtml) card += "<div class='lc-card-footer'>" + tagsHtml + dotsHtml + "</div>";
@@ -693,20 +693,12 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
           return;
         }
       }
-      /* otherwise the real name lives in the folder's index.md — a listing
-         never shows that card, so read it through whichever door this shelf
-         is using and upgrade the line once it lands. The directory name
-         shows in the meantime, so the shelf is never unlabelled. */
-      var idxRel = (dir ? dir + "/" : "") + "index.md";
-      var got = runnerMode
-        ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" +
-                   ((runBaseDir && idxRel.charAt(0) !== "/") ? runBaseDir + "/" + idxRel : idxRel.replace(/^\/+/, "")), true)
-        : fetchText(mdUrl(idxRel));
-      Promise.resolve(got).then(function (text) {
-        if (typeof text !== "string") return;
-        var t = extractPageMeta(text).title;
-        if (t) label.textContent = t;
-      }).catch(function () {});
+      /* otherwise the real name lives in the folder's index.md, read by the
+         recap's own road (moduleTitle). The shelf once built its own path and
+         doubled the render's folder inside a lesson — a 404, so a lesson's
+         shelf said "MODULE 08" where the cover says "🧭 08·…" (Michel,
+         2026-11-04). The directory name shows meanwhile. */
+      moduleTitle(rp).then(function (t) { if (t) label.textContent = t; });
     }
 
     var titleCase = function (s) { return s.replace(/\.md$/i, "").replace(/[-_]/g, " ").replace(/\b\w/g, function (c) { return c.toUpperCase(); }); };
@@ -1141,13 +1133,22 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
       var fallback = dir ? titleCase(dir.split("/").pop()) : "";
       if (!dir) return Promise.resolve(fallback);
       var idx = dir + "/index.md";
+      /* FRUGAL: one read per module per tab session — every shelf and recap
+         on the page, and every page after it, share the answer. A cover's
+         title changes with a commit, not with a click. */
+      var ck = runnerMode ? "lc_modtitle:" + dir : "lc_modtitle:site:" + idx;   /* the runner's crumb key: one read for both */
+      var memo = (window._lcModTitles = window._lcModTitles || {});
+      var orFallback = function (t) { return t || fallback; };
+      if (memo[ck]) return memo[ck].then(orFallback);
+      try { var kept = sessionStorage.getItem(ck); if (kept) return (memo[ck] = Promise.resolve(kept)).then(orFallback); } catch (e) {}
       var get = runnerMode
         ? apiFetch("https://api.github.com/repos/" + scanRepo + "/contents/" + idx, true)
         : fetchText(mdUrl(idx));
-      return Promise.resolve(get).then(function (t) {
+      return (memo[ck] = Promise.resolve(get).then(function (t) {
         var m = typeof t === "string" ? extractPageMeta(t) : null;
-        return (m && m.title) || fallback;
-      }).catch(function () { return fallback; });
+        if (m && m.title) { try { sessionStorage.setItem(ck, m.title); } catch (e) {} }
+        return (m && m.title) || "";
+      }).catch(function () { return ""; })).then(orFallback);
     }
     /* 🖥 / 📦 — where these numbers come from, and the one way to bring the
        bench's in (progress.md: source, refresh) */

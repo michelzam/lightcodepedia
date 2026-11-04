@@ -191,6 +191,19 @@ def test_an_intro_filed_in_the_module_is_found_whatever_its_title():
     assert standing is None and "2 intro pages are filed" in clash, clash
 
 
+def test_a_standing_page_keeps_its_published_state():
+    """2026-11-03: re-delivering six live intros would have sent published=False
+    and hidden them. Only a NEW page is born unpublished."""
+    assert cm.page_put("ℹ️ Module 07", "<p>x</p>", new=False) == {"wiki_page": {"title": "ℹ️ Module 07", "body": "<p>x</p>"}}
+    assert cm.page_put("ℹ️ Module 07", "<p>x</p>", new=True)["wiki_page"]["published"] is False
+
+
+def test_the_intro_frame_carries_its_range():
+    """the intro's iframe reaches Canvas as html, its upto= intact"""
+    html = cm.md_html('<iframe src="https://lightcodepedia.org/go?p=_progress&upto=6&focus=1" style="border:none"></iframe>')
+    assert "upto=6" in html and "<iframe" in html, html
+
+
 def test_the_little_markdown_an_intro_needs():
     html = cm.md_html("# Title\n\nHope **all** is *well* — see [the map](x).\n\n## Parts\n\n- one\n- two & three\n\n<iframe src=\"u\"></iframe>\n\nBye.")
     assert "Title" not in html.replace("<h2>", ""), html          # the title is the page's name

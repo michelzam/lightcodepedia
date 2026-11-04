@@ -42,6 +42,38 @@ Feature: Folder shelf — read posture and X-ray workbench
     Then the shelf is titled "Shelf page"
     And the card for "Alpha" does not say you are here
 
+  Scenario: In a lesson, the shelf names its module by the cover's title, read once
+    Michel, 2026-11-04: a lesson's shelf said "MODULE 08" where the cover
+    says "🧭 08·Your Own App" — the shelf built the cover's path with the
+    module's folder twice, and the read 404'd. The title comes through the
+    recap's road, once per module: two shelves, one read.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And I count the reads of "courses/demo/module_08/index.md"
+    And the folder "courses/demo/module_08" serves pages "01_choice.md"
+    And the GitHub contents API serves "courses/demo/module_08/index.md" with the document:
+      """
+      # 🧭 08·Your Own App
+
+      The cover.
+      """
+    And the GitHub contents API serves "courses/demo/module_08/01_choice.md" with the document:
+      """
+      # 🎯 Pick One
+
+      [in this module](#)
+      {: .folder parent="true" }
+
+      [again](#)
+      {: .folder }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_08/01_choice.md"
+    And I wait for the page to be interactive
+    Then the shelf is titled "🧭 08·Your Own App"
+    And the cover was read at most once
+
   Scenario: X-ray turns the shelf into a workbench
     Given I have a clean browser page
     And a marked shim is preinstalled

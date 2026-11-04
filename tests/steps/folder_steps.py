@@ -451,6 +451,20 @@ def step_subdir_title(context):
     expect(card).to_contain_text("Skills ready to build", timeout=5_000)
 
 
+@given('I count the reads of "{path}"')
+def step_count_reads(context, path):
+    context.cover_reads = []
+    context.page.on("request", lambda r: context.cover_reads.append(r.method + " " + r.url)
+                    if ("/contents/" + path) in r.url else None)
+
+
+@then("the cover was read at most once")
+def step_cover_once(context):
+    context.page.wait_for_timeout(1000)
+    n = len(context.cover_reads)
+    assert n <= 1, f"the cover was read {n} times: {context.cover_reads}"
+
+
 @then('the shelf is titled "{title}"')
 def step_shelf_title(context, title):
     expect(context.page.locator(".lc-folder-title").first).to_have_text(

@@ -83,7 +83,8 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `master="<id>"` | Filter this grid by the selected row in another grid — see below |
 | `save="dogs.yaml"` | The reader's edits persist in *their own* connected repo — relative lands beside the lesson, `/my/…` at the bench root; the fence stays the author's seed — see below |
 | `filter="<local>=<master>"` | Required with `master`: which field to match |
-| `empty="…"` | What to show when the data is empty. Say it plainly when the grid is *waiting* on a choice made elsewhere — the default reads like a fault |
+| `columns="i_want, value"` | Show these columns, in this order; the rows keep every field, so a bound card and 💾 still see the whole row. A named column shows even before any row fills it |
+| `empty="…"` | What to show when the data is empty — a bound list that starts with no rows (`[]`) shows it, then paints as soon as rows arrive. Say it plainly when the grid is *waiting* on a choice made elsewhere — the default reads like a fault |
 
 **Q:** You have two grids on the same page and they're interfering with each other. What's missing?
 

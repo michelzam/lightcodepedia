@@ -1016,16 +1016,21 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
   }
   function moduleTitle(src, dir) {
     var key = "lc_modtitle:" + dir;
-    try { var hit = sessionStorage.getItem(key); if (hit !== null) return Promise.resolve(hit); } catch (e) {}
+    /* ONE READ PER COVER: the crumb and the page's shelves (folder.md) ask
+       for the same title at the same moment — they share the read in flight
+       (Michel, 2026-11-04: "check frugality GH R/W") */
+    var memo = (window._lcModTitles = window._lcModTitles || {});
+    if (memo[key]) return memo[key];
+    try { var hit = sessionStorage.getItem(key); if (hit) return (memo[key] = Promise.resolve(hit)); } catch (e) {}
     var sib = src.replace(/[^\/]+$/, "index.md");
     var spec = resolveSrc(sib);
-    return fetch(spec.url, spec.headers ? { headers: spec.headers } : undefined)
+    return (memo[key] = fetch(spec.url, spec.headers ? { headers: spec.headers } : undefined)
       .then(function (r) { return r.ok ? r.text() : ""; })
       .then(function (t) {
         var title = headingOf(t);
-        try { sessionStorage.setItem(key, title); } catch (e) {}
+        if (title) { try { sessionStorage.setItem(key, title); } catch (e) {} }
         return title;
-      }).catch(function () { return ""; });
+      }).catch(function () { return ""; }));
   }
   function crumbFrom(src, root) {
     var path = root.dataset.lcSrcPath || "";

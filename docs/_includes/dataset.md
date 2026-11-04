@@ -997,6 +997,12 @@ Auto-included by docs/_layouts/default.html.
     window.lcSetDataset(id, arr);
     return !!hit;
   };
+  /* replace: the list becomes exactly these rows (Dataset.replace) */
+  window.lcDatasetReplace = function (id, rowsJson) {
+    var rows = typeof rowsJson === "string" ? JSON.parse(rowsJson) : rowsJson;
+    window.lcSetDataset(id, Array.isArray(rows) ? rows : []);
+    return true;
+  };
   window.lcDatasetAppend = function (id, rowJson) {
     var row = typeof rowJson === "string" ? JSON.parse(rowJson) : rowJson;
     var arr = Array.isArray(window.lcDatasets[id]) ? window.lcDatasets[id].filter(function (r) { return !r["⚠️"]; }) : [];
