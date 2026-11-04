@@ -261,6 +261,16 @@ Feature: Component specs run green
     And I run the page's embedded features
     Then every embedded feature passes
 
+  Scenario: Retrospective spec passes
+    Michel, 2026-11-04: "add a new component retrospective … keep, improve,
+    stop, start (Kiss)".
+    Given I have a clean browser page
+    When I navigate to "/components/retrospective"
+    And I wait for the page to be interactive
+    And I wait for the selector ".lc-form-grid .ag-row"
+    And I run the page's embedded features
+    Then every embedded feature passes
+
   Scenario: Pitch spec passes
     Given I have a clean browser page
     When I navigate to "/components/pitch"

@@ -335,3 +335,18 @@ def step_map_told(context, mid, worth, cost):
 def step_map_fact(context, mid, fact):
     m = context.page.locator('.lc-imap[data-lc-id="%s"]' % mid)
     expect(m.locator(".lc-imap-facts")).to_contain_text(fact, timeout=15_000)
+
+
+@then('the retrospective "{cid}" shows the boxes "{boxes}"')
+def step_retro_boxes(context, cid, boxes):
+    card = context.page.locator('.lc-retro[data-lc-id="%s"]' % cid)
+    expect(card).to_be_visible(timeout=PS_TIMEOUT)
+    got = [t.strip() for t in card.locator(".lc-empathy-cell h5").all_text_contents()]
+    want = [b.strip() for b in boxes.split(",")]
+    assert [g.split(" ", 1)[-1] for g in got] == want, got
+
+
+@then('the retrospective "{cid}" says a box is empty')
+def step_retro_empty(context, cid):
+    card = context.page.locator('.lc-retro[data-lc-id="%s"]' % cid)
+    expect(card.locator(".lc-retro-empty").first).to_be_visible(timeout=PS_TIMEOUT)

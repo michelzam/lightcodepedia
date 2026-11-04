@@ -2885,6 +2885,19 @@ class Persona(Block):
         return _lc_ref(self, "data-bind")
 
 
+@component(icon="🔁",
+           assoc=[{"n": "source", "target": "Form"}])
+class Retrospective(Block):
+    """Sprint retrospective (.retrospective) — keep, improve, stop, start."""
+    @property
+    def data(self):
+        return _lc_doc_data(self)
+
+    @property
+    def source(self):
+        return _lc_ref(self, "data-bind")
+
+
 @component(icon="✨",
            assoc=[{"n": "source", "target": "Form"},
                   {"n": "persona", "target": "Persona"}])
@@ -3206,7 +3219,7 @@ _WRAP = [
     ("lc-scene3d", Scene3d), ("lc-avatar-host", Avatar),
     ("lc-vitals", Vitals), ("lc-modelcheck", ModelCheck), ("lc-stat", Stat), ("lc-mdpad", Mdpad),
     ("lc-avatar-trigger", AvatarTrigger),
-    ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap),
+    ("lc-persona", Persona), ("lc-pitch", Pitch), ("lc-imap", ImpactMap), ("lc-retro", Retrospective),
     ("lc-event-flow", EventFlow), ("lc-inspector", Inspector),
     ("lc-model", Model), ("lc-cell", Cell),
     ("lc-database", Database), ("lc-server", Server), ("lc-crew", Crew),

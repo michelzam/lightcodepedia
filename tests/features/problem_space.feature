@@ -26,6 +26,14 @@ Feature: Problem space — persona, pitch, impact map
     Then the persona card "sam" shows the name "Sam"
     And the persona card "sam" has 0 empathy sections
 
+  Scenario: A retrospective renders its four boxes, an empty one says so
+    When I navigate to "/components/retrospective"
+    And I wait for the page to be interactive
+    Then the LC platform is loaded
+    And there are no JS console errors
+    And the retrospective "shelter_retro" shows the boxes "Keep, Improve, Stop, Start"
+    And the retrospective "my_retro" says a box is empty
+
   Scenario: The pitch assembles its sentences from the blanks
     When I navigate to "/components/pitch"
     And I wait for the page to be interactive

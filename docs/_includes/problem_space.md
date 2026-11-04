@@ -44,6 +44,11 @@ Auto-included by docs/_layouts/default.html.
 .lc-empathy-cell h5 { margin: 0 0 0.3em; font-size: 0.82em; color: #6b7280; text-transform: uppercase; letter-spacing: 0.04em; }
 .lc-empathy-cell ul { margin: 0; padding-left: 1.1em; }
 @media (max-width: 560px) { .lc-empathy { grid-template-columns: 1fr; } }
+/* .retrospective — keep · improve · stop · start, the sprint's look back */
+.lc-retro { border: 1px solid #e5e7eb; border-radius: 10px; margin: 1em 0; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.lc-retro-head { padding: 0.6em 1em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-weight: 700; color: #111827; }
+.lc-retro .lc-empathy { border-top: 0; }
+.lc-retro-empty { color: #9ca3af; font-style: italic; }
 
 .lc-pitch { border: 1px solid #e5e7eb; border-left: 4px solid #7b6cf6; border-radius: 0 10px 10px 0; margin: 1em 0; background: #fff; padding: 0.9em 1.1em; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 /* ONE BLANK PER LINE (Michel, 2026-08-12: *"the display should show them in
@@ -391,6 +396,49 @@ Auto-included by docs/_layouts/default.html.
     }).catch(function (e) { fail(el, "lc-persona", e); });
   }
 
+  /* ── .retrospective — keep · improve · stop · start ─────────────────
+     The sprint's look back, in four boxes, KISS (Michel, 2026-11-04:
+     "Retro: keep, improve, stop, start!"). Same wires as the persona:
+     source= an editor form, save= the learner's own file. An empty box
+     stays on the card, saying it is empty — a retro is read box by box. */
+  var RETRO = [["keep", "✅ Keep"], ["improve", "🔧 Improve"], ["stop", "🛑 Stop"], ["start", "🚀 Start"]];
+  function retroHtml(r) {
+    var h = "<div class='lc-retro-head'>🔁 Retrospective" + (r.sprint ? " — " + escapeHtml(r.sprint) : "") + "</div>";
+    return h + "<div class='lc-empathy'>" + RETRO.map(function (c) {
+      var items = asList(r[c[0]]).filter(function (v) { return String(v || "").trim(); });
+      return "<div class='lc-empathy-cell' data-box='" + c[0] + "'><h5>" + c[1] + "</h5>" +
+        (items.length ? "<ul>" + items.map(function (v) { return "<li>" + escapeHtml(v) + "</li>"; }).join("") + "</ul>"
+                      : "<div class='lc-retro-empty'>nothing yet</div>") + "</div>";
+    }).join("") + "</div>";
+  }
+  function upgradeRetro(el) {
+    if (el.dataset.lcUpgraded) return;
+    el.dataset.lcUpgraded = "1";
+    var raw = (el.querySelector("code") || {}).textContent || "";
+    var srcId = el.getAttribute("source") || "";
+    var save = el.getAttribute("save") || "";
+    parseData(raw, "yaml").then(function (seed) {
+      var data = seed || {};
+      var card = document.createElement("div");
+      card.className = "lc-retro";
+      var id = carryId(el, card, "retro");
+      var body = document.createElement("div");
+      card.appendChild(body);
+      function render() {
+        body.innerHTML = retroHtml(data);
+        card.setAttribute("data-lc-value", JSON.stringify(data));
+        if (window.lcSetDataset) window.lcSetDataset(id, data);
+      }
+      render();
+      el.parentNode.replaceChild(card, el);
+      wireDoc(card, {
+        srcId: srcId, save: save, render: render,
+        getData: function () { return data; },
+        setData: function (d) { data = d; }
+      });
+    }).catch(function (e) { fail(el, "lc-retro", e); });
+  }
+
   /* ── .pitch — the assembled two sentences, one emoji per blank ────── */
   var SHAPE = [
     ["For", "who", "👤"], ["who", "need", "🎯"], ["our", "product", "📦"],
@@ -690,6 +738,7 @@ Auto-included by docs/_layouts/default.html.
     window.lcRegisterUpgrader(".highlighter-rouge.persona, pre.persona", upgradePersona);
     window.lcRegisterUpgrader(".highlighter-rouge.pitch, pre.pitch", upgradePitch);
     window.lcRegisterUpgrader(".highlighter-rouge.impact_map, pre.impact_map", upgradeImpactMap);
+    window.lcRegisterUpgrader(".highlighter-rouge.retrospective, pre.retrospective", upgradeRetro);
   }
 })();
 </script>
