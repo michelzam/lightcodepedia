@@ -196,6 +196,10 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
          an error: {= walk_when.first.time[11:16] } on a day with no good
          hour reads '' (Michel, 2026-10-16) */
       "    def __getitem__(self, _k): return self\n" +
+      /* …and called, still empty: {= my_project.first.story.replace(a, b) }
+         with no project chosen yet read "'_Empty' object isn't callable" in
+         red on module 08's page 2, in Canvas (Michel, 2026-11-05) */
+      "    def __call__(self, *_a, **_k): return self\n" +
       "    def __str__(self): return ''\n" +
       "    def __repr__(self): return ''\n" +
       "    def __eq__(self, _o): return _o == '' or _o is None or _o is self\n" +
