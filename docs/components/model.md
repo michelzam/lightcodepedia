@@ -201,6 +201,16 @@ class, a card with its verbs, a diagram of it. What a class can say:
   (`{: .inspector source="shop" bind="order" }`) and diagrams follow. The
   edit is kept in the reader's browser; a tutor `bound="shop"` reads it like
   a program. Python Module 11 (SwiftSip) is built on it.
+- **Classic classes, no Attr, no decorator**: a plain `class Order:` whose
+  `__init__` sets its attributes (`self.order_id = order_id`,
+  `self.state = "pending"`) is read from its own lines: what `__init__`
+  sets becomes the card's fields (a hint — `order: Order`, `amount: float`
+  — says the type, and a class type is an association); a method's
+  **first line** `assert self.state == "paid", "…"` (or `in [...]`) is the
+  state it needs, its **last line** `self.state = "cancelled"` the state it
+  leads to. The card shows the states as chips and the methods as buttons,
+  grey when the assert would refuse; the diagram draws the classes, their
+  links and the state machine. Python Module 11 (SwiftSip) uses it.
 - **Where the rows live**: `class Family(Object, source="calls")` wears a
   list on the page; `{: .model source="shelter" }` puts every class in a
   [database](database), a table each.

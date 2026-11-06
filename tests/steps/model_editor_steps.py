@@ -32,3 +32,8 @@ def step_model_editor_says(context, mid, text):
 @then('the cards "{iid}" offer the command "{verb}"')
 def step_cards_offer(context, iid, verb):
     expect(context.page.locator("[data-lc-id='%s'] button[data-m='%s']" % (iid, verb)).first).to_be_attached(timeout=15_000)
+
+
+@then('the cards "{iid}" show the state "{state}"')
+def step_cards_state(context, iid, state):
+    expect(context.page.locator("[data-lc-id='%s']" % iid).first).to_contain_text(state, timeout=15_000)

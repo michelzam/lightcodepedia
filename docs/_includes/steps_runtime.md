@@ -3424,8 +3424,77 @@ def this_year():
 # truth: every field write / transition pushes a fresh schema to the JS
 # renderer, so widget, REPL and buttons all stay in sync.
 
+def _lc_classic_reg(meta_json):
+    """A CLASSIC class (Michel, 2026-11-06: "make it kiss … not with Attr …
+    without @transitions — just a self.state = 'placed' in init, then an
+    assert in the first line of constrained methods and a self.state = 'paid'
+    at the end of that method"): the page reads those lines (classicMeta, on
+    the js side), and the class is drawn and carded like a model."""
+    for m in json.loads(meta_json):
+        cls = globals().get(m["n"])
+        if not isinstance(cls, type) or getattr(cls, "_lc_fields", None) is not None:
+            continue
+        cls._lc_classic = m
+        sf = m.get("sf") or ""
+        attrs = []
+        for a in m["attrs"]:
+            st = a["n"] == sf
+            d = {"n": a["n"], "t": "fsm" if st else a["t"], "d": a.get("d"), "ro": st,
+                 "unit": "", "hint": "", "secret": False, "field": True, "state": st}
+            if st:
+                d["enum"] = list(m["states"])
+            attrs.append(d)
+        # an attribute typed by a class (beverage: Beverage) is an association:
+        # "an order has an attribute beverage" — the arrow of the board
+        assoc = [{"n": a["n"], "target": a["t"]} for a in m["attrs"]
+                 if a["t"][:1].isupper() and a["t"] not in ("Any",)]
+        attrs = [a for a in attrs if not (a["t"][:1].isupper())]
+        spec = {"icon": m.get("icon", ""), "bases": list(m.get("bases") or []),
+                "attrs": attrs, "assoc": assoc, "events": [],
+                "methods": [{"n": x["n"], "pre": list(x["pre"]), "post": x["post"]} for x in m["methods"]],
+                "states": list(m["states"]) if sf else [], "sdress": {}}
+        cls._spec = spec
+        _MODEL[m["n"]] = spec
+        _CLASSES[m["n"]] = cls
+        for k in ("_dot_node", "_dot_assoc", "_dot_states"):
+            setattr(cls, k, Object.__dict__[k])
+
+
+def _lc_classic_schema(obj, m):
+    """A classic object's card: what its __init__ (and its methods) set on
+    it, the state as chips, the methods as buttons — live when the first-line
+    assert allows them, grey when it does not."""
+    sf = m.get("sf") or ""
+    names = [a["n"] for a in m["attrs"]]
+    for k in list(obj.__dict__.keys()):
+        if not k.startswith("_") and k not in names:
+            names.append(k)
+    fields, stf = [], []
+    for k in names:
+        if not hasattr(obj, k):
+            continue
+        v = getattr(obj, k)
+        if k == sf:
+            stf.append({"n": k, "t": "fsm", "v": v, "ro": True, "state": True,
+                        "enum": list(m["states"]), "field": True, "hint": "", "unit": ""})
+            continue
+        t = ("bool" if isinstance(v, bool) else "int" if isinstance(v, int)
+             else "float" if isinstance(v, float) else "str" if isinstance(v, str)
+             else "list" if isinstance(v, list) else "any")
+        plain = t in ("bool", "int", "float", "str")
+        fields.append({"n": k, "t": t, "v": v if plain else (_lc_name_of(v) or str(v)),
+                       "ro": not plain, "state": False, "field": True, "hint": "", "unit": ""})
+    cur = getattr(obj, sf, None) if sf else None
+    meths = [{"n": x["n"], "pre": list(x["pre"]), "post": x["post"], "doc": x.get("doc", ""),
+              "enabled": (not x["pre"]) or (cur in x["pre"])} for x in m["methods"]]
+    return {"cls": type(obj).__name__, "icon": m.get("icon", ""), "doc": m.get("doc", ""),
+            "fields": fields + stf, "methods": meths}
+
+
 def _lc_inspect_schema(obj):
     cls = type(obj)
+    if getattr(cls, "_lc_fields", None) is None and getattr(cls, "_lc_classic", None) is not None:
+        return _lc_classic_schema(obj, cls._lc_classic)
     sp = getattr(cls, "_spec", None) or {}
     fields = []
     for f in cls._lc_fields:
@@ -4302,6 +4371,12 @@ def _lc_inspect_bind_new(elid):
     the classes (Michel, 2026-08-23: the widget built nothing forever)."""
     insts = list(_LC_NEW)
     _LC_NEW[:] = []
+    g = globals()
+    for k in list(g.keys()):       # classic objects: no registry, their names are their door
+        v = g[k]
+        if not k.startswith("_") and not isinstance(v, type) and getattr(type(v), "_lc_classic", None) is not None \
+                and getattr(type(v), "_lc_fields", None) is None and v not in insts:
+            insts.append(v)
     if not insts:
         snap = globals().get("_LC_CLS_SNAP") or set()
         for n in _CLASSES:
@@ -4317,10 +4392,14 @@ def _lc_inspect_bind_decl(elid, mid):
     block — the page's own structure — and the widget only points at it
     (Michel, 2026-08-24: 'the inspector should just use that block as source')."""
     insts = []
+    g = globals()
     for n in _LC_DECL.get(mid) or []:
         cls = _CLASSES.get(n)
         if cls is not None and getattr(cls, "_lc_fields", None):
             insts.append(cls())
+        elif cls is not None and getattr(cls, "_lc_classic", None) is not None:
+            # a classic class: the objects its block built, by their names
+            insts += [g[k] for k in list(g.keys()) if not k.startswith("_") and type(g[k]) is cls]
     _LC_NEW[:] = []
     _lc_inspect_bind(elid, insts)
 
@@ -5081,7 +5160,7 @@ _inject_store()
       : "\n_lc_inspect_bind_new(" + JSON.stringify(elid) + ")\n";
     mpReady().then(function (mp) {
       try {
-        runIn(host, mp, preamble + "\n_LC_NEW[:] = []\n_LC_CLS_SNAP = set(_CLASSES)\n" + code + tail);
+        runIn(host, mp, preamble + "\n_LC_NEW[:] = []\n_LC_CLS_SNAP = set(_CLASSES)\n" + code + classicReg(code) + tail);
         if (follow) {
           host.innerHTML = "<div class='lc-ins-loading'>👉 click a row to open its object</div>";
           if (window.lcMasterDetail) window.lcMasterDetail.subscribe(follow, function (row) {
@@ -5230,6 +5309,112 @@ _inject_store()
     }
     return null;
   };
+
+  /* THE CLASSIC READER (Michel, 2026-11-06): a plain class, read from its
+     own lines — what __init__ sets (self.x = …), the state attribute (the one
+     an assert names, else state/status) and, per method, the first-line
+     assert (the states it needs) and the last self.state = "…" (where it
+     leads). Classes on Object are left to the model machinery. */
+  function classicMeta(code) {
+    var lines = String(code).split("\n"), out = [], cur = null, meth = null, byName = {};
+    var strs = function (t) { var r = [], m, re = /(["'])((?:(?!\1).)*)\1/g; while ((m = re.exec(t))) r.push(m[2]); return r; };
+    var typeOf = function (rhs, params) {
+      rhs = rhs.trim();
+      if (/^(["']).*\1$/.test(rhs)) return ["str", strs(rhs)[0]];
+      if (/^-?\d+$/.test(rhs)) return ["int", parseInt(rhs, 10)];
+      if (/^-?\d*\.\d+$/.test(rhs)) return ["float", parseFloat(rhs)];
+      if (rhs === "True" || rhs === "False") return ["bool", rhs === "True"];
+      if (/^\[/.test(rhs)) return ["list", null];
+      if (params[rhs]) return params[rhs];
+      return ["any", null];
+    };
+    var DOC = /^("""|''')(.*?)\1$/;
+    var finish = function () {
+      if (!cur) return;
+      var st = [];
+      var add = function (v) { if (v != null && st.indexOf(v) < 0) st.push(v); };
+      add(cur.init);
+      cur.methods.forEach(function (x) { x.pre.forEach(add); add(x.post); });
+      cur.states = cur.sf ? st : [];
+      out.push(cur); byName[cur.n] = cur;
+    };
+    lines.forEach(function (l) {
+      var cm = /^class\s+(\w+)\s*(?:\(([^)]*)\))?\s*:/.exec(l);
+      if (cm) {
+        finish(); meth = null;
+        var bases = (cm[2] || "").split(",").map(function (b) { return b.trim(); }).filter(Boolean);
+        if (bases.some(function (b) { return !byName[b] && b !== "object"; })) { cur = null; return; }   /* Object & co: the model's */
+        cur = { n: cm[1], bases: bases.filter(function (b) { return byName[b]; }), attrs: [], methods: [], sf: "", init: null, icon: "", doc: "" };
+        cur.bases.forEach(function (b) {
+          var B = byName[b];
+          cur.attrs = B.attrs.slice(); cur.methods = B.methods.map(function (x) { return JSON.parse(JSON.stringify(x)); });
+          cur.sf = B.sf; cur.init = B.init;
+        });
+        return;
+      }
+      if (!cur) return;
+      if (/^\S/.test(l)) { finish(); cur = null; meth = null; return; }
+      var dm = /^    def\s+(\w+)\s*\(([^)]*)\)/.exec(l);
+      if (dm) {
+        var params = {};
+        dm[2].split(",").forEach(function (p) {
+          var pm = /^\s*(\w+)\s*(?::\s*(\w+))?\s*(?:=\s*(.+))?$/.exec(p);
+          if (!pm || pm[1] === "self") return;
+          var t = pm[2] || (pm[3] ? typeOf(pm[3], {})[0] : "any"), d = pm[3] ? typeOf(pm[3], {})[1] : null;
+          params[pm[1]] = [{ str: "str", int: "int", float: "float", bool: "bool", list: "list" }[t] || (/^[A-Z]\w*$/.test(t) ? t : "any"), d];
+        });
+        meth = { n: dm[1], pre: [], post: null, doc: "", first: true, params: params };
+        if (dm[1].charAt(0) !== "_") {
+          var had = cur.methods.filter(function (x) { return x.n === dm[1]; })[0];
+          if (had) cur.methods.splice(cur.methods.indexOf(had), 1);
+          cur.methods.push(meth);
+        }
+        return;
+      }
+      var body = l.trim();
+      if (!body) return;
+      if (!meth) {   /* the class's own docstring: its icon and its words */
+        var cd = DOC.exec(body);
+        if (cd && !cur.doc) { cur.doc = cd[2]; var ic = /^(\S+)\s/.exec(cd[2]); if (ic && !/\w/.test(ic[1])) cur.icon = ic[1]; }
+        return;
+      }
+      var ds = DOC.exec(body);
+      if (ds && meth.first && !meth.doc) { meth.doc = ds[2]; return; }
+      var am = /^assert\s+self\.(\w+)\s*(==|in)\s*(.+)$/.exec(body);
+      if (meth.first && am) {
+        var rhs = am[3];
+        if (am[2] === "==") meth.pre = strs(rhs).slice(0, 1);
+        else { var lm = /^\[([^\]]*)\]/.exec(rhs.trim()); meth.pre = lm ? strs(lm[1]) : []; }
+        if (!cur.sf) cur.sf = am[1];
+        meth.first = false;
+        return;
+      }
+      meth.first = false;
+      var sm = /^self\.(\w+)\s*(?::\s*(\w+))?\s*=\s*(.+)$/.exec(body);
+      if (sm) sm = [sm[0], sm[1], sm[3], sm[2]];   /* [_, name, value, hint] — a hint says the type */
+      if (!sm) return;
+      if (meth.n === "__init__") {
+        var tv = typeOf(sm[2], meth.params);
+        if (sm[3]) tv = [{ str: "str", int: "int", float: "float", bool: "bool", list: "list" }[sm[3]] || (/^[A-Z]\w*$/.test(sm[3]) ? sm[3] : "any"), tv[1]];
+        if (!cur.attrs.some(function (a) { return a.n === sm[1]; })) cur.attrs.push({ n: sm[1], t: tv[0], d: tv[1] });
+        if ((sm[1] === "state" || sm[1] === "status") && /^(["'])/.test(sm[2].trim())) {
+          if (!cur.sf) cur.sf = sm[1];
+          if (sm[1] === cur.sf) cur.init = strs(sm[2])[0];
+        }
+      } else if ((sm[1] === cur.sf || (!cur.sf && (sm[1] === "state" || sm[1] === "status"))) && /^(["'])/.test(sm[2].trim())) {
+        if (!cur.sf) cur.sf = sm[1];
+        meth.post = strs(sm[2])[0];
+      }
+    });
+    finish();
+    out.forEach(function (c) { c.methods.forEach(function (x) { delete x.first; delete x.params; }); });
+    return out;
+  }
+  function classicReg(code) {
+    var meta = classicMeta(code);
+    return meta.length ? "\n_lc_classic_reg(" + JSON.stringify(JSON.stringify(meta)) + ")\n" : "";
+  }
+  window.lcClassicMeta = classicMeta;
 
   /* the editable model's editor — dressed as a run editor (lc-pyrun-<id>,
      .lc-pyrun-code, .lc-pyrun-out) so a tutor bound="<id>" reads the
@@ -5421,7 +5606,7 @@ _inject_store()
         if (purge) runPy(mp, purge);
         /* the fence's text is known BEFORE its classes run: the first publish
            already orders the verbs as written */
-        runPy(mp, pre + "\n_LC_SNAP_M = set(_CLASSES)\n_LC_SRC[" + JSON.stringify(mid) + "] = " + JSON.stringify(code) + "\n" + code + bind +
+        runPy(mp, pre + "\n_LC_SNAP_M = set(_CLASSES)\n_LC_SRC[" + JSON.stringify(mid) + "] = " + JSON.stringify(code) + "\n" + code + classicReg(code) + bind +
           "\n_LC_DECL[" + JSON.stringify(mid) + "] = [n for n in _CLASSES if n not in _LC_SNAP_M]\n" +
           "_LC_NEW[:] = []\n_lc_publish_all()\n");
         window._lcModelPreIn = mp;
