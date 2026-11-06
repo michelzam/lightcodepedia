@@ -5422,8 +5422,19 @@ _inject_store()
   function modelEditor(el, mid, starter) {
     if (el._lcEd) return el._lcEd.value;
     var key = "lc_model_edit:" + ((location.hash.match(/src=([^&]+)/) || [])[1] || location.pathname) + ":" + mid;
-    var saved = null;
-    try { saved = localStorage.getItem(key); } catch (e) {}
+    /* A KEPT EDIT BELONGS TO ITS STARTER (Michel, 2026-11-06: the page
+       turned classic, his browser kept showing the old Attr/@transition
+       classes): the edit is stored with a fingerprint of the starter it was
+       made on; a new starter wins, the old edit stays one click away. */
+    var fp = function (t) { var h = 0; for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return String(h); };
+    var saved = null, stale = null;
+    try {
+      var raw = localStorage.getItem(key), rec = null;
+      try { rec = raw ? JSON.parse(raw) : null; } catch (e) { rec = null; }
+      if (rec && typeof rec === "object" && rec.code != null) {
+        if (rec.starter === fp(starter)) saved = rec.code; else stale = rec.code;
+      } else if (raw) stale = raw;          /* the first format: no fingerprint, so an older starter */
+    } catch (e) {}
     var wrap = document.createElement("div");
     wrap.className = "lc-pyrun lc-model-ed";
     wrap.id = "lc-pyrun-" + mid;
@@ -5437,6 +5448,12 @@ _inject_store()
       "<pre class='lc-pyrun-out lc-empty'></pre>";
     var ta = wrap.querySelector("textarea"), out = wrap.querySelector(".lc-pyrun-out"), st = wrap.querySelector(".lc-model-ed-status");
     ta.value = saved != null ? saved : starter;
+    if (stale != null && stale !== starter) {
+      st.innerHTML = "🆕 new starter — <a href='#' class='lc-model-old'>your earlier version</a>";
+      st.querySelector(".lc-model-old").addEventListener("click", function (ev) {
+        ev.preventDefault(); ta.value = stale; ta.dispatchEvent(new Event("input"));
+      });
+    }
     var fit = function () { ta.rows = Math.min(120, Math.max(6, ta.value.split("\n").length + 1)); };
     fit();
     ta.addEventListener("input", function () { fit(); st.textContent = "✏️ changed — ▶ Apply"; });
@@ -5451,12 +5468,12 @@ _inject_store()
       out.classList.remove("lc-empty");
       out.classList.toggle("lc-pyrun-err", !!err);
       out.textContent = err ? "⚠️ " + err : "✅ applied: " + (names || []).join(", ");
-      st.textContent = "";
+      if (/^✏️/.test(st.textContent)) st.textContent = "";   /* the earlier-version link stays */
       if (!err) try { document.dispatchEvent(new CustomEvent("lc-model-rerun", { detail: mid })); } catch (e) {}
     };
     function apply() {
       var code = ta.value;
-      try { if (code === starter) localStorage.removeItem(key); else localStorage.setItem(key, code); } catch (e) {}
+      try { if (code === starter) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify({ starter: fp(starter), code: code })); } catch (e) {}
       var c = el.querySelector("code") || el;
       c.textContent = code;
       delete el.dataset.lcModelDone;
