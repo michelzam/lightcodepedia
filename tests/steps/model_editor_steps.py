@@ -60,3 +60,14 @@ def step_editor_not_holds(context, mid, text):
 @then('the model editor "{mid}" offers "{text}"')
 def step_editor_offers(context, mid, text):
     expect(context.page.locator("#lc-pyrun-%s .lc-model-ed-status" % mid)).to_contain_text(text, timeout=10_000)
+
+
+@then('the cards "{iid}" have no button "{verb}"')
+def step_cards_no_button(context, iid, verb):
+    expect(context.page.locator("[data-lc-id='%s'] .lc-ins-card" % iid).first).to_be_visible(timeout=15_000)
+    assert context.page.locator("[data-lc-id='%s'] button[data-m='%s']" % (iid, verb)).count() == 0
+
+
+@then('the console of "{iid}" reads "{text}"')
+def step_console_reads(context, iid, text):
+    expect(context.page.locator("[data-lc-console='%s']" % iid).first).to_contain_text(text, timeout=10_000)

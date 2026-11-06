@@ -3486,7 +3486,7 @@ def _lc_classic_schema(obj, m):
                        "ro": not plain, "state": False, "field": True, "hint": "", "unit": ""})
     cur = getattr(obj, sf, None) if sf else None
     meths = [{"n": x["n"], "pre": list(x["pre"]), "post": x["post"], "doc": x.get("doc", ""),
-              "enabled": (not x["pre"]) or (cur in x["pre"])} for x in m["methods"]]
+              "enabled": (not x["pre"]) or (cur in x["pre"])} for x in m["methods"] if not x.get("hidden")]
     return {"cls": type(obj).__name__, "icon": m.get("icon", ""), "doc": m.get("doc", ""),
             "fields": fields + stf, "methods": meths}
 
@@ -4422,14 +4422,37 @@ def _lc_inspect_set(elid, name, field, vjson):
     _lc_inspect_push(elid, err)
 
 
+def _lc_trace_snap():
+    """Every object the page's inspectors show, attribute by attribute — what
+    a press is about to change (Michel, 2026-11-06: "I would prefer the
+    inspectors to trace instead of … the methods doing themselves with ugly
+    explicit prints")."""
+    snap = {}
+    for pairs in _LC_INSPECT.values():
+        for nm, inst in pairs:
+            vals = getattr(inst, "_v", None)
+            d = vals if isinstance(vals, dict) else getattr(inst, "__dict__", {})
+            for k in list(d.keys()):
+                if not k.startswith("_"):
+                    v = d[k]
+                    snap[(nm, k)] = _lc_name_of(v) if hasattr(v, "__dict__") and _lc_name_of(v) else repr(v)
+    return snap
+
+
 def _lc_inspect_call(elid, name, meth):
     err = ""
+    before = _lc_trace_snap()
     for nm, inst in (_LC_INSPECT.get(elid) or []):
         if nm == name:
             try:
                 getattr(inst, meth)()
             except Exception as e:
                 err = str(e)
+    after = _lc_trace_snap()
+    for key in after:
+        if before.get(key) != after[key]:
+            was = before.get(key)
+            print(key[0] + "." + key[1] + " = " + after[key] + ("    # was " + was if was is not None else ""))
     _lc_inspect_push(elid, err)
 
 
@@ -5364,7 +5387,10 @@ _inject_store()
           params[pm[1]] = [{ str: "str", int: "int", float: "float", bool: "bool", list: "list" }[t] || (/^[A-Z]\w*$/.test(t) ? t : "any"), d];
         });
         meth = { n: dm[1], pre: [], post: null, doc: "", first: true, params: params };
-        if (dm[1].charAt(0) !== "_") {
+        /* a _private method is no button (Michel, 2026-11-06: "declare Order._pay
+           private, so no button for it") — but its transition is still drawn */
+        if (dm[1].charAt(0) === "_" && dm[1].slice(0, 2) !== "__") meth.hidden = true;
+        if (dm[1].slice(0, 2) !== "__") {
           var had = cur.methods.filter(function (x) { return x.n === dm[1]; })[0];
           if (had) cur.methods.splice(cur.methods.indexOf(had), 1);
           cur.methods.push(meth);
