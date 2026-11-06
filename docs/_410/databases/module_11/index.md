@@ -28,13 +28,173 @@ content, and the graded assignment reads what they reveal. Take your time. 🙂
 > Why did the SQL query break up with the NoSQL database? It needed more
 > structure in the relationship. 💔
 
+```json
+[
+  {"DepartmentID": 1, "DepartmentName": "Information Studies", "DepartmentCode": "INFOST"},
+  {"DepartmentID": 2, "DepartmentName": "Computer Science", "DepartmentCode": "COMPSCI"},
+  {"DepartmentID": 3, "DepartmentName": "Mathematical Sciences", "DepartmentCode": "MATH"}
+]
+```
+{: .dataset #Departments }
+
+```json
+[
+  {"TermID": 1, "TermName": "Spring 2026"},
+  {"TermID": 2, "TermName": "Fall 2026"}
+]
+```
+{: .dataset #Terms }
+
+```json
+[
+  {"CourseID": 1, "CourseNumber": "INFOST 110", "CourseTitle": "Introduction to Information Science and Technology", "Credits": 3, "DepartmentID": 1},
+  {"CourseID": 2, "CourseNumber": "INFOST 120", "CourseTitle": "Information Technology Ethics", "Credits": 3, "DepartmentID": 1},
+  {"CourseID": 3, "CourseNumber": "INFOST 240", "CourseTitle": "Web Design I", "Credits": 3, "DepartmentID": 1},
+  {"CourseID": 4, "CourseNumber": "INFOST 270", "CourseTitle": "Generative AI Literacy", "Credits": 3, "DepartmentID": 1},
+  {"CourseID": 5, "CourseNumber": "INFOST 410", "CourseTitle": "Database Information Retrieval Systems", "Credits": 3, "DepartmentID": 1},
+  {"CourseID": 6, "CourseNumber": "COMPSCI 250", "CourseTitle": "Introductory Computer Programming", "Credits": 3, "DepartmentID": 2},
+  {"CourseID": 7, "CourseNumber": "MATH 231", "CourseTitle": "Calculus and Analytic Geometry I", "Credits": 4, "DepartmentID": 3}
+]
+```
+{: .dataset #Courses }
+
+```json
+[
+  {"MajorID": 1, "MajorName": "Information Science and Technology", "DepartmentID": 1},
+  {"MajorID": 2, "MajorName": "Computer Science", "DepartmentID": 2},
+  {"MajorID": 3, "MajorName": "Mathematics", "DepartmentID": 3},
+  {"MajorID": 4, "MajorName": "Actuarial Science", "DepartmentID": 3}
+]
+```
+{: .dataset #Majors }
+
+```json
+[
+  {"InstructorID": 1, "FirstName": "Edgar", "LastName": "Codd", "DepartmentID": 1},
+  {"InstructorID": 2, "FirstName": "Grace", "LastName": "Hopper", "DepartmentID": 2},
+  {"InstructorID": 3, "FirstName": "Emmy", "LastName": "Noether", "DepartmentID": 3},
+  {"InstructorID": 4, "FirstName": "Alan", "LastName": "Turing", "DepartmentID": 2}
+]
+```
+{: .dataset #Instructors }
+
+```json
+[
+  {"StudentID": 1, "FirstName": "Jay", "LastName": "Rivera", "MajorID": 1},
+  {"StudentID": 2, "FirstName": "Max", "LastName": "Nguyen", "MajorID": 1},
+  {"StudentID": 3, "FirstName": "Miranda", "LastName": "Okafor", "MajorID": 2},
+  {"StudentID": 4, "FirstName": "Bill", "LastName": "Kowalski", "MajorID": 3},
+  {"StudentID": 5, "FirstName": "Ana", "LastName": "Lopez", "MajorID": 4},
+  {"StudentID": 6, "FirstName": "Lee", "LastName": "Park", "MajorID": 1}
+]
+```
+{: .dataset #Students }
+
+```json
+[
+  {"SectionID": 1, "SectionNumber": "202", "CourseID": 5, "TermID": 1, "InstructorID": 1},
+  {"SectionID": 2, "SectionNumber": "201", "CourseID": 6, "TermID": 1, "InstructorID": 4},
+  {"SectionID": 3, "SectionNumber": "401", "CourseID": 7, "TermID": 1, "InstructorID": 3},
+  {"SectionID": 4, "SectionNumber": "202", "CourseID": 5, "TermID": 2, "InstructorID": 1},
+  {"SectionID": 5, "SectionNumber": "201", "CourseID": 3, "TermID": 2, "InstructorID": 1},
+  {"SectionID": 6, "SectionNumber": "201", "CourseID": 6, "TermID": 2, "InstructorID": 2},
+  {"SectionID": 7, "SectionNumber": "401", "CourseID": 7, "TermID": 2, "InstructorID": 3}
+]
+```
+{: .dataset #Sections }
+
+```json
+[
+  {"EnrollmentID": 1, "StudentID": 1, "SectionID": 1, "Grade": "A"},
+  {"EnrollmentID": 2, "StudentID": 2, "SectionID": 1, "Grade": "B"},
+  {"EnrollmentID": 3, "StudentID": 3, "SectionID": 2, "Grade": "A"},
+  {"EnrollmentID": 4, "StudentID": 4, "SectionID": 3, "Grade": "B"},
+  {"EnrollmentID": 5, "StudentID": 1, "SectionID": 3, "Grade": "C"},
+  {"EnrollmentID": 6, "StudentID": 1, "SectionID": 4, "Grade": null},
+  {"EnrollmentID": 7, "StudentID": 2, "SectionID": 4, "Grade": null},
+  {"EnrollmentID": 8, "StudentID": 6, "SectionID": 4, "Grade": null},
+  {"EnrollmentID": 9, "StudentID": 5, "SectionID": 7, "Grade": null},
+  {"EnrollmentID": 10, "StudentID": 3, "SectionID": 6, "Grade": null},
+  {"EnrollmentID": 11, "StudentID": 4, "SectionID": 7, "Grade": null},
+  {"EnrollmentID": 12, "StudentID": 2, "SectionID": 5, "Grade": null},
+  {"EnrollmentID": 13, "StudentID": 6, "SectionID": 5, "Grade": null}
+]
+```
+{: .dataset #Enrollments }
+
+```json
+[
+  {"PersonID": 1, "Name": "Matt"},
+  {"PersonID": 2, "Name": "Michel"},
+  {"PersonID": 3, "Name": "Chris"},
+  {"PersonID": 4, "Name": "Ben"}
+]
+```
+{: .dataset #People }
+
+```json
+[
+  {"ConnectionID": 1, "FromName": "Matt", "ToName": "Chris"},
+  {"ConnectionID": 2, "FromName": "Michel", "ToName": "Ben"},
+  {"ConnectionID": 3, "FromName": "Chris", "ToName": "Ben"}
+]
+```
+{: .dataset #Connections }
+
+
+````
+### 📚 Step 0 · The data you play with
+
+Every game this week runs on data you can see right here — open this
+step whenever you need to look something up.
+
+**The UWM sample data** (module 07) — eight tables, top of the map first:
+
+[Departments](#)
+{: .datagrid source="Departments" rows="4" }
+
+[Terms](#)
+{: .datagrid source="Terms" rows="4" }
+
+[Courses](#)
+{: .datagrid source="Courses" rows="4" }
+
+[Majors](#)
+{: .datagrid source="Majors" rows="4" }
+
+[Instructors](#)
+{: .datagrid source="Instructors" rows="4" }
+
+[Students](#)
+{: .datagrid source="Students" rows="4" }
+
+[Sections](#)
+{: .datagrid source="Sections" rows="4" }
+
+[Enrollments](#)
+{: .datagrid source="Enrollments" rows="6" }
+
+**The little network** of step 3 — four people, three arrows:
+
+[People](#)
+{: .datagrid source="People" rows="4" }
+
+[Connections](#)
+{: .datagrid source="Connections" rows="3" }
+
+Tip: in SQuizL, look **here** while you predict; run the query only to
+check.
+````
+{: .accordion #data }
+
 ````
 ### 🏆 Step 1 · SQuizL — predict, then let the database decide
 
-Eight challenges on the **UWM sample data** of module 07 (the tables are
-in the practice block below, all eight). For each one:
+Eight challenges on the **UWM sample data** of module 07 — the tables
+are in the **📚 Step 0** just above. For each one:
 
-1. **Predict** — pick your answer in the quiz *before* running anything.
+1. **Predict** — look at the tables of Step 0, then pick your answer in
+   the quiz *before* running anything.
 2. **Reveal** — the quiz tells you right away, and your 🏆 counts it.
 3. **Check** — press ▶ Run on the challenge's query in the practice
    block, and see the database agree.
@@ -299,8 +459,8 @@ only SQL") names the families that store data differently:
 A tiny network from the slides: four people, three connections —
 **Matt → Chris**, **Michel → Ben**, **Chris → Ben**.
 
-**As rows** (relational) — the two tables are in the practice block:
-`People` and `Connections`, one row per arrow.
+**As rows** (relational) — the two tables are in 📚 Step 0: `People` and
+`Connections`, one row per arrow.
 
 **As a document** (MongoDB style) — one person with their connections
 nested inside:
@@ -591,121 +751,7 @@ db.students.find({ gender: 'F' });
 ````
 ### 🔎 Practice block — the queries that settle the games
 
-The **UWM sample data** of module 07, all eight tables, and the little
-network of step 3.
-
-```json
-[
-  {"DepartmentID": 1, "DepartmentName": "Information Studies", "DepartmentCode": "INFOST"},
-  {"DepartmentID": 2, "DepartmentName": "Computer Science", "DepartmentCode": "COMPSCI"},
-  {"DepartmentID": 3, "DepartmentName": "Mathematical Sciences", "DepartmentCode": "MATH"}
-]
-```
-{: .dataset #Departments }
-
-```json
-[
-  {"TermID": 1, "TermName": "Spring 2026"},
-  {"TermID": 2, "TermName": "Fall 2026"}
-]
-```
-{: .dataset #Terms }
-
-```json
-[
-  {"CourseID": 1, "CourseNumber": "INFOST 110", "CourseTitle": "Introduction to Information Science and Technology", "Credits": 3, "DepartmentID": 1},
-  {"CourseID": 2, "CourseNumber": "INFOST 120", "CourseTitle": "Information Technology Ethics", "Credits": 3, "DepartmentID": 1},
-  {"CourseID": 3, "CourseNumber": "INFOST 240", "CourseTitle": "Web Design I", "Credits": 3, "DepartmentID": 1},
-  {"CourseID": 4, "CourseNumber": "INFOST 270", "CourseTitle": "Generative AI Literacy", "Credits": 3, "DepartmentID": 1},
-  {"CourseID": 5, "CourseNumber": "INFOST 410", "CourseTitle": "Database Information Retrieval Systems", "Credits": 3, "DepartmentID": 1},
-  {"CourseID": 6, "CourseNumber": "COMPSCI 250", "CourseTitle": "Introductory Computer Programming", "Credits": 3, "DepartmentID": 2},
-  {"CourseID": 7, "CourseNumber": "MATH 231", "CourseTitle": "Calculus and Analytic Geometry I", "Credits": 4, "DepartmentID": 3}
-]
-```
-{: .dataset #Courses }
-
-```json
-[
-  {"MajorID": 1, "MajorName": "Information Science and Technology", "DepartmentID": 1},
-  {"MajorID": 2, "MajorName": "Computer Science", "DepartmentID": 2},
-  {"MajorID": 3, "MajorName": "Mathematics", "DepartmentID": 3},
-  {"MajorID": 4, "MajorName": "Actuarial Science", "DepartmentID": 3}
-]
-```
-{: .dataset #Majors }
-
-```json
-[
-  {"InstructorID": 1, "FirstName": "Edgar", "LastName": "Codd", "DepartmentID": 1},
-  {"InstructorID": 2, "FirstName": "Grace", "LastName": "Hopper", "DepartmentID": 2},
-  {"InstructorID": 3, "FirstName": "Emmy", "LastName": "Noether", "DepartmentID": 3},
-  {"InstructorID": 4, "FirstName": "Alan", "LastName": "Turing", "DepartmentID": 2}
-]
-```
-{: .dataset #Instructors }
-
-```json
-[
-  {"StudentID": 1, "FirstName": "Jay", "LastName": "Rivera", "MajorID": 1},
-  {"StudentID": 2, "FirstName": "Max", "LastName": "Nguyen", "MajorID": 1},
-  {"StudentID": 3, "FirstName": "Miranda", "LastName": "Okafor", "MajorID": 2},
-  {"StudentID": 4, "FirstName": "Bill", "LastName": "Kowalski", "MajorID": 3},
-  {"StudentID": 5, "FirstName": "Ana", "LastName": "Lopez", "MajorID": 4},
-  {"StudentID": 6, "FirstName": "Lee", "LastName": "Park", "MajorID": 1}
-]
-```
-{: .dataset #Students }
-
-```json
-[
-  {"SectionID": 1, "SectionNumber": "202", "CourseID": 5, "TermID": 1, "InstructorID": 1},
-  {"SectionID": 2, "SectionNumber": "201", "CourseID": 6, "TermID": 1, "InstructorID": 4},
-  {"SectionID": 3, "SectionNumber": "401", "CourseID": 7, "TermID": 1, "InstructorID": 3},
-  {"SectionID": 4, "SectionNumber": "202", "CourseID": 5, "TermID": 2, "InstructorID": 1},
-  {"SectionID": 5, "SectionNumber": "201", "CourseID": 3, "TermID": 2, "InstructorID": 1},
-  {"SectionID": 6, "SectionNumber": "201", "CourseID": 6, "TermID": 2, "InstructorID": 2},
-  {"SectionID": 7, "SectionNumber": "401", "CourseID": 7, "TermID": 2, "InstructorID": 3}
-]
-```
-{: .dataset #Sections }
-
-```json
-[
-  {"EnrollmentID": 1, "StudentID": 1, "SectionID": 1, "Grade": "A"},
-  {"EnrollmentID": 2, "StudentID": 2, "SectionID": 1, "Grade": "B"},
-  {"EnrollmentID": 3, "StudentID": 3, "SectionID": 2, "Grade": "A"},
-  {"EnrollmentID": 4, "StudentID": 4, "SectionID": 3, "Grade": "B"},
-  {"EnrollmentID": 5, "StudentID": 1, "SectionID": 3, "Grade": "C"},
-  {"EnrollmentID": 6, "StudentID": 1, "SectionID": 4, "Grade": null},
-  {"EnrollmentID": 7, "StudentID": 2, "SectionID": 4, "Grade": null},
-  {"EnrollmentID": 8, "StudentID": 6, "SectionID": 4, "Grade": null},
-  {"EnrollmentID": 9, "StudentID": 5, "SectionID": 7, "Grade": null},
-  {"EnrollmentID": 10, "StudentID": 3, "SectionID": 6, "Grade": null},
-  {"EnrollmentID": 11, "StudentID": 4, "SectionID": 7, "Grade": null},
-  {"EnrollmentID": 12, "StudentID": 2, "SectionID": 5, "Grade": null},
-  {"EnrollmentID": 13, "StudentID": 6, "SectionID": 5, "Grade": null}
-]
-```
-{: .dataset #Enrollments }
-
-```json
-[
-  {"PersonID": 1, "Name": "Matt"},
-  {"PersonID": 2, "Name": "Michel"},
-  {"PersonID": 3, "Name": "Chris"},
-  {"PersonID": 4, "Name": "Ben"}
-]
-```
-{: .dataset #People }
-
-```json
-[
-  {"ConnectionID": 1, "FromName": "Matt", "ToName": "Chris"},
-  {"ConnectionID": 2, "FromName": "Michel", "ToName": "Ben"},
-  {"ConnectionID": 3, "FromName": "Chris", "ToName": "Ben"}
-]
-```
-{: .dataset #Connections }
+The queries that settle the games — on the data of the 📚 step at the top.
 
 **① Join**
 
@@ -922,6 +968,9 @@ face:
   zoom: 1.2
 script:
   - say: "Welcome back! A pivotal week. First you prove your SQL with a game, then you open the door to NoSQL. Every game plays three ways: alone, with a person, or with Ari. All optional, all worth it."
+  - at: data
+    do: open
+    say: "Step zero. The data you play with: the eight UWM tables you know, and a little network of four people. Look here whenever you need to."
   - at: squizl
     do: open
     say: "Step one. SQuizL. Eight challenges on the UWM data. Predict first, the quiz reveals, then the query in the practice block settles it. Ari can be your opponent, never your helper."
