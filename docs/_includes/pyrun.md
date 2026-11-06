@@ -22,6 +22,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
 .lc-pyrun textarea { display: block; width: 100%; box-sizing: border-box; border: none; outline: none; padding: 0.9em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; resize: none; background: #fafafa; color: #111; }   /* the grip below is the one handle (Michel, 2026-10-27: the corner one was "not useful and not in sync") */
 .lc-pyrun-editor { display: flex; background: #fafafa; align-items: stretch; }
+/* the editable model (steps_runtime.md modelEditor): classes, ▶ Apply, the page follows */
+.lc-model-ed-bar { display: flex; gap: 0.5em; align-items: center; padding: 0.45em 0.9em; border-top: 1px solid #e5e7eb; background: #f6f7f9; }
+.lc-model-apply { font: inherit; font-size: 0.85em; padding: 0.3em 0.9em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
+.lc-model-reset { font: inherit; font-size: 0.85em; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-model-ed-status { font-size: 0.8em; color: #6b7280; }
+.lc-model-ed .lc-pyrun-out { margin: 0; padding: 0.55em 1em; font-size: 0.82em; white-space: pre-wrap; border-top: 1px solid #e5e7eb; background: #fbfbfb; color: #1f6f3f; }
+.lc-model-ed .lc-pyrun-out.lc-pyrun-err { color: #b00020; background: #fff5f5; }
+.lc-model-ed .lc-pyrun-out.lc-empty { display: none; }
 .lc-pyrun-codewrap { position: relative; flex: 1; min-width: 0; }
 .lc-pyrun-codewrap .lc-pyrun-code { flex: none; width: 100%; padding-left: 0.6em; }
 .lc-pyrun-hl { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; pointer-events: none; overflow: hidden; background: transparent; color: #111; white-space: pre-wrap; word-wrap: break-word; box-sizing: border-box; }

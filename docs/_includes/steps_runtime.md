@@ -5056,9 +5056,14 @@ _inject_store()
           if ((window._lcModelReady || {})[source]) {
             /* bind= alongside source=: the model is the WHEN, the names are
                the WHAT — cards for its live singletons, not specimens */
-            pySend(bind
-              ? "_lc_inspect_bind_names(" + JSON.stringify(elid) + "," + JSON.stringify(bind) + ")"
-              : "_lc_inspect_bind_decl(" + JSON.stringify(elid) + "," + JSON.stringify(source) + ")");
+            var bindNow = function () {
+              pySend(bind
+                ? "_lc_inspect_bind_names(" + JSON.stringify(elid) + "," + JSON.stringify(bind) + ")"
+                : "_lc_inspect_bind_decl(" + JSON.stringify(elid) + "," + JSON.stringify(source) + ")");
+            };
+            bindNow();
+            /* an editable model re-ran (▶ Apply): its new objects, its new classes */
+            document.addEventListener("lc-model-rerun", function (ev) { if (ev.detail === source && host.isConnected) bindNow(); });
           } else if (++tries < 150) setTimeout(waitM, 120);
           else host.innerHTML = "<div class='lc-ins-err'>⚠️ model block #" + esc(source) + " never ran</div>";
         })();
@@ -5226,6 +5231,62 @@ _inject_store()
     return null;
   };
 
+  /* the editable model's editor — dressed as a run editor (lc-pyrun-<id>,
+     .lc-pyrun-code, .lc-pyrun-out) so a tutor bound="<id>" reads the
+     classes and the last verdict as it reads any program */
+  function modelEditor(el, mid, starter) {
+    if (el._lcEd) return el._lcEd.value;
+    var key = "lc_model_edit:" + ((location.hash.match(/src=([^&]+)/) || [])[1] || location.pathname) + ":" + mid;
+    var saved = null;
+    try { saved = localStorage.getItem(key); } catch (e) {}
+    var wrap = document.createElement("div");
+    wrap.className = "lc-pyrun lc-model-ed";
+    wrap.id = "lc-pyrun-" + mid;
+    wrap.setAttribute("data-lc-model-ed", mid);
+    var title = el.getAttribute("title") || "🧬 your classes";
+    wrap.innerHTML = "<div class='lc-pyrun-title'><span>" + esc(title) + "</span><span class='lc-pyrun-lang'>python · ▶ Apply, and the page follows</span></div>" +
+      "<textarea class='lc-pyrun-code' spellcheck='false' autocapitalize='off' autocomplete='off'></textarea>" +
+      "<div class='lc-model-ed-bar'><button type='button' class='lc-model-apply'>▶ Apply</button>" +
+      "<button type='button' class='lc-model-reset' title='Back to the starter'>↺ Starter</button>" +
+      "<span class='lc-model-ed-status'></span></div>" +
+      "<pre class='lc-pyrun-out lc-empty'></pre>";
+    var ta = wrap.querySelector("textarea"), out = wrap.querySelector(".lc-pyrun-out"), st = wrap.querySelector(".lc-model-ed-status");
+    ta.value = saved != null ? saved : starter;
+    var fit = function () { ta.rows = Math.min(120, Math.max(6, ta.value.split("\n").length + 1)); };
+    fit();
+    ta.addEventListener("input", function () { fit(); st.textContent = "✏️ changed — ▶ Apply"; });
+    ta.addEventListener("keydown", function (ev) {
+      if (ev.key === "Tab") { ev.preventDefault(); var a = ta.selectionStart; ta.setRangeText("    ", a, ta.selectionEnd, "end"); }
+      if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); apply(); }
+    });
+    el.parentNode.insertBefore(wrap, el);
+    el.style.display = "none";
+    el._lcEd = ta;
+    el._lcAfterRun = function (err, names) {
+      out.classList.remove("lc-empty");
+      out.classList.toggle("lc-pyrun-err", !!err);
+      out.textContent = err ? "⚠️ " + err : "✅ applied: " + (names || []).join(", ");
+      st.textContent = "";
+      if (!err) try { document.dispatchEvent(new CustomEvent("lc-model-rerun", { detail: mid })); } catch (e) {}
+    };
+    function apply() {
+      var code = ta.value;
+      try { if (code === starter) localStorage.removeItem(key); else localStorage.setItem(key, code); } catch (e) {}
+      var c = el.querySelector("code") || el;
+      c.textContent = code;
+      delete el.dataset.lcModelDone;
+      upgradeModel(el);
+    }
+    wrap.querySelector(".lc-model-apply").addEventListener("click", apply);
+    wrap.querySelector(".lc-model-reset").addEventListener("click", function () {
+      if (ta.value !== starter && !confirm("Put the starter back? Your classes here are replaced.")) return;
+      ta.value = starter; fit(); apply();
+    });
+    var c0 = el.querySelector("code") || el;
+    c0.textContent = ta.value;
+    return ta.value;
+  }
+
   function upgradeModel(el) {
     if (el.dataset.lcModelDone) return;
     el.dataset.lcModelDone = "1";
@@ -5238,6 +5299,13 @@ _inject_store()
     var mid = el.id || ("_model" + (++INS_N));
     el.setAttribute("data-lc-id", mid);
     el.classList.add("lc-model");
+    /* editable="true": THE CLASSES ARE THE STUDENT'S TO WRITE, no pad
+       (Michel, 2026-11-06, Python Module 11: "the python editors can define
+       classes with states, colors, emojis, and allow UI components to
+       follow"). The fence becomes an editor; ▶ Apply re-runs the classes in
+       place and every grid, card and inspector on them follows. The edit is
+       kept in this browser (the course is account-free); ↺ is the starter. */
+    if (el.getAttribute("editable") === "true") code = modelEditor(el, mid, code);
     /* A CLASS IS A DATASET (Michel, 2026-10-15): class Family(Object,
        source="reservations") — MicroPython takes no keyword on a class line,
        so the runner lifts it: the class is declared plain, then bound to its
@@ -5339,6 +5407,7 @@ _inject_store()
           document.dispatchEvent(new CustomEvent("lc-model-changed"));
           if (window.lcWarn) window.lcWarn(el, srcWarn);
           el._lcModelNames = names; el._lcModelCode = code;    /* a .server reads them */
+          if (el._lcAfterRun) el._lcAfterRun("", names);
           return;
         } catch (e) { names.forEach(function (n) { delete by[n]; }); }
       }
@@ -5361,9 +5430,11 @@ _inject_store()
         document.dispatchEvent(new CustomEvent("lc-model-changed"));
         if (window.lcWarn) window.lcWarn(el, srcWarn);
         el._lcModelNames = names; el._lcModelCode = code;      /* a .server reads them */
+        if (el._lcAfterRun) el._lcAfterRun("", names);
       } catch (e) {
         names.forEach(function (n) { delete by[n]; });
         console.error("[lc-model]", e);
+        if (el._lcAfterRun) el._lcAfterRun(window.lcPyError ? window.lcPyError(e, (window._lcModelPreIn === mp ? 0 : preamble.split("\n").length + 1) || 2) : String(e && e.message || e), names);
         /* a class that does not run says so beside itself, on ITS line —
            not only in the console (Michel, 2026-10-16) */
         if (pre) window._lcModelPreIn = null;
