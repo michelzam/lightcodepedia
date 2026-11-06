@@ -19,6 +19,7 @@ Start with the first module, then follow the quest:
 - [👀 08 · From Designer to Auditor](module_08/index.md)
 - [🤑 09 · TILT — Transactions, Integrity, Logic, and Trust](module_09/index.md)
 - [🧙 10 · Advanced SQL — Procedures, Cursors, and Triggers](module_10/index.md)
+- [🌉 11 · From SQL Mastery to NoSQL Beginnings](module_11/index.md)
 
 [Browse](#)
 {: .folder }
@@ -43,6 +44,7 @@ stories:
     - Module 08 shows one SQL injection, then turns you into an auditor of database designs, yours first.
     - Module 09 changes data safely with TILT, on a tiny shop database: a transaction that fails on purpose and rolls back.
     - Module 10 moves logic inside the database: a procedure you call, a trigger that reacts, a cursor that walks row by row.
+    - Module 11 plays SQuizL to prove your SQL, then opens NoSQL: documents, graphs, and how to choose with CAP.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }
