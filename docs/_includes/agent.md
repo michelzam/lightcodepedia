@@ -760,6 +760,14 @@ Auto-included by docs/_layouts/default.html.
      *pedagogical access is not ownership*.) A learner reading the org vault
      cannot; the author reading their own lab can. One request per repo per
      session, and the answer FAILS CLOSED — unknown means learner. */
+  /* the pedagogical levels an agent can declare — one deterministic
+     template each; the ladder is Michel's to extend */
+  window.lcAgentLevels = {
+    direct: 'Answer directly and completely. When the learner asks for the solution, give it, in the step format.',
+    aristotelian: 'Teach by a worked example close to the learner\'s case but never their own: show the move on the example, then end with one question that asks them to make the analogous move themselves. Do not write their solution.',
+    socratic: 'Answer only with questions — at most two, pointed at what the learner should look at or try next. Never state the solution, never write their code.',
+    silent: 'Do not answer the question. Say in one line that the answer is theirs to find, and name the part of the page where it waits.'
+  };
   window.lcAuthorMode = (function () {
     var SITE = {{ site.github.repository_nwo | default: "" | jsonify }};
     var inflight = {};
@@ -1944,7 +1952,8 @@ Auto-included by docs/_layouts/default.html.
           if (window.lcDocLog && window.lcDocLog.log) {
             var agentName = cfg.name || panel.getAttribute('data-lc-id') || panel.id.replace(/^lc-agent-/, '');
             var agentKind = 'agent ' + agentName +
-              (result.engine && result.engine.model ? ' · ' + result.engine.model : '');
+              (result.engine && result.engine.model ? ' · ' + result.engine.model : '') +
+              (panel.getAttribute('data-lc-level') ? ' · level ' + panel.getAttribute('data-lc-level') : '');
             window.lcDocLog.log({ host: panel }, question, result.text, agentKind);
           }
         } catch (e) {}
@@ -2097,6 +2106,17 @@ Auto-included by docs/_layouts/default.html.
        briefing it runs under, which model. Only an author-given id joins
        the page model (auto ids aren't python names). */
     if (givenId) panel.setAttribute('data-lc-id', givenId);
+    /* THE LEVEL IS DECLARED, NEVER INFERRED (Michel, 2026-11-06: "qualify the
+       retention with/without ai assistance, including the level — direct
+       answers, Socratic, Aristotelian…"): level: in the yaml picks one
+       template appended to the briefing, is stamped on the panel and written
+       into every trace line, so a later read joins saves and greens to the
+       kind of help they had. An unknown word is kept as a word, no template. */
+    if (cfg.level) {
+      var lvl = String(cfg.level).toLowerCase().trim(), tpl = window.lcAgentLevels[lvl];
+      if (tpl) cfg.system = String(cfg.system || '') + '\n\n' + tpl;
+      panel.setAttribute('data-lc-level', lvl);
+    }
     panel.setAttribute('data-system', cfg.system || '');
     /* its wires, named where the x-ray reads them (Michel, 2026-10-15:
        "the agent has a knob bound, but in xray, there is no pipe") */

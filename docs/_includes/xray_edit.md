@@ -1344,8 +1344,10 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
         panel.className = css + "-panel";
         btn.setAttribute("aria-pressed", "true");
         panel.innerHTML = "<ol><li>⏳ reading your history…</li></ol>";
-        var at = o.anchor || btn.parentNode;
-        at.parentNode.insertBefore(panel, at.nextSibling);
+        /* a host that draws its own tabs (the pad's tools=) hands a mount;
+           otherwise the panel follows the anchor, as ever */
+        if (o.mount) o.mount.appendChild(panel);
+        else { var at = o.anchor || btn.parentNode; at.parentNode.insertBefore(panel, at.nextSibling); }
         window.lcBench.history(o.path, o.el).then(function (list) {
           if (!panel) return;
           if (!list.length) {
@@ -1442,6 +1444,7 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
       return { button: btn, close: close, mark: mark,
                playButton: function () { return playBtn; },
                isOpen: function () { return !!panel; },
+               open: function () { if (!panel) btn.click(); },
                reveal: function () { btn.hidden = false; } };
     }
   };

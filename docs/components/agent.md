@@ -162,6 +162,7 @@ All configuration goes in the YAML block.
 | Key | Default | What it does |
 |---|---|---|
 | `system` | "You are a helpful assistant." | The system prompt — defines the persona |
+| `level` | (none) | The declared pedagogical level — `direct`, `aristotelian`, `socratic`, `silent`: one fixed template appended to the briefing, stamped on the panel and written into every trace line, so a later read can tell what kind of help a save had |
 | `provider` | the ring's default (`gemini`) | The author's *suggestion* of an engine — a learner's ★ on the ring outranks it |
 | `model` | the engine's own preset (`gemini-flash-latest`, `llama-3.3-70b-versatile`…) | Any model that engine serves — applies on that engine only; on another, the ring's preset answers |
 | `model_fallback` | (the fallback preset's own) | Model to ask a fallback engine for, when its preset's default is not what you want |
