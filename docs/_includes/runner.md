@@ -680,6 +680,27 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
             who.textContent = "🙋 Made by @" + e.by;
             who.href = "https://github.com/" + encodeURIComponent(e.by);
             who.hidden = false;
+            /* THE MAKER RECORDS FROM THE APP (Michel, 2026-11-07, as zamm-student
+               on a fresh ship: "I can't see the record option in the top right
+               drop down menu so I can record a walk-through"): a shipped app
+               wears its own bar, not the site's, so the owner-only 🎬 of the
+               bay pages (topbar.md) never reached it. Signed in as the maker
+               named by the ledger (by:), the ⋯ menu offers Record screen; a
+               visitor's menu does not. The take is made here, in the app's
+               own tab, never inside Canvas's frame. */
+            var me = "";
+            try { me = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (x) {}
+            if (me && me.toLowerCase() === String(e.by).toLowerCase() && !appBar.querySelector(".lc-app-record")) {
+              var rec = document.createElement("button");
+              rec.type = "button"; rec.className = "lc-app-record"; rec.textContent = "🎬 Record screen";
+              rec.title = "Record a walk-through of your app — screen and face, from this tab";
+              rec.addEventListener("click", function () {
+                var more = appBar.querySelector(".lc-app-more"); if (more) more.open = false;
+                if (window.lcOpenRecorder) window.lcOpenRecorder();
+                else alert("Recorder is still loading — please try again in a moment.");
+              });
+              appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", rec);
+            }
           }
         }).catch(function () {});
     }
