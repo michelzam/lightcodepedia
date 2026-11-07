@@ -48,11 +48,14 @@ IAL knobs:
               learner's résumé can carry a pitch, cards, a chart. Same
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
-  tools="versions, load, a11y, rhythm, struggle, flow, pep8, mypy, <agent id>"
-              🧰 the lower panel (lab only today): the plugins as BUTTONS in
-              the pad's bar — a tap opens one and closes the others (a tab), a
-              long press adds one beside the open ones; a discreet ↻ redraws
-              the open ones; pep8 or mypy listed turns the line numbers on —
+  tools="true" | tools="versions, load, a11y, rhythm, struggle, flow, pep8, mypy, <agent id>"
+              🧰 the lower panel (lab only today): one discreet 🧰 button in
+              the pad's bar opens a dropdown with a checkbox per INSTALLED
+              tool; a checked tool shows its section under the pad, several
+              at once, the checks remembered in this browser; "true" lists
+              everything with nothing checked, a list pre-checks those; ↻ in
+              the menu redraws the open ones; pep8 or mypy listed turns the
+              line numbers on —
               🕘 Versions as a tab; the metrics (plugins/metrics.md: 📐 Load
               counted from the source, now and per saved version; ♿ A11y over
               the preview; 🔁 Rhythm from the saves, needs save=; 🧗 Struggle
@@ -478,8 +481,10 @@ Auto-included by docs/_layouts/default.html.
     /* an audit tool names lines (Michel, 2026-11-07: "I don't see the gutter
        with line numbers"): with pep8 or mypy among the tools the gutter is on
        unless numbers="false" says otherwise */
+    var toolsAttr = el.getAttribute("tools") || "";
     var numbers = el.getAttribute("numbers") === "true" ||
-      (el.getAttribute("numbers") !== "false" && /(^|,)\s*(pep8|mypy)\s*(,|$)/.test(el.getAttribute("tools") || ""));
+      (el.getAttribute("numbers") !== "false" && !!toolsAttr && toolsAttr !== "false" &&
+       (toolsAttr === "true" || /(^|,)\s*(pep8|mypy)\s*(,|$)/.test(toolsAttr)));
     /* mypy="true": Dr. mypy (lite) reads each python fence too, strict as the
        Python course runs it; "loose" skips the untyped-def rule (Michel,
        2026-10-26: "mypy lite capability would be great for the mdpad too") */
@@ -861,6 +866,7 @@ Auto-included by docs/_layouts/default.html.
              learner READS, so it repaints with the preview, not on their first
              click (Michel 2026-10-13: the starter's dots stayed over a saved story) */
           wrap._lcApply(ta.value);
+          if (wrap._lcTools) wrap._lcTools.refresh();   /* the open tools counted the seed: count the saved copy */
         }).catch(function () {});
       }
       /* pad.versions — the names of the versions the learner kept (newest
