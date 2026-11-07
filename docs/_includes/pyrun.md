@@ -22,14 +22,6 @@ Auto-included by docs/_layouts/default.html.
 .lc-pyrun-title .lc-pyrun-lang { margin-left: auto; font-size: 0.75em; text-transform: uppercase; color: var(--lc-ink-mute, #616161); letter-spacing: 0.05em; }
 .lc-pyrun textarea { display: block; width: 100%; box-sizing: border-box; border: none; outline: none; padding: 0.9em 1em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; resize: none; background: #fafafa; color: #111; }   /* the grip below is the one handle (Michel, 2026-10-27: the corner one was "not useful and not in sync") */
 .lc-pyrun-editor { display: flex; background: #fafafa; align-items: stretch; }
-/* the editable model (steps_runtime.md modelEditor): classes, ▶ Apply, the page follows */
-.lc-model-ed-bar { display: flex; gap: 0.5em; align-items: center; padding: 0.45em 0.9em; border-top: 1px solid #e5e7eb; background: #f6f7f9; }
-.lc-model-apply { font: inherit; font-size: 0.85em; padding: 0.3em 0.9em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
-.lc-model-reset { font: inherit; font-size: 0.85em; padding: 0.3em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
-.lc-model-ed-status { font-size: 0.8em; color: #6b7280; }
-.lc-model-ed .lc-pyrun-out { margin: 0; padding: 0.55em 1em; font-size: 0.82em; white-space: pre-wrap; border-top: 1px solid #e5e7eb; background: #fbfbfb; color: #1f6f3f; }
-.lc-model-ed .lc-pyrun-out.lc-pyrun-err { color: #b00020; background: #fff5f5; }
-.lc-model-ed .lc-pyrun-out.lc-empty { display: none; }
 .lc-pyrun-codewrap { position: relative; flex: 1; min-width: 0; }
 .lc-pyrun-codewrap .lc-pyrun-code { flex: none; width: 100%; padding-left: 0.6em; }
 .lc-pyrun-hl { position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: 0; padding: 0.9em 1em 0.9em 0.6em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.85em; line-height: 1.5; pointer-events: none; overflow: hidden; background: transparent; color: #111; white-space: pre-wrap; word-wrap: break-word; box-sizing: border-box; }
@@ -898,7 +890,6 @@ Auto-included by docs/_layouts/default.html.
     /* ✨ THE SAME SYMBOL, LIT: select a word (a double-click does), and every
        other occurrence of it lights up under the colours */
     var marksCode = root.querySelector(".lc-pyrun-marks code"), marksTimer = null;
-    function escHtml(x) { return String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
     function paintMarks() {
       marksTimer = null;
       if (!marksCode) return;
@@ -1062,6 +1053,7 @@ Auto-included by docs/_layouts/default.html.
        (Shift+Tab: up to four off the line's start). A selection: every line
        it touches moves, as one undoable edit, and stays selected. */
     codeEl.addEventListener("keydown", function(e){
+      if (opts.apply && e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); runBtn.click(); return; }
       if (e.key !== "Tab") return;
       e.preventDefault();
       var v = codeEl.value, a = codeEl.selectionStart, b = codeEl.selectionEnd;
@@ -1280,7 +1272,14 @@ Auto-included by docs/_layouts/default.html.
         setOut("Failed to load MicroPython: " + (e.message || String(e)), true);
       });
     }
-    runBtn.addEventListener("click", function () { srcOverride = null; runNow(); });
+    runBtn.addEventListener("click", function () {
+      srcOverride = null;
+      if (opts.apply) { status.textContent = "applying…"; opts.apply(codeEl.value); return; }
+      runNow();
+    });
+    root._lcSetOut = function (text, isErr) { setOut(text, isErr); status.textContent = isErr ? "error" : "applied"; };
+    root._lcSetStatus = function (text) { status.textContent = text; };
+    root._lcSetCode = function (text) { codeEl.value = text; codeEl.dispatchEvent(new Event("input")); };
 
     /* 🧩 THE UI TAB (outside_in.md writes the markdown, the page's own
        renderer draws it — the same pipeline as a pad's preview) */
@@ -1472,11 +1471,15 @@ Auto-included by docs/_layouts/default.html.
   }
 
   /* a runner's program, by its id — what `import <id>` reads (null when no runner wears it) */
+  window.lcBuildRunner = buildRunner;     /* the editable model builds its editor here (steps_runtime.md) */
+  window.lcAttachRunner = attach;
   window.lcRunSource = function (id) {
     var root = document.getElementById("lc-pyrun-" + id), ta = root && root.querySelector(".lc-pyrun-code");
     if (!ta) return null;
     return desugarFstrings(ta.value);   /* the program as written; docstrings are for the reader and 🧪, the import needs the code */
   };
+
+  function escHtml(x) { return String(x).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); }
 
   function buildRunner(opts) {
     var id = opts.id;
@@ -1492,7 +1495,7 @@ Auto-included by docs/_layouts/default.html.
     if (folded) {
       html += '<details class="lc-pyrun-fold"><summary>🐍 Edit &amp; run Python</summary>';
     } else {
-      html += '<div class="lc-pyrun-title">🐍 <span>' + (opts.readonly && opts.readonly !== "false" ? "Python module <code>" + id + "</code> — read it, run it, import it" : "Python runner") + '</span><span class="lc-pyrun-lang">' + (opts.readonly && opts.readonly !== "false" ? "read only" : "python") + '</span></div>';
+      html += '<div class="lc-pyrun-title">🐍 <span>' + (opts.title ? escHtml(opts.title) : opts.readonly && opts.readonly !== "false" ? "Python module <code>" + id + "</code> — read it, run it, import it" : "Python runner") + '</span><span class="lc-pyrun-lang">' + (opts.apply ? "python · ▶ Apply, and the page follows" : opts.readonly && opts.readonly !== "false" ? "read only" : "python") + '</span></div>';
     }
     /* 🧩 OUTSIDE-IN (Michel, 2026-11-02: "an alternate tab to the py editor,
        even open by default, with the ui … activable with a knob (outside_in),
@@ -1512,7 +1515,12 @@ Auto-included by docs/_layouts/default.html.
        visible"): ▶ Run keeps its word; the rest are icons with a tooltip
        and an aria-label; 💬 is a switch that shows its state. */
     html += '<div class="lc-pyrun-grip" role="separator" aria-orientation="horizontal" title="Drag to make the editor taller or shorter — double-click to reset"></div>';
-    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">▶ Run</button>' +
+    /* ONE EDITOR (Michel, 2026-11-06: "it should not create new components
+       without asking permission … kiss and frugal"): an editable model is
+       this very pad in apply mode — ▶ Apply in ▶ Run's place, ↺ Starter
+       beside it, and every comfort of the pad (colours, gutter, 💡, 💬). */
+    html += '<div class="lc-pyrun-bar"><button class="lc-pyrun-run">' + (opts.apply ? "▶ Apply" : "▶ Run") + '</button>' +
+      (opts.apply ? '<button class="lc-pyrun-reset lc-pyrun-icon" title="Back to the starter" aria-label="Starter">↺</button>' : '') +
       '<button class="lc-pyrun-test lc-pyrun-icon" title="Test — run the >>> examples in the docstrings" aria-label="Test">🧪</button>' +
       (opts.mypy && opts.mypy !== "false" ? '<button class="lc-pyrun-mypy lc-pyrun-icon" title="Dr. mypy (lite) — check the type hints" aria-label="Dr. mypy">🩺</button>' : '') +
       (opts.pep8 && opts.pep8 !== "false" ? '<button class="lc-pyrun-pep8 lc-pyrun-icon" title="PEP 8 (lite) — check the style, pycodestyle\'s way" aria-label="PEP 8">🛁</button>' : '') +
@@ -1521,7 +1529,7 @@ Auto-included by docs/_layouts/default.html.
       '<button class="lc-pyrun-sound lc-pyrun-icon" hidden title="Sound check — the notes this run queued, and the audio state; tap to hear one note at once" aria-label="Sound check"></button>' +
       '<span class="lc-pyrun-status"></span></div>';
     html += '<div class="lc-pyrun-subline" hidden></div>';
-    html += '<pre class="lc-pyrun-out lc-empty">click ▶ Run to execute</pre>';
+    html += '<pre class="lc-pyrun-out lc-empty">' + (opts.apply ? "" : "click ▶ Run to execute") + '</pre>';
     html += '<div class="lc-pyrun-view" id="lc-pyrun-' + id + '-view"></div>';
     html += '<div class="lc-pyrun-tests" id="lc-pyrun-' + id + '-tests"></div>';
     if (folded) html += '</details>';

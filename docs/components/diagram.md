@@ -178,7 +178,7 @@ Feature: A dot fence is a live diagram, sized to the page
 
 | Attribute | Default | What it does |
 |---|---|---|
-| `scope="…"` | (whole model) | A **class** name (class + neighbours), a **package** (`ui` / `kore`), or `*` for the whole model |
+| `scope="…"` | (whole model) | A **class** name (class + neighbours), a **package** (`ui` / `kore`, or a `.model` fence's id: its classes are that package, named after the file they live in), or `*` for the whole model |
 | `states="…"` | `true` | Set `false`/`off` to hide the state-machine clusters |
 
 ## 🧠 Quick check

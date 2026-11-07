@@ -196,11 +196,15 @@ class, a card with its verbs, a diagram of it. What a class can say:
 - **Inheritance**: `class Sprint(Walk)` adds its own attributes and verbs;
   ➕ New offers both kinds.
 - **Classes the reader writes**: `{: .model #shop editable="true" }` turns
-  the fence into an editor with **▶ Apply** (⌘/Ctrl+Enter) and **↺ Starter**.
+  the fence into the site's one Python editor — the [pad](run) with its
+  colours, gutter and 💡 completion — in apply mode: **▶ Apply**
+  (⌘/Ctrl+Enter) where ▶ Run stands, **↺** back to the starter.
   Apply re-runs the classes in place: grids, cards, inspectors
   (`{: .inspector source="shop" bind="order" }`) and diagrams follow. The
   edit is kept in the reader's browser; a tutor `bound="shop"` reads it like
-  a program. Python Module 11 (SwiftSip) is built on it.
+  a program. In a diagram the classes cluster under the fence's id, `shop`,
+  the file they live in — `scope="shop"` draws them all. Python Module 11
+  (SwiftSip) is built on it.
 - **Classic classes, no Attr, no decorator**: a plain `class Order:` whose
   `__init__` sets its attributes (`self.order_id = order_id`,
   `self.state = "pending"`) is read from its own lines: what `__init__`

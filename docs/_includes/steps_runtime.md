@@ -4648,6 +4648,13 @@ _PKG_ICON = {"ui": "🎨", "kore": "⚙️"}
 
 
 def _pkg_of(name):
+    # AN AUTHOR'S CLASSES ARE THEIR OWN PACKAGE, NAMED AFTER THEIR FENCE
+    # (Michel, 2026-11-06: "the package name should not be kore, but
+    # swiftsip, like the filename"): the model block's id is the module —
+    # and scope="swiftsip" draws that file's classes, the Assistant included.
+    for mid in _LC_DECL:
+        if name in _LC_DECL[mid]:
+            return mid
     stack, seen = [name], set()
     while stack:
         n = stack.pop()
@@ -4684,8 +4691,8 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     for n in _dot_order(sel):
         groups.setdefault(pkg_of(n), []).append(n)
     for p in sorted(groups):
-        icon = _PKG_ICON.get(p, "📦")
-        L.append("  subgraph cluster_pkg_" + p + " {")
+        icon = _PKG_ICON.get(p) or ("🐍" if p in _LC_DECL else "📦")
+        L.append('  subgraph "cluster_pkg_' + p + '" {')
         L.append('    label="' + _dot_esc(icon + " " + p) + '"; labeljust=l;'
                  ' fontsize=10; fontcolor="gray40";')
         L.append('    style=filled; fillcolor="gray98"; color="gray85";'
@@ -5442,11 +5449,16 @@ _inject_store()
   }
   window.lcClassicMeta = classicMeta;
 
-  /* the editable model's editor — dressed as a run editor (lc-pyrun-<id>,
-     .lc-pyrun-code, .lc-pyrun-out) so a tutor bound="<id>" reads the
-     classes and the last verdict as it reads any program */
+  /* THE EDITABLE MODEL'S EDITOR IS THE PAD (Michel, 2026-11-06: "it should
+     not create new components without asking permission … kiss and frugal,
+     reduce cognitive load, maintenance burden"): the fence becomes the one
+     Python editor of the site (pyrun.md) in apply mode — colours, gutter,
+     💡 completion, 💬 subtitles, ▶ Apply in ▶ Run's place, ↺ Starter beside
+     it. Its root is lc-pyrun-<id>, so a tutor bound="<id>" reads the classes
+     and the last verdict as it reads any program. */
   function modelEditor(el, mid, starter) {
     if (el._lcEd) return el._lcEd.value;
+    if (!window.lcBuildRunner) { console.error("[lc-model] no pad on this page (pyrun.md)"); return starter; }
     var key = "lc_model_edit:" + ((location.hash.match(/src=([^&]+)/) || [])[1] || location.pathname) + ":" + mid;
     /* A KEPT EDIT BELONGS TO ITS STARTER (Michel, 2026-11-06: the page
        turned classic, his browser kept showing the old Attr/@transition
@@ -5461,55 +5473,44 @@ _inject_store()
         if (rec.starter === fp(starter)) saved = rec.code; else stale = rec.code;
       } else if (raw) stale = raw;          /* the first format: no fingerprint, so an older starter */
     } catch (e) {}
-    var wrap = document.createElement("div");
-    wrap.className = "lc-pyrun lc-model-ed";
-    wrap.id = "lc-pyrun-" + mid;
-    wrap.setAttribute("data-lc-model-ed", mid);
-    var title = el.getAttribute("title") || "🧬 your classes";
-    wrap.innerHTML = "<div class='lc-pyrun-title'><span>" + esc(title) + "</span><span class='lc-pyrun-lang'>python · ▶ Apply, and the page follows</span></div>" +
-      "<textarea class='lc-pyrun-code' spellcheck='false' autocapitalize='off' autocomplete='off'></textarea>" +
-      "<div class='lc-model-ed-bar'><button type='button' class='lc-model-apply'>▶ Apply</button>" +
-      "<button type='button' class='lc-model-reset' title='Back to the starter'>↺ Starter</button>" +
-      "<span class='lc-model-ed-status'></span></div>" +
-      "<pre class='lc-pyrun-out lc-empty'></pre>";
-    var ta = wrap.querySelector("textarea"), out = wrap.querySelector(".lc-pyrun-out"), st = wrap.querySelector(".lc-model-ed-status");
-    ta.value = saved != null ? saved : starter;
-    if (stale != null && stale !== starter) {
-      st.innerHTML = "🆕 new starter — <a href='#' class='lc-model-old'>your earlier version</a>";
-      st.querySelector(".lc-model-old").addEventListener("click", function (ev) {
-        ev.preventDefault(); ta.value = stale; ta.dispatchEvent(new Event("input"));
-      });
-    }
-    var fit = function () { ta.rows = Math.min(120, Math.max(6, ta.value.split("\n").length + 1)); };
-    fit();
-    ta.addEventListener("input", function () { fit(); st.textContent = "✏️ changed — ▶ Apply"; });
-    ta.addEventListener("keydown", function (ev) {
-      if (ev.key === "Tab") { ev.preventDefault(); var a = ta.selectionStart; ta.setRangeText("    ", a, ta.selectionEnd, "end"); }
-      if (ev.key === "Enter" && (ev.metaKey || ev.ctrlKey)) { ev.preventDefault(); apply(); }
-    });
-    el.parentNode.insertBefore(wrap, el);
-    el.style.display = "none";
-    el._lcEd = ta;
-    el._lcAfterRun = function (err, names) {
-      out.classList.remove("lc-empty");
-      out.classList.toggle("lc-pyrun-err", !!err);
-      out.textContent = err ? "⚠️ " + err : "✅ applied: " + (names || []).join(", ");
-      if (/^✏️/.test(st.textContent)) st.textContent = "";   /* the earlier-version link stays */
-      if (!err) try { document.dispatchEvent(new CustomEvent("lc-model-rerun", { detail: mid })); } catch (e) {}
-    };
-    function apply() {
-      var code = ta.value;
+    function apply(code) {
       try { if (code === starter) localStorage.removeItem(key); else localStorage.setItem(key, JSON.stringify({ starter: fp(starter), code: code })); } catch (e) {}
       var c = el.querySelector("code") || el;
       c.textContent = code;
       delete el.dataset.lcModelDone;
       upgradeModel(el);
     }
-    wrap.querySelector(".lc-model-apply").addEventListener("click", apply);
-    wrap.querySelector(".lc-model-reset").addEventListener("click", function () {
+    var opts = { id: mid, code: saved != null ? saved : starter, rows: 0, apply: apply,
+                 title: el.getAttribute("title") || "🧬 your classes" };
+    var wrap = window.lcBuildRunner(opts);
+    wrap.classList.add("lc-model-ed");
+    wrap.removeAttribute("data-lc-id");       /* self.page.<id> is the model, not its editor */
+    wrap.setAttribute("data-lc-model-ed", mid);
+    el.parentNode.insertBefore(wrap, el);
+    el.style.display = "none";
+    window.lcAttachRunner(wrap.id, opts);
+    var ta = wrap.querySelector(".lc-pyrun-code");
+    var showStale = function () {};
+    if (stale != null && stale !== starter) {
+      showStale = function () {               /* the link outlives the first ▶ Apply's "applied" */
+        var st = wrap.querySelector(".lc-pyrun-status");
+        st.innerHTML = "🆕 new starter — <a href='#' class='lc-model-old'>your earlier version</a>";
+        st.querySelector(".lc-model-old").addEventListener("click", function (ev) {
+          ev.preventDefault(); wrap._lcSetCode(stale); showStale = function () {};
+        });
+      };
+      showStale();
+    }
+    wrap.querySelector(".lc-pyrun-reset").addEventListener("click", function () {
       if (ta.value !== starter && !confirm("Put the starter back? Your classes here are replaced.")) return;
-      ta.value = starter; fit(); apply();
+      wrap._lcSetCode(starter); apply(starter);
     });
+    el._lcEd = ta;
+    el._lcAfterRun = function (err, names) {
+      wrap._lcSetOut(err ? "⚠️ " + err : "✅ applied: " + (names || []).join(", "), !!err);
+      showStale();
+      if (!err) try { document.dispatchEvent(new CustomEvent("lc-model-rerun", { detail: mid })); } catch (e) {}
+    };
     var c0 = el.querySelector("code") || el;
     c0.textContent = ta.value;
     return ta.value;
