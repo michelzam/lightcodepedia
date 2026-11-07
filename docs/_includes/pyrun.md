@@ -10,8 +10,8 @@ PyRun — the in-browser Python family, activated from md + IAL.
 MicroPython (lazy-loaded, ~300 KB) runs the editor; buttons run on the
 shared page instance against the steps-runtime preamble. CPython's
 f'{x = }' is rewritten before the code reaches it (desugarFstrings). Exposes
-window.lcPyrun.attach for Liquid-rendered python_run.md blocks and
-flushes their lcPyrunQueue.
+window.lcBuildRunner / lcAttachRunner (the editable model builds its pad
+here) and lcPyrun.edit (the agent's ⬇ Add keeps undo).
 
 Auto-included by docs/_layouts/default.html.
 {%- endcomment -%}
@@ -1781,13 +1781,9 @@ Auto-included by docs/_layouts/default.html.
       .catch(function(e){ if (window.console) console.warn("[lc silent load]", e.message || e); });
   }
 
-  // Export the runner for Liquid-rendered python_run.md blocks, then flush
-  // any attach calls they queued while this file was still parsing.
-  window.lcPyrun = { attach: attach, edit: editRange };
-  if (window.lcPyrunQueue) {
-    window.lcPyrunQueue.forEach(function(fn){ try { fn(); } catch (e) {} });
-    window.lcPyrunQueue = null;
-  }
+  /* the agent's ⬇ Add edits a pad through this (agent.md); the Liquid pad
+     template that once queued attach calls here is gone (2026-11-06) */
+  window.lcPyrun = { edit: editRange };
 
 
   function upgradeButton(el) {
