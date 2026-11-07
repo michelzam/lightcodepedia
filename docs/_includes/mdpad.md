@@ -48,14 +48,16 @@ IAL knobs:
               learner's résumé can carry a pitch, cards, a chart. Same
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
-  tools="versions, load, a11y, rhythm, pep8, mypy, <agent id>"
+  tools="versions, load, a11y, rhythm, struggle, flow, pep8, mypy, <agent id>"
               🧰 the lower panel (lab only today): the plugins as BUTTONS in
               the pad's bar, each opening its own section under the pad,
               several at once, a discreet ↻ redraws the open ones —
               🕘 Versions as a tab; the metrics (plugins/metrics.md: 📐 Load
               counted from the source, now and per saved version; ♿ A11y over
-              the preview; 🔁 Rhythm from the saves, needs save=; "metrics" is
-              the three); the audits over the source's python fences (🛁 PEP 8,
+              the preview; 🔁 Rhythm from the saves, needs save=; 🧗 Struggle
+              and 🎮 Flow from the bench record's history, need a bench;
+              "metrics" is load, a11y, rhythm); the audits over the source's
+              python fences (🛁 PEP 8,
               🩺 mypy); an agent of the page by its id (its panel moves under
               the pad, still bound as the author wired it). Own numbers, own
               trend, no bands.
