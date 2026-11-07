@@ -920,6 +920,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       document.getElementById('lc-ud-avatar').src = u.avatar_url;
       document.getElementById('lc-ud-name').textContent = u.name || u.login;
       document.getElementById('lc-ud-login').textContent = '@' + u.login;
+      if (window.lcBayRecordGate) window.lcBayRecordGate(u.login);
       lcPaintKeyRow();
 
       // karma: show cached value instantly, then verify from GitHub API
@@ -1235,6 +1236,35 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   lcInitUserPill();
 
   // ── Recorder launchers (work in every auth state) ──────────────────────────
+  /* ON A BAY, THE OWNER RECORDS, A VISITOR DOES NOT (Michel, 2026-11-06, the
+     cohort's recording problem — Module 07 · Show Time recorded from the
+     course page inside Canvas's frame, where the recorder cannot work): the
+     shipped app in its own tab is where the take is made, so 🎬 sits in the
+     bay page's top-right menu — for the signed-in owner named in the bays'
+     manifest (by:), never for a visitor, whose 🔑 menu loses the row. */
+  var LC_PAGE_PATH = {{ page.path | default: "" | jsonify }};
+  var BAY = /^share\/bays\/([^/]+)\//.exec(LC_PAGE_PATH || "");
+  var _bayOwner = null;          /* null: unknown yet; "": no owner in the manifest */
+  function bayOwner() {
+    if (!BAY) return Promise.resolve(null);
+    if (_bayOwner !== null) return Promise.resolve(_bayOwner);
+    var key = BAY[1].replace(/_[0-9a-f]{7,}$/, "");
+    return fetch((window.LC_BASE || "") + "/share/bays/manifest.json", { cache: "no-store" })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (m) { _bayOwner = String((m[key] || {}).by || ""); return _bayOwner; })
+      .catch(function () { _bayOwner = ""; return _bayOwner; });
+  }
+  window.lcBayRecordGate = function (login) {
+    if (!BAY) return;
+    var sd = document.getElementById('lc-sd-record'), ud = document.getElementById('lc-ud-record');
+    if (sd) sd.style.display = 'none';                      /* a visitor never records a bay */
+    if (ud) ud.style.display = 'none';
+    if (!login) return;
+    bayOwner().then(function (by) {
+      if (ud && by && by.toLowerCase() === String(login).toLowerCase()) ud.style.display = '';
+    });
+  };
+  window.lcBayRecordGate('');
   function openRec(e) {
     if (e) e.stopPropagation();
     var d = document.getElementById('lc-start-drop'); if (d) d.classList.remove('open');

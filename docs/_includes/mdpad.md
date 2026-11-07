@@ -49,8 +49,9 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   tools="versions, load, a11y, rhythm, pep8, mypy, <agent id>"
-              🧰 the lower panel (lab only today): the plugins as TABS in the
-              pad's bar, drawn when opened, a discreet ↻ redraws the open one —
+              🧰 the lower panel (lab only today): the plugins as BUTTONS in
+              the pad's bar, each opening its own section under the pad,
+              several at once, a discreet ↻ redraws the open ones —
               🕘 Versions as a tab; the metrics (plugins/metrics.md: 📐 Load
               counted from the source, now and per saved version; ♿ A11y over
               the preview; 🔁 Rhythm from the saves, needs save=; "metrics" is
@@ -202,9 +203,10 @@ Auto-included by docs/_layouts/default.html.
 .lc-mdpad-reset:hover { border-color: #888; color: #222; }
 /* 🧰 tools — the pad's lower panel: the plugins as tabs (tools=) */
 .lc-mdpad-bar .lc-tools-tabs { display: flex; flex-wrap: wrap; align-items: center; gap: 0.25em; margin-right: auto; }
-.lc-mdpad-bar .lc-tools-tab { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
-.lc-mdpad-bar .lc-tools-tab:hover { border-color: #888; color: #222; }
-.lc-mdpad-bar .lc-tools-tab[aria-selected="true"] { background: #333; border-color: #333; color: #fff; }
+.lc-mdpad-bar .lc-tools-btn { font: inherit; font-size: 0.85em; padding: 0.35em 0.7em; border-radius: 6px; border: 1px solid #bbb; background: #fff; color: #555; cursor: pointer; }
+.lc-mdpad-bar .lc-tools-btn:hover { border-color: #888; color: #222; }
+.lc-mdpad-bar .lc-tools-btn[aria-pressed="true"] { background: #333; border-color: #333; color: #fff; }
+.lc-tools-section + .lc-tools-section:not([hidden]) { border-top: 1px solid #e5e7eb; }
 .lc-mdpad-bar .lc-tools-refresh { font: inherit; font-size: 1em; padding: 0.15em 0.4em; border: none; background: transparent; color: #9ca3af; cursor: pointer; }
 .lc-mdpad-bar .lc-tools-refresh:hover { color: #222; }
 .lc-tools-panel { border: 1px solid #d0d0d0; border-radius: 8px; margin: -0.6em 0 1em; background: #fafafa; overflow: hidden; }
@@ -1384,82 +1386,83 @@ Auto-included by docs/_layouts/default.html.
       };
     }
 
-    /* ── 🧰 TOOLS — one lower panel, the plugins as tabs (Michel, 2026-11-06:
-       "make the knob tools='<list of plugins>', integrate them as alternate
-       tabs to versions, in the lower mdpad panel; a discreet refresh button;
-       tabs for the audits when activated as tools"). versions · load · a11y ·
-       rhythm · pep8 · mypy · <an agent's id>: each a tab, drawn when opened;
-       ↻ redraws the open one. Without the knob nothing here runs. */
+    /* ── 🧰 TOOLS — one lower panel, the plugins as BUTTONS (Michel, 2026-11-06:
+       "make the knob tools='<list of plugins>', integrate them … in the lower
+       mdpad panel; a discreet refresh button; tabs for the audits when
+       activated as tools" — then "buttons should not be tabs after all, so I
+       can see both versions and a11y"). versions · load · a11y · rhythm ·
+       pep8 · mypy · <an agent's id>: each a button that opens or closes its
+       own section, several open at once, in the knob's order; ↻ redraws the
+       open ones. Without the knob nothing here runs. */
     var toolsKnob = el.getAttribute("tools") || "";
     if (toolsKnob && toolsKnob !== "false" && saveWrap) {
       var toolNames = [];
       toolsKnob.split(",").map(function (x) { return x.trim(); }).filter(Boolean).forEach(function (x) {
-        /* "metrics" is the three measuring tabs in one word (Michel: "metrics should be just a tool") */
+        /* "metrics" is the three measuring tools in one word (Michel: "metrics should be just a tool") */
         (x === "metrics" ? ["load", "a11y", "rhythm"] : [x]).forEach(function (y) { if (toolNames.indexOf(y) < 0) toolNames.push(y); });
       });
       var vers0 = (typeof vers !== "undefined") ? vers : null;
       var met0 = window.lcMetrics ? window.lcMetrics.attach({
         el: wrap, path: benchPath, scope: "page", families: [],
         source: function () { return ta.value; }, scopeEl: function () { return out; }, goto: padGoto }) : null;
-      var strip = document.createElement("div"); strip.className = "lc-tools-tabs"; strip.setAttribute("role", "tablist"); strip.setAttribute("aria-label", "Tools");
+      var strip = document.createElement("div"); strip.className = "lc-tools-tabs"; strip.setAttribute("role", "group"); strip.setAttribute("aria-label", "Tools");
       var lower = document.createElement("div"); lower.className = "lc-tools-panel"; lower.hidden = true;
-      var sections = {}, tabBtns = {}, openName = null;
-      function agentOf(name) { return document.querySelector(".lc-agent[data-lc-id='" + name + "'], #lc-agent-" + name); }
-      function labelOf(name) {
+      var sections = {}, toolBtns = {}, openTools = [];
+      function toolAgent(name) { return document.querySelector(".lc-agent[data-lc-id='" + name + "'], #lc-agent-" + name); }
+      function toolLabel(name) {
         if (name === "versions") return "🕘 Versions";
         if (met0 && met0.labels[name]) return met0.labels[name].tab;
         return "🤖 " + name;
       }
-      function note(sec, text) { sec.innerHTML = "<p class='lc-tools-note'>" + escHtml(text) + "</p>"; }
-      function render(name, fresh) {
+      function toolNote(sec, text) { sec.innerHTML = "<p class='lc-tools-note'>" + escHtml(text) + "</p>"; }
+      function toolDraw(name, fresh) {
         var sec = sections[name];
         if (name === "versions") {
-          if (!vers0) { note(sec, "No saved file — save=\"<file>\" gives this pad a history."); return; }
+          if (!vers0) { toolNote(sec, "No saved file — save=\"<file>\" gives this pad a history."); return; }
           if (typeof versOpts !== "undefined") versOpts.mount = sec;
           if (fresh && vers0.isOpen()) vers0.close();
           vers0.open(); return;
         }
         if (met0 && met0.labels[name]) {
-          if (met0.families.indexOf(name) < 0) { note(sec, "No saved file — save=\"<file>\" gives this pad a rhythm."); return; }
+          if (met0.families.indexOf(name) < 0) { toolNote(sec, "No saved file — save=\"<file>\" gives this pad a rhythm."); return; }
           met0.show(name, sec); return;
         }
-        var ag = agentOf(name);
-        if (!ag) { note(sec, "No agent named " + name + " on this page."); return; }
+        var ag = toolAgent(name);
+        if (!ag) { toolNote(sec, "No agent named " + name + " on this page."); return; }
         if (ag.parentNode !== sec) sec.appendChild(ag);
       }
-      function closeTools() {
-        if (openName === "versions" && vers0 && vers0.isOpen()) vers0.close();
-        openName = null; wrap._lcToolsOpen = null; lower.hidden = true;
-        Object.keys(tabBtns).forEach(function (k) { tabBtns[k].setAttribute("aria-selected", "false"); });
-      }
-      function openTool(name) {
-        if (openName === name) { closeTools(); return; }
-        if (openName === "versions" && vers0 && vers0.isOpen()) vers0.close();
-        openName = name; wrap._lcToolsOpen = name;
-        Object.keys(sections).forEach(function (k) { sections[k].hidden = k !== name; tabBtns[k].setAttribute("aria-selected", String(k === name)); });
-        lower.hidden = false;
-        if (!sections[name]._lcDrawn || name === "versions") { render(name, false); sections[name]._lcDrawn = true; }
+      function toolSet(name, on) {
+        var i = openTools.indexOf(name);
+        if (on && i < 0) openTools.push(name);
+        if (!on && i >= 0) openTools.splice(i, 1);
+        sections[name].hidden = !on;
+        toolBtns[name].setAttribute("aria-pressed", String(!!on));
+        if (!on && name === "versions" && vers0 && vers0.isOpen()) vers0.close();
+        if (on && (!sections[name]._lcDrawn || name === "versions")) { toolDraw(name, false); sections[name]._lcDrawn = true; }
+        lower.hidden = !openTools.length;
+        wrap._lcToolsOpen = openTools.length ? openTools.join(" ") : null;
       }
       toolNames.forEach(function (name) {
         var t = document.createElement("button");
-        t.type = "button"; t.className = "lc-tools-tab"; t.setAttribute("role", "tab"); t.setAttribute("data-tool", name); t.setAttribute("aria-selected", "false");
-        t.textContent = labelOf(name);
-        t.addEventListener("click", function () { openTool(name); });
-        strip.appendChild(t); tabBtns[name] = t;
+        t.type = "button"; t.className = "lc-tools-btn"; t.setAttribute("data-tool", name); t.setAttribute("aria-pressed", "false");
+        t.textContent = toolLabel(name);
+        t.addEventListener("click", function () { toolSet(name, openTools.indexOf(name) < 0); });
+        strip.appendChild(t); toolBtns[name] = t;
         var sec = document.createElement("div"); sec.className = "lc-tools-section"; sec.setAttribute("data-tool", name); sec.hidden = true;
         lower.appendChild(sec); sections[name] = sec;
       });
       var refreshBtn = document.createElement("button");
       refreshBtn.type = "button"; refreshBtn.className = "lc-tools-refresh"; refreshBtn.textContent = "↻";
-      refreshBtn.title = "Recalculate the open tab"; refreshBtn.setAttribute("aria-label", "Refresh");
-      refreshBtn.addEventListener("click", function () { if (openName) render(openName, true); });
+      refreshBtn.title = "Recalculate the open tools"; refreshBtn.setAttribute("aria-label", "Refresh");
+      refreshBtn.addEventListener("click", function () { openTools.slice().forEach(function (n) { toolDraw(n, true); }); });
       strip.appendChild(refreshBtn);
-      /* the Versions tab replaces the bar's own 🕘 button */
+      /* the Versions button of the strip replaces the bar's own 🕘 */
       if (vers0 && vers0.button && vers0.button.parentNode) vers0.button.parentNode.removeChild(vers0.button);
       saveWrap.insertBefore(strip, saveWrap.firstChild);
       saveWrap.parentNode.insertBefore(lower, saveWrap.nextSibling);
       wrap._lcToolsLower = lower;
-      wrap._lcTools = { open: openTool, close: closeTools, refresh: function () { if (openName) render(openName, true); } };
+      wrap._lcTools = { open: function (n) { toolSet(n, true); }, close: function (n) { toolSet(n, false); },
+                        refresh: function () { openTools.slice().forEach(function (m) { toolDraw(m, true); }); } };
     }
 
     /* ── WIRES: the preview's model is what its text declares ──────────────
