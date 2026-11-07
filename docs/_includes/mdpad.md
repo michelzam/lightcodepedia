@@ -48,6 +48,12 @@ IAL knobs:
               learner's résumé can carry a pitch, cards, a chart. Same
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
+  metrics="true" | metrics="load, a11y, rhythm"
+              📐 Metrics in the bar (lab only, the plugins/metrics.md block
+              on the 🕘 Versions pattern): a panel under the pad, one tab per
+              family — 📐 Load counted from the source, now and per saved
+              version; ♿ A11y over the preview; 🔁 Rhythm from the saves
+              (needs save="<file>"). Own numbers, own trend, no bands.
   id="..."    optional — names the pad for X-ray
   (always)       the source is painted: a fence and its body muted, a {: … }
                  decoration on a lighter band — class, #id and knobs in their
@@ -505,6 +511,7 @@ Auto-included by docs/_layouts/default.html.
        exists, replaces the seed on load. Same page, two repos, one writer
        per file — the author can republish forever without touching it. */
     var saveKnob = el.getAttribute("save") || "";
+    var metricsKnob = el.getAttribute("metrics") || "";   /* 📐 the metrics plugin's families, or "true" */
     var benchPath = saveKnob && saveKnob !== "true" ? saveKnob : "";
     if (benchPath) wrap.setAttribute("data-lc-save", benchPath);   /* named in a proof's verdict */
     /* save="here:<file>": the file on the host that served this page — no bench, no frame (Michel, 2026-10-22) */
@@ -536,9 +543,11 @@ Auto-included by docs/_layouts/default.html.
     }
     /* the stripe every saved block wears — see lcBenchFrame in widgets.md */
     var frame = null;
-    if (saveKnob) {
+    if (saveKnob || metricsKnob) {
       saveWrap = document.createElement("div");
       saveWrap.className = "lc-mdpad-bar";
+    }
+    if (saveKnob) {
       if (benchPath) {
         mineTag = document.createElement("span");
         mineTag.className = "lc-mdpad-mine";
@@ -775,6 +784,20 @@ Auto-included by docs/_layouts/default.html.
     ta.addEventListener("input", hideTip);
     el.parentNode.replaceChild(wrap, el);
     if (saveWrap) wrap.parentNode.insertBefore(saveWrap, wrap.nextSibling);
+    /* 📐 metrics — the SAME plugin pattern as 🕘 Versions (plugins/metrics.md,
+       lab only): one attach line, a button in the bar, a panel under the pad —
+       with or without a saved file (no file: no Rhythm tab). Removing this
+       call takes the feature out of the pad and nothing else. */
+    if (metricsKnob && metricsKnob !== "false" && window.lcMetrics && saveWrap) {
+      var met = window.lcMetrics.attach({
+        el: wrap, anchor: saveWrap, path: benchPath, scope: "page",
+        families: metricsKnob === "true" ? [] : metricsKnob.split(",").map(function (f) { return f.trim(); }).filter(Boolean),
+        source: function () { return ta.value; },
+        scopeEl: function () { return out; }
+      });
+      saveWrap.appendChild(met.button);
+      wrap._lcMetrics = met;
+    }
     /* the stripe goes round BOTH the pad and its keep bar, so the frame
        reads as one owned thing rather than a box with a bar loose under it */
     if (benchPath && !hereSave && window.lcBenchFrame) {

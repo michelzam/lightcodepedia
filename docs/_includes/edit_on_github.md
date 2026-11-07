@@ -2489,6 +2489,7 @@ Auto-included by docs/_layouts/default.html. Skipped for:
     });
     return _axeLoading;
   }
+  window.lcLoadAxe = loadAxe;      /* one rule engine: the 📐 metrics plugin audits with it too */
   var _a11yLit = null;
   function a11yShow(sel) {
     var el = null;
