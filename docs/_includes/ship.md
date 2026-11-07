@@ -543,6 +543,16 @@ Auto-included by docs/_layouts/default.html.
     box.appendChild(btn);
     box.appendChild(status);
     el.parentNode.replaceChild(box, el);
+    /* 🧰 tools="ships" — the bay's ledger as the plugin's strip, scope bay
+       (metrics 4, 2026-11-07): the copies the ship already lists */
+    var toolsKnob = el.getAttribute("tools") || "";
+    if (toolsKnob && toolsKnob !== "false" && window.lcMetrics && window.lcMetrics.tools) {
+      var toolsBar = document.createElement("div"); toolsBar.className = "lc-tools-bar";
+      box.parentNode.insertBefore(toolsBar, box.nextSibling);
+      window.lcMetrics.tools(box, { tools: toolsKnob, bar: toolsBar, scope: "bay", copies: function () {
+        try { return JSON.parse(box.getAttribute("data-lc-copies") || "[]"); } catch (e) { return []; }
+      } });
+    }
 
     /* disarmed states name their reason — a dead control that explains
        itself is a course tool; one that doesn't is a bug report */
