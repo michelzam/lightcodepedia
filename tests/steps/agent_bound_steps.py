@@ -1038,3 +1038,22 @@ def step_agent_key_saved(context):
 @when('I tap the chip "{words}" of the agent "{aid}"')
 def step_agent_chip(context, aid, words):
     context.page.locator('[data-lc-id="%s"] .lc-agent-suggest' % aid, has_text=words).first.click()
+
+
+@then('the agent "{aid}" offers no chip')
+def step_agent_no_chip(context, aid):
+    expect(_agent_box(context, aid)).to_be_visible(timeout=15_000)
+    context.page.wait_for_timeout(500)
+    chips = context.page.locator('[data-lc-id="%s"] .lc-agent-suggest' % aid)
+    assert chips.count() == 0, "the agent offers chips: %r" % chips.all_inner_texts()
+
+
+@then('the box of the agent "{aid}" hints "{text}"')
+def step_agent_box_hints(context, aid, text):
+    expect(_agent_box(context, aid)).to_have_attribute("placeholder", text)
+
+
+@then('the box of the agent "{aid}" stays empty')
+def step_agent_box_empty(context, aid):
+    context.page.wait_for_timeout(300)
+    expect(_agent_box(context, aid)).to_have_value("")

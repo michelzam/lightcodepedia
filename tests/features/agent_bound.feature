@@ -998,7 +998,8 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
 
   Scenario: The page's question is one Tab or one tap away
     Michel, 2026-10-31, module 08 on a phone: "propose the default question
-    with a tab or a tap" — the placeholder is the page's own question.
+    with a tab or a tap" — the page's question, written in prompts: as the
+    learner would say it (one line or a list).
 
     Given I have a clean browser page
     And an AI key is saved on this device
@@ -1008,7 +1009,8 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
 
       ```yaml
       name: Sky the Skeptic
-      placeholder: What is the weakest word in my pitch?
+      placeholder: Paste a sentence of your pitch, or ask about one word
+      prompts: What is the weakest word in my pitch?
       system: You are a skeptic.
       ```
       {: .agent #sky }
@@ -1019,6 +1021,32 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     Then the box of the agent "sky" holds "What is the weakest word in my pitch?"
     When I empty the box of the agent "sky" and tap its suggestion
     Then the box of the agent "sky" holds "What is the weakest word in my pitch?"
+
+  Scenario: The box's hint is the agent's voice — never a chip, never what Tab types
+    Michel, 2026-11-08, Bill on Module 06 · 01: the chip under the box read
+    "Which part do you want? Say what it should do." — "the default chip offers
+    the learner to ask the avatar to react as a learner". Two knobs, two voices:
+    the placeholder is the agent's hint, prompts: are the learner's lines.
+
+    Given I have a clean browser page
+    And an AI key is saved on this device
+    And the GitHub contents API serves "courses/demo/mod/hint.md" with the document:
+      """
+      # Hint
+
+      ```yaml
+      name: Bill the Builder
+      placeholder: Which part do you want? Say what it should do.
+      system: You build.
+      ```
+      {: .agent #bill }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/hint.md"
+    And I wait for the page to be interactive
+    Then the agent "bill" offers no chip
+    And the box of the agent "bill" hints "Which part do you want? Say what it should do."
+    When I press Tab in the empty box of the agent "bill"
+    Then the box of the agent "bill" stays empty
 
   Scenario: An agent's last answer is the page's to read, empty before the first ask
     Michel, 2026-10-31: "Sue should consider also what Eve suggests" — another

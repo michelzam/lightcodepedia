@@ -1458,12 +1458,15 @@ Auto-included by docs/_layouts/default.html.
     /* THE SUGGESTED QUESTIONS ARE ONE KEY OR ONE TAP AWAY (Michel,
        2026-10-31: "propose the default question with a tab or a tap"; then
        "several chips suggested as potential prompts"). prompts: lists the
-       page's questions — each a chip under the box; without it, the
-       placeholder is the one. Tab in the empty box takes the first. */
+       learner's lines — each a chip under the box; Tab in the empty box takes
+       the first. TWO KNOBS, TWO VOICES (Michel, 2026-11-08, Bill on Module
+       06 · 01: the chip read "Which part do you want? Say what it should do."
+       — "the default chip offers the learner to ask the avatar to react as a
+       learner"): the placeholder is the agent's hint in the empty box, its
+       own voice, and is never a chip; only prompts: speak for the learner. */
     var asks = Array.isArray(cfg.prompts) ? cfg.prompts.map(String)
              : (typeof cfg.prompts === 'string' && cfg.prompts.trim() ? cfg.prompts.split('|').map(function (s) { return s.trim(); }) : []);
     asks = asks.filter(Boolean);
-    if (!asks.length && cfg.placeholder && cfg.placeholder !== 'Ask anything...') asks = [cfg.placeholder];
     if (prompt && askForm && asks.length) {
       var chipRow = document.createElement('div');
       chipRow.className = 'lc-agent-suggests';

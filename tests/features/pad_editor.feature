@@ -56,6 +56,15 @@ Feature: The pad types like a text field, painted
     Then the "playground" pad does not contain "# hello"
     And the "playground" pad's mirror does not show "# hello"
 
+  Scenario: A task list's box borrows its text as its name
+    Michel, 2026-11-08, from the ♿ tool on Module 06 · 01: "Form elements must
+    have labels — 1 element": the pad's "- [x] a form on the selected family".
+    The box is drawn disabled, its text beside it, nameless. Now the box reads
+    its text to a screen reader, tags stripped; a box already named keeps its name.
+
+    When I type "\n\n- [x] a form on the selected family\n- [ ] a walk **log**\n" at the end of the "playground" pad
+    Then the "playground" pad's preview names its boxes "a form on the selected family, a walk log"
+
   Scenario: ⇥ hides the editor, ✎ brings it back — small pills, 🔍 only while editing
     Michel, 2026-10-11: "Hide/Edit are displayed on top of the text. They
     should be more like an icon on a semi-transparent small pill", and the

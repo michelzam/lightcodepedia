@@ -738,3 +738,17 @@ def step_pad_formula_kept(context, pid, formula, value):
     context.page.wait_for_timeout(1500)
     expect(pad.locator(".lc-mdpad-src")).to_contain_text(formula)
     assert pad.locator(".lc-mdpad-src .lc-cell").count() == 0, "a cell was evaluated inside the pad's source"
+
+
+@then('the "{pad_id}" pad\'s preview names its boxes "{names}"')
+def step_preview_box_names(context, pad_id, names):
+    want = [n.strip() for n in names.split(",")]
+    got = None
+    for _ in range(40):
+        got = context.page.evaluate(
+            "(id) => [...document.querySelectorAll(`[data-lc-id='${id}'] .lc-mdpad-out input[type=checkbox]`)]"
+            ".map(b => b.getAttribute('aria-label') || '')", pad_id)
+        if got == want:
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("the preview's boxes are named %r, expected %r" % (got, want))

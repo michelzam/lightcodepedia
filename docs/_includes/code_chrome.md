@@ -598,7 +598,7 @@
   function inlineIAL(html) {
     // [^<] for the carrier's content so the match can't span across other tags
     // (a lazy .*? would stretch from an earlier <em> to a later </em>{: .x})
-    return String(html).replace(
+    return taskListNames(String(html).replace(
       /<(em|strong|code|a)\b([^>]*)>([^<]*)<\/\1>\s*\{:\s*([^}]*?)\s*\}/g,
       function (m, tag, attrs, inner, ial) {
         var cls = (ial.match(/\.[-\w]+/g) || []).map(function (c) { return c.slice(1); });
@@ -609,6 +609,21 @@
           attrs += ' class="' + cls.join(" ") + '"';
         }
         return "<" + tag + attrs + ">" + inner + "</" + tag + ">";
+      }
+    ));
+  }
+  // A GFM task list ("- [x] a form on the family") renders as a disabled box
+  // with its text BESIDE it — no label, so a screen reader meets a nameless
+  // checkbox and axe says "Form elements must have labels", critical (Michel,
+  // 2026-11-08, the ♿ tool on Module 06 · 01). The box borrows the text that
+  // follows it, tags stripped, as its accessible name. Explicit names are kept.
+  function taskListNames(html) {
+    return html.replace(
+      /(<input\b(?=[^>]*type="checkbox")(?![^>]*aria-label)[^>]*>)([\s\S]*?)(?=<\/li>|<ul\b|<ol\b|<\/p>|$)/g,
+      function (m, box, rest) {
+        var name = rest.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+        if (!name) return m;
+        return box.replace(/\s*\/?>$/, ' aria-label="' + name.replace(/"/g, "&quot;") + '">') + rest;
       }
     );
   }
