@@ -211,6 +211,19 @@ The check is live truth against the API, never cached. Done steps reopen via
     }
 
     function pat() { try { return localStorage.getItem("lc_ed_pat") || ""; } catch (e) { return ""; } }
+    /* #step2 — a shipped app's menu sends the maker here to paste the SAME
+       course key on this site (Michel, 2026-11-08: the page opened at step 3
+       and misled); the hash opens ② once the live checks have settled */
+    if (/#step2\b/.test(location.hash)) {
+      [600, 1800].forEach(function (ms) {
+        setTimeout(function () {
+          setState("2", "on");
+          var k = wrap.querySelector(".lcj-key"); if (k) { try { k.focus(); } catch (e) {} }
+          msg(2, "Paste the same course key you use in Canvas — not a new one. The app you opened will then know you.", "");
+          steps["2"].scrollIntoView({ block: "center", behavior: "smooth" });
+        }, ms);
+      });
+    }
 
     /* ── the seat: email ↔ login, stated once, written into the bench ─────
        Nobody types a login: the key already says who they are. The email

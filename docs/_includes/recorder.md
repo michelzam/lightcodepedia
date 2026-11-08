@@ -1070,6 +1070,8 @@ Auto-included by docs/_layouts/default.html.
 
     // Core upload: takes a File or Blob, returns videoUrl via onDone(url) or onDone(null, err).
     window.lcYtInsertIntoPage = ytInsertIntoPage;
+    /* the result as it looks after an upload, without one — for a proof or a test */
+    window.lcYtShowResult = function (container, videoUrl) { ytShowUploadUI(container, null, "", "", true); container._lcYtDone(videoUrl); };
     function ytDoUpload(token, fileOrBlob, title, mimeType, onProgress, onDone, description) {
       fetch("https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status", {
         method: "POST",
@@ -1106,7 +1108,7 @@ Auto-included by docs/_layouts/default.html.
     }
 
     // Render upload progress + result UI into a container div.
-    function ytShowUploadUI(container, fileOrBlob, mimeType, title) {
+    function ytShowUploadUI(container, fileOrBlob, mimeType, title, demo) {
       container.innerHTML = [
         '<div style="background:#eee;border-radius:99px;height:6px;overflow:hidden;margin-bottom:6px;">',
           '<div class="lc-yt-bar" style="background:#ff0000;height:6px;width:0;transition:width .3s;border-radius:99px;"></div>',
@@ -1116,8 +1118,20 @@ Auto-included by docs/_layouts/default.html.
           '<input class="lc-yt-url" readonly style="width:100%;padding:7px 9px;border:1px solid #ddd;border-radius:7px;font-size:0.82em;box-sizing:border-box;background:#f9f9f9;margin-bottom:6px;">',
           '<div style="display:flex;gap:6px;flex-wrap:wrap;">',
             '<button class="lc-yt-copy" style="flex:1;padding:7px;background:#065fd4;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📋 Copy URL</button>',
-            '<button class="lc-yt-insert" style="flex:1;padding:7px;background:#2e7d32;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📄 Insert into page</button>',
+            (window._lcRecInto
+              ? '<button class="lc-yt-insert" style="flex:1;padding:7px;background:#2e7d32;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📄 Insert into page</button>'
+              : '<button class="lc-yt-embed" style="flex:1;padding:7px;background:#2e7d32;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">📋 Copy embed</button>'),
           '</div>',
+          /* THE WAY BACK (Michel, 2026-11-08, from the phone: "after the upload,
+             'record on the page' is not working, so it should propose to copy an
+             embed so learners go back on Canvas and paste that embed in the
+             mdpad, with clear directions"): a shipped copy is frozen and nobody's
+             to write — the embed is copied, and the directions say where it goes */
+          (window._lcRecInto ? '' :
+            '<div class="lc-yt-embed-how" style="font-size:0.8em;color:#444;margin-top:8px;line-height:1.5;text-align:left;background:#f6f8fa;border-radius:7px;padding:8px 10px;">' +
+              '<strong>Then, back in Canvas:</strong> open the lesson page, press <strong>✎</strong> on your pad, ' +
+              'paste the embed on a new line at the end, <strong>💾 Save</strong>. The video plays on your page; ' +
+              '🚀 Ship it again and the QR code carries it.</div>'),
           '<div class="lc-yt-insert-status" style="font-size:0.78em;color:#555;margin-top:5px;text-align:center;min-height:1em;"></div>',
         '</div>'
       ].join("");
@@ -1127,6 +1141,7 @@ Auto-included by docs/_layouts/default.html.
       var urlEl    = container.querySelector(".lc-yt-url");
       var copyEl   = container.querySelector(".lc-yt-copy");
       var insEl    = container.querySelector(".lc-yt-insert");
+      var embEl    = container.querySelector(".lc-yt-embed");
       var insStEl  = container.querySelector(".lc-yt-insert-status");
 
       function run(token) {
@@ -1146,11 +1161,23 @@ Auto-included by docs/_layouts/default.html.
               else { urlEl.select(); urlEl.setSelectionRange(0,99999); document.execCommand("copy"); }
               copyEl.textContent = "✅ Copied!";
             };
-            insEl.onclick = function(){ insEl.disabled = true; ytInsertIntoPage(videoUrl, insStEl); };
+            if (insEl) insEl.onclick = function(){ insEl.disabled = true; ytInsertIntoPage(videoUrl, insStEl); };
+            if (embEl) embEl.onclick = function(){
+              var embed = "[Recording](" + videoUrl + ")\n{: .video }";
+              var done = function () { embEl.textContent = "✅ Embed copied"; if (insStEl) insStEl.textContent = "Two lines, ready to paste at the end of your pad."; };
+              if (navigator.clipboard) navigator.clipboard.writeText(embed).then(done, done);
+              else { var ta = document.createElement("textarea"); ta.value = embed; document.body.appendChild(ta); ta.select(); document.execCommand("copy"); ta.remove(); done(); }
+            };
           }
         );
       }
+      /* a proof or a test shows the finished state without an upload */
+      container._lcYtDone = function (videoUrl) {
+        barEl.style.width = "100%"; pctEl.textContent = "✅ Upload complete!"; resultEl.style.display = "block"; urlEl.value = videoUrl;
+        if (embEl) embEl.onclick = function(){ embEl.textContent = "✅ Embed copied"; if (insStEl) insStEl.textContent = "Two lines, ready to paste at the end of your pad."; };
+      };
 
+      if (demo) return;                        /* the finished state is shown by _lcYtDone */
       var token = ytGetToken();
       if (token) { run(token); return; }
       pctEl.textContent = "Connecting YouTube…";

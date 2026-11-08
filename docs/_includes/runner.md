@@ -721,8 +721,8 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                    same key the frame took (Michel, 2026-11-08: the GitHub session
                    is the student's, the site's key is not here yet) */
                 var go = document.createElement("a");
-                go.href = window.lcHref ? window.lcHref("/courses/join") : "/courses/join";
-                go.textContent = "paste your key here"; go.className = "lc-app-record-join";
+                go.href = (window.lcHref ? window.lcHref("/courses/join") : "/courses/join") + "#step2";
+                go.textContent = "paste the same course key here (Join, step ②)"; go.className = "lc-app-record-join";
                 h.appendChild(go);
               }
               if (!me && pat && tries++ < 40) { setTimeout(offerRecord, 500); return; }
