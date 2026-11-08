@@ -738,6 +738,20 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                 else alert("Recorder is still loading — please try again in a moment.");
               });
               appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", rec);
+              /* AND THE TAKE'S WAY OUT (Michel, 2026-11-08: "not clear how to send the
+                 video on yt and catch the url"): on a phone the take lands in Photos;
+                 the maker picks it here, it goes up unlisted, the link comes back
+                 with a Copy button — the same dialog the site's menu offers */
+              if (window.lcOpenYtUpload && !appBar.querySelector(".lc-app-yt")) {
+                var yt = document.createElement("button");
+                yt.type = "button"; yt.className = "lc-app-yt"; yt.textContent = "📹 Upload to YouTube";
+                yt.title = "Pick your recording — it goes up unlisted, and you get the link to paste";
+                yt.addEventListener("click", function () {
+                  var more = appBar.querySelector(".lc-app-more"); if (more) more.open = false;
+                  window.lcOpenYtUpload();
+                });
+                rec.insertAdjacentElement("afterend", yt);
+              }
             })();
           }
         }).catch(function () {});
