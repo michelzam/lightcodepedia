@@ -706,20 +706,22 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                   .then(function (u) { if (u && u.login) { try { localStorage.setItem("lc_gh_user", JSON.stringify(u)); } catch (x) {} } })
                   .catch(function () {});
               }
-              if (!me) {
-                if (tries++ < 40) { setTimeout(offerRecord, 500); return; }
-                /* NO NAME ON THIS SITE (Michel, 2026-11-08, still no 🎬 on the newest
-                   engine): the maker opened the copy where no key of theirs is
-                   held — say so in the menu instead of staying silent */
-                if (!appBar.querySelector(".lc-app-record-hint")) {
-                  var hint = document.createElement("div");
-                  hint.className = "lc-app-copy lc-app-record-hint";
-                  hint.textContent = "🎬 to record from here, sign in on this site as @" + e.by;
-                  appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", hint);
-                }
-                return;
+              /* THE FRAME AND THE TAB ARE TWO SITES (Michel, 2026-11-08, the
+                 Canvas screenshot): a course page inside Canvas's frame keeps
+                 its own storage — the ship there named @zamm-student — while
+                 the copy opens at the top of lightcodepedia.org, where the
+                 browser holds another sign-in, or none. So the menu says who it
+                 sees and who it needs, at once; it waits only while a held key
+                 is still being named. */
+              function hintNow(text) {
+                var h = appBar.querySelector(".lc-app-record-hint");
+                if (!h) { h = document.createElement("div"); h.className = "lc-app-copy lc-app-record-hint"; appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", h); }
+                h.textContent = text;
               }
-              if (me.toLowerCase() !== String(e.by).toLowerCase()) return;
+              if (!me && pat && tries++ < 40) { setTimeout(offerRecord, 500); return; }
+              if (!me) { hintNow("🎬 to record from here, sign in on this site as @" + e.by); return; }
+              if (me.toLowerCase() !== String(e.by).toLowerCase()) { hintNow("🎬 to record, sign in on this site as @" + e.by + " — you are @" + me + " here"); return; }
+              var old = appBar.querySelector(".lc-app-record-hint"); if (old) old.remove();
               var rec = document.createElement("button");
               rec.type = "button"; rec.className = "lc-app-record"; rec.textContent = "🎬 Record screen";
               rec.title = "Record a walk-through of your app — screen and face, from this tab";
