@@ -693,12 +693,32 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                the top bar caches who holds the key only after its own call
                to GitHub, so a fresh page may build this menu before the name
                is there. Ask again, every half second, for twenty seconds. */
-            var tries = 0;
+            var tries = 0, asked = false;
             (function offerRecord() {
               if (appBar.querySelector(".lc-app-record")) return;
-              var me = "";
-              try { me = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (x) {}
-              if (!me) { if (tries++ < 40) setTimeout(offerRecord, 500); return; }
+              var me = "", pat = "";
+              try { me = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; pat = localStorage.getItem("lc_ed_pat") || ""; } catch (x) {}
+              if (!me && pat && !asked) {
+                /* a key without a cached name on this site: ask GitHub once ourselves */
+                asked = true;
+                fetch("https://api.github.com/user", { headers: { Authorization: "Bearer " + pat } })
+                  .then(function (r) { return r.ok ? r.json() : null; })
+                  .then(function (u) { if (u && u.login) { try { localStorage.setItem("lc_gh_user", JSON.stringify(u)); } catch (x) {} } })
+                  .catch(function () {});
+              }
+              if (!me) {
+                if (tries++ < 40) { setTimeout(offerRecord, 500); return; }
+                /* NO NAME ON THIS SITE (Michel, 2026-11-08, still no 🎬 on the newest
+                   engine): the maker opened the copy where no key of theirs is
+                   held — say so in the menu instead of staying silent */
+                if (!appBar.querySelector(".lc-app-record-hint")) {
+                  var hint = document.createElement("div");
+                  hint.className = "lc-app-copy lc-app-record-hint";
+                  hint.textContent = "🎬 to record from here, sign in on this site as @" + e.by;
+                  appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", hint);
+                }
+                return;
+              }
               if (me.toLowerCase() !== String(e.by).toLowerCase()) return;
               var rec = document.createElement("button");
               rec.type = "button"; rec.className = "lc-app-record"; rec.textContent = "🎬 Record screen";
