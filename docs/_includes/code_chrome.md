@@ -517,10 +517,29 @@
     });
   }
 
+  /* A code block wider than the phone scrolls sideways; without a tab stop a
+     keyboard never reaches it (axe "scrollable-region-focusable", serious,
+     on every component page at 430px — 2026-11-08). The ones that overflow
+     get tabindex=0, measured now, once more when the fonts have settled, and
+     again on resize. */
+  function _focusScrollers(root) {
+    function mark() {
+      (root || document).querySelectorAll("pre, .lc-datagrid").forEach(function (p) {
+        if (p.hasAttribute("tabindex") || p.closest("[contenteditable], textarea")) return;
+        if (p.scrollWidth > p.clientWidth + 1 || p.scrollHeight > p.clientHeight + 1) p.setAttribute("tabindex", "0");
+      });
+    }
+    mark(); setTimeout(mark, 1200);
+    if (!window._lcScrollersResize) {
+      window._lcScrollersResize = true;
+      var t = null; window.addEventListener("resize", function () { clearTimeout(t); t = setTimeout(function () { _focusScrollers(document); }, 300); });
+    }
+  }
   function scan() {
     _rehomeChrome();
     _applyIAL(document);
     _foldBeside(document);
+    _focusScrollers(document);
     _snapshotSources(document);
     _runUpgraders(document);
     _scanned = true;
@@ -531,6 +550,7 @@
   function scanElement(root) {
     _applyIAL(root);
     _foldBeside(root);
+    _focusScrollers(root);
     /* Same order as scan(): snapshot BEFORE upgrading, or a component that
        arrives later — a bench slot's grid, an embedded fragment — has no
        source for the ⚙️ to open, and the editor falls back to showing its

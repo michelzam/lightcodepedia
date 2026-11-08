@@ -194,7 +194,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-suite-header { display: flex; align-items: center; gap: 0.7em; padding: 0.55em 1em; background: #f9fafb; border-bottom: 1px solid #e5e7eb; font-size: 0.88em; }
 .lc-suite-title { font-weight: 600; color: #111827; }
 .lc-suite-summary { flex: 1; font-size: 0.82em; color: #6b7280; }
-.lc-suite-summary .ok  { color: #16a34a; font-weight: 500; }
+.lc-suite-summary .ok  { color: #15803d; font-weight: 500; }   /* 5:1 on white — #16a34a read at 3.3:1 (axe, 2026-11-08) */
 .lc-suite-summary .err { color: #dc2626; font-weight: 500; }
 .lc-suite-run { background: #0066cc; color: #fff; border: none; border-radius: 4px; padding: 0.25em 0.85em; font-size: 0.8em; font-weight: 500; cursor: pointer; flex-shrink: 0; }
 .lc-suite-run:hover:not(:disabled) { background: #0052a3; }
