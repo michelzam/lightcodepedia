@@ -688,9 +688,18 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                named by the ledger (by:), the ⋯ menu offers Record screen; a
                visitor's menu does not. The take is made here, in the app's
                own tab, never inside Canvas's frame. */
-            var me = "";
-            try { me = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (x) {}
-            if (me && me.toLowerCase() === String(e.by).toLowerCase() && !appBar.querySelector(".lc-app-record")) {
+            /* THE LOGIN ARRIVES LATE (Michel, 2026-11-08, as zamm-student on
+               engine 83539a0 — the row was in the engine and still missing):
+               the top bar caches who holds the key only after its own call
+               to GitHub, so a fresh page may build this menu before the name
+               is there. Ask again, every half second, for twenty seconds. */
+            var tries = 0;
+            (function offerRecord() {
+              if (appBar.querySelector(".lc-app-record")) return;
+              var me = "";
+              try { me = (JSON.parse(localStorage.getItem("lc_gh_user") || "{}") || {}).login || ""; } catch (x) {}
+              if (!me) { if (tries++ < 40) setTimeout(offerRecord, 500); return; }
+              if (me.toLowerCase() !== String(e.by).toLowerCase()) return;
               var rec = document.createElement("button");
               rec.type = "button"; rec.className = "lc-app-record"; rec.textContent = "🎬 Record screen";
               rec.title = "Record a walk-through of your app — screen and face, from this tab";
@@ -700,7 +709,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                 else alert("Recorder is still loading — please try again in a moment.");
               });
               appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", rec);
-            }
+            })();
           }
         }).catch(function () {});
     }
