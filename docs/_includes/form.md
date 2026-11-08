@@ -67,7 +67,8 @@ Auto-included by docs/_layouts/default.html.
    stage forbids is a quiet grey */
 .lc-form-verb { font: inherit; font-size: .85em; font-weight: 500; padding: .35em 1em; border-radius: 6px; border: 1px solid #0066cc; background: #0066cc; color: #fff; cursor: pointer; }
 .lc-form-verb:hover { background: #0052a3; border-color: #0052a3; }
-.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f3f4f6; color: #9ca3af; cursor: default; }
+/* not disabled= : the grey verb stays focusable and says why on a tap (a11y); its ink reads at 7:1 on the grey (axe flagged 2.4:1, Michel 2026-11-08) */
+.lc-form-verb.lc-form-verb-off { border-color: #e5e7eb; background: #f3f4f6; color: #4b5563; cursor: default; }
 </style>
 
 <script>
@@ -448,6 +449,7 @@ Auto-included by docs/_layouts/default.html.
       var b = document.createElement("button");
       b.type = "button";
       b.className = "lc-form-verb" + (it.ok ? "" : " lc-form-verb-off");
+      if (!it.ok) b.setAttribute("aria-disabled", "true");   /* said, not hidden: a tap explains what the stage needs */
       var dd = window.lcDocOf ? window.lcDocOf(cls, it.n) : null;   /* its docstring's icon and words */
       b.textContent = (dd && dd.icon ? dd.icon + " " : "") + prettifyKey(it.n);
       b.title = (dd && dd.text) || it.hint;

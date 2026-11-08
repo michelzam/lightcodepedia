@@ -48,23 +48,24 @@ IAL knobs:
               learner's résumé can carry a pitch, cards, a chart. Same
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
-  tools="true" | tools="versions, load, a11y, rhythm, struggle, flow, pep8, mypy, <agent id>"
-              🧰 the lower panel (lab only today): one discreet 🧰 button in
-              the pad's bar opens a dropdown with a checkbox per INSTALLED
-              tool; a checked tool shows its section under the pad, several
-              at once, the checks remembered in this browser; "true" lists
-              everything with nothing checked, a list pre-checks those; ↻ in
-              the menu redraws the open ones; pep8 or mypy listed turns the
-              line numbers on —
-              🕘 Versions as a tab; the metrics (plugins/metrics.md: 📐 Load
-              counted from the source, now and per saved version; ♿ A11y over
-              the preview; 🔁 Rhythm from the saves, needs save=; 🧗 Struggle
-              and 🎮 Flow from the bench record's history, need a bench;
-              "metrics" is load, a11y, rhythm); the audits over the source's
-              python fences (🛁 PEP 8,
-              🩺 mypy); an agent of the page by its id (its panel moves under
-              the pad, still bound as the author wired it). Own numbers, own
-              trend, no bands.
+  tools="load, a11y:on, focus:on, …, avatar:<agent id>"
+              🧰 the lower panel (lab only today): a LIST, never a boolean —
+              the page designer offers the tools, the learner ticks the ones
+              to show (Michel, 2026-11-08). One discreet 🧰 button in the bar
+              opens a dropdown with a checkbox per listed tool, in the list's
+              order; a ticked tool shows its section under the pad, several
+              at once, the ticks remembered in this browser; "name:on"
+              pre-ticks; "avatar:<id>" lists an agent declared anywhere on
+              the page — its panel moves under the pad when ticked and is
+              bound to the pad if the designer left it unbound; ↻ in the
+              menu redraws the open ones; pep8 or mypy listed turns the line
+              numbers on. Tools: versions (🕘, needs save=), load (📐, from the
+              source, now and per saved version), a11y (♿ over the preview),
+              rhythm (🔁 the saves, needs save=), focus (🎯 the learner's
+              sentence), struggle 🧗, flow 🎮, dora 📦, retention 🧠 (the bench
+              record's history and stamps, need a bench), pep8 🛁 and mypy 🩺
+              (over the source's python fences). Own numbers, own trend, no
+              bands.
   id="..."    optional — names the pad for X-ray
   (always)       the source is painted: a fence and its body muted, a {: … }
                  decoration on a lighter band — class, #id and knobs in their

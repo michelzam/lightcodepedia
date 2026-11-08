@@ -1451,6 +1451,21 @@ Auto-included by docs/_layouts/default.html.
   // ===== wire one panel =====
   function wirePanel(panel, cfg, boundId, boundExpr) {
     var totalTokens = 0;
+    /* A pad's tools="avatar:<id>" (Michel, 2026-11-08) moves this panel under
+       the pad and, if the designer left it unbound, binds it to the pad: the
+       closures below read boundId, so one assignment is the whole rewire. */
+    panel._lcBind = function (id) {
+      if (boundId || boundExpr || !id) return false;
+      boundId = String(id);
+      var head = panel.querySelector('.lc-agent-head'), key = panel.querySelector('.lc-agent-key');
+      if (head && !panel.querySelector('.lc-agent-bound')) {
+        var lbl = document.createElement('span'); lbl.className = 'lc-agent-bound';
+        lbl.innerHTML = 'linked to <code>#' + escapeHtml(boundId) + '</code>';
+        head.insertBefore(lbl, key || null);
+      }
+      panel.setAttribute('data-lc-bound', boundId);
+      return true;
+    };
     var authForm = panel.querySelector('.lc-agent-auth');
     var body = panel.querySelector('.lc-agent-body');
     var askForm = panel.querySelector('.lc-agent-ask');
