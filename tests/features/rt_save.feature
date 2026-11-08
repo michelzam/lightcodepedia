@@ -1133,3 +1133,53 @@ Feature: One page, two repos — the fence seeds, the reader's bench persists
     Then the pad's preview shows the picture "Fern" from the bench
     And the picture "Fern.png" was never asked from the vault
     And the picture fits the preview's width
+
+  Scenario: A proof's line travels in the record — its tags, its status, its first green
+    Michel, 2026-11-08, "go stamps": one line per proof beside the page's counts, so a
+    concept (a tag) met again on a later page can be read — when first green, how it went.
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/stamp.md" with the document:
+      """
+      # Stamps
+
+      ```gherkin
+      Feature: A tagged proof
+        Scenario: It passes
+          Given nothing
+          :::python
+          self.ok = True
+          :::
+          Then it is fine
+          :::python
+          assert self.ok
+          :::
+      ```
+      {: .feature #dod visible="true" status="pending" tags="python, states" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/stamp.md"
+    And I wait for the page to be interactive
+    And I run the feature "dod"
+    Then the card "dod" comes out green
+    When the learner leaves the page without saving
+    Then the record commit carries a proof line for "dod" tagged "python,states", "green", with a first green
+
+  Scenario: A quiz's moments travel in the record — seen, first answer, correct — beside the score, never in it
+    Given a connected bench whose "courses/demo/mod/cv.md" does not exist yet
+    And the GitHub contents API serves "courses/demo/mod/moments.md" with the document:
+      """
+      # Moments
+
+      **Q:** Two plus two?
+
+      - [ ] Three
+        > One short.
+      - [x] Four
+        > Yes.
+      {: .quiz #sum }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/moments.md"
+    And I wait for the page to be interactive
+    And I pick the quiz answer "Four"
+    Then that quiz answer is marked correct
+    When the learner leaves the page without saving
+    Then the record commit carries a quiz line for "sum" with seen, first answer and correct

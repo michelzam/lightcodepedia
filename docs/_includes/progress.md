@@ -135,6 +135,17 @@ Auto-included by docs/_layouts/default.html.
       r.red_runs += (rec.runs || {}).red || 0;
       r.green_runs += (rec.runs || {}).green || 0;
       if (rec.ts && rec.ts > r.ts) r.ts = rec.ts;
+      /* the proof's own line (2026-11-08, the stamps): tags, status, first red, first green, runs */
+      if (rec.tags || rec.first_green || rec.first_red)
+        out[k] = { kind: "f", tags: rec.tags || "", status: rec.status === "passing" ? "green" : "red",
+                   first_red: rec.first_red || "", first_green: rec.first_green || "",
+                   red_runs: (rec.runs || {}).red || 0, green_runs: (rec.runs || {}).green || 0 };
+    });
+    var moments = {};
+    try { moments = JSON.parse(localStorage.getItem("lc_quiz_moments") || "{}"); } catch (e) {}
+    Object.keys(moments).forEach(function (k) {
+      var m = moments[k] || {};
+      out[k] = { kind: "q", seen: m.seen || "", first: m.first || "", correct: m.correct || "" };
     });
     return out;
   }
@@ -143,6 +154,8 @@ Auto-included by docs/_layouts/default.html.
     var lines = [HEAD];
     Object.keys(map).sort().forEach(function (k) {
       var r = map[k];
+      if (r.kind === "f") { lines.push([k, "f", r.tags || "", r.status || "", r.first_red || "", r.first_green || "", (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t")); return; }
+      if (r.kind === "q") { lines.push([k, "q", r.seen || "", r.first || "", r.correct || ""].join("\t")); return; }
       lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || "",
                   (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t"));
     });
@@ -161,6 +174,8 @@ Auto-included by docs/_layouts/default.html.
       if (line.charAt(0) === "#") return;
       var p = line.split("\t");
       if (p.length < 3) return;
+      if (p[1] === "f") { var fr = (p[6] || "0/0").split("/"); map[p[0]] = { kind: "f", tags: (p[2] || "").trim(), status: (p[3] || "").trim(), first_red: (p[4] || "").trim(), first_green: (p[5] || "").trim(), red_runs: +fr[0] || 0, green_runs: +fr[1] || 0 }; return; }
+      if (p[1] === "q") { map[p[0]] = { kind: "q", seen: (p[2] || "").trim(), first: (p[3] || "").trim(), correct: (p[4] || "").trim() }; return; }
       var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/"), u = (p[5] || "0/0").split("/");
       map[p[0]] = { won: +q[0] || 0, total: +q[1] || 0,
                     green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim(),
@@ -177,8 +192,22 @@ Auto-included by docs/_layouts/default.html.
     var out = {};
     [a, b].forEach(function (src) {
       Object.keys(src || {}).forEach(function (k) {
-        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "", bench: "", red_runs: 0, green_runs: 0 });
         var s = src[k];
+        /* a stamp line merges on its own terms: the earliest moment wins, green outranks red */
+        var earliest = function (a, b) { return !a ? (b || "") : !b ? a : (a < b ? a : b); };
+        if (s.kind === "f") {
+          var fo = out[k] && out[k].kind === "f" ? out[k] : (out[k] = { kind: "f", tags: "", status: "", first_red: "", first_green: "", red_runs: 0, green_runs: 0 });
+          fo.tags = fo.tags || s.tags || ""; fo.status = (fo.status === "green" || s.status === "green") ? "green" : (fo.status || s.status || "");
+          fo.first_red = earliest(fo.first_red, s.first_red); fo.first_green = earliest(fo.first_green, s.first_green);
+          fo.red_runs = Math.max(fo.red_runs, s.red_runs || 0); fo.green_runs = Math.max(fo.green_runs, s.green_runs || 0);
+          return;
+        }
+        if (s.kind === "q") {
+          var qo = out[k] && out[k].kind === "q" ? out[k] : (out[k] = { kind: "q", seen: "", first: "", correct: "" });
+          qo.seen = earliest(qo.seen, s.seen); qo.first = earliest(qo.first, s.first); qo.correct = earliest(qo.correct, s.correct);
+          return;
+        }
+        var r = out[k] || (out[k] = { won: 0, total: 0, green: 0, feats: 0, ts: "", bench: "", red_runs: 0, green_runs: 0 });
         if (s.bench && !r.bench) r.bench = s.bench;
         r.red_runs = Math.max(r.red_runs, s.red_runs || 0);
         r.green_runs = Math.max(r.green_runs, s.green_runs || 0);
@@ -200,6 +229,7 @@ Auto-included by docs/_layouts/default.html.
     var changed = false;
     Object.keys(map).forEach(function (k) {
       var r = map[k], s = scores[k] || { won: 0, total: 0 };
+      if (r.kind) return;                       /* a stamp line is read, never a score */
       /* the proofs travel as counts (the bench keeps no feature ids): the
          recap reads them beside the browser's own (2026-11-03, a student's
          "proofs not registering" on a second browser) */

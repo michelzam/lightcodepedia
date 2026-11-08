@@ -170,7 +170,29 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
 
     var selected = {};
 
+    /* THE QUIZ'S MOMENTS (Michel, 2026-11-08, "go stamps"): seen when it scrolls
+       into view, first answer, first correct — kept beside the score, never
+       in it (doctrine 5: scores are sacred), travelling in the record as one
+       line per quiz, so "seen → correct" can be read without an accordion. */
+    var MOMENTS = "lc_quiz_moments";
+    function momentKey() { return (window.lcPageScores ? window.lcPageScores.norm() : location.pathname) + "#q:" + quizId; }
+    function stamp(field) {
+      try {
+        var all = JSON.parse(localStorage.getItem(MOMENTS) || "{}"), k = momentKey(), m = all[k] || {};
+        if (m[field]) return;
+        m[field] = new Date().toISOString(); all[k] = m;
+        localStorage.setItem(MOMENTS, JSON.stringify(all));
+      } catch (e) {}
+    }
+    if (window.IntersectionObserver) {
+      var seenObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { stamp("seen"); seenObs.disconnect(); } });
+      }, { threshold: 0.5 });
+      seenObs.observe(el);
+    } else stamp("seen");
     function gradeAndReport(allCorrect) {
+      stamp("first");
+      if (allCorrect) stamp("correct");
       reportScore(quizId, allCorrect, el);
     }
 

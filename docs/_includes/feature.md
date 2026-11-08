@@ -312,14 +312,23 @@ Registers with window.lcScanElement so the editor preview also renders cards.
          status restored on load is not a run. */
       var runs = { red: (was.runs || {}).red || 0, green: (was.runs || {}).green || 0 };
       if (!card._lcRestoring) { if (status === "passing") runs.green++; else if (status === "failing") runs.red++; }
+      /* THE STAMPS (Michel, 2026-11-08, "go stamps"): the card's tags and the
+         moments of its first red and first green travel in the record, one
+         line per proof — so a concept met again later (the same tag on
+         another page) can be read: when first green, how it went after. */
+      var nowIso = new Date().toISOString();
+      var first_red = was.first_red || (!card._lcRestoring && status === "failing" ? nowIso : "");
+      var first_green = was.first_green || (!card._lcRestoring && status === "passing" ? nowIso : "");
+      var tags = Array.prototype.map.call(card.querySelectorAll(".lc-feature-tag[data-tag]"), function (c) { return c.getAttribute("data-tag"); })
+        .filter(Boolean).join(",");           /* the chips the card wears — the fence's tags= never reaches the card */
       /* A GREEN OVER UNSAVED DATA IS NOT BOOKED. The record is what the
          desk counts; booking it now would let the bench hold a green proof
          over data it does not contain (Michel, 2026-09-16). The card shows
          the green and says what to save; the save re-runs and books. */
       if (status === "passing" && card.getAttribute("data-unsaved")) {
-        all[key] = { status: was.status || "", ts: was.ts || "", runs: runs };
+        all[key] = { status: was.status || "", ts: was.ts || "", runs: runs, tags: tags || was.tags || "", first_red: first_red, first_green: was.first_green || "" };
       } else {
-        all[key] = { status: status, ts: new Date().toISOString(), runs: runs };
+        all[key] = { status: status, ts: nowIso, runs: runs, tags: tags || was.tags || "", first_red: first_red, first_green: first_green };
       }
       localStorage.setItem("lc_features", JSON.stringify(all));
       /* same as a quiz: the bench copy follows on the next save (progress.md) */

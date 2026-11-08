@@ -1402,3 +1402,28 @@ def step_picture_fits(context):
     got = context.page.evaluate("""() => { const img = document.querySelector('.lc-mdpad-out img'), out = img.closest('.lc-mdpad-out');
         const cs = getComputedStyle(img); return { maxw: cs.maxWidth, h: cs.height === 'auto' || img.style.height === '' , w: img.getBoundingClientRect().width, ow: out.getBoundingClientRect().width }; }""")
     assert got["maxw"] == "100%" and got["w"] <= got["ow"], got
+
+
+# ── the stamps (2026-11-08): a proof's line, a quiz's moments ──────────────────
+
+def _record_lines(context):
+    puts = [c for c in context.bench_commits if c["path"].endswith("progress.txt")]
+    assert puts, "no record was written"
+    return [l.split("\t") for l in puts[-1]["text"].split("\n") if "\t" in l]
+
+
+@then('the record commit carries a proof line for "{fid}" tagged "{tags}", "{status}", with a first green')
+def step_record_proof_line(context, fid, tags, status):
+    rows = [p for p in _record_lines(context) if p[0].endswith("#" + fid) and len(p) > 1 and p[1] == "f"]
+    assert rows, "no proof line for %s in %r" % (fid, _record_lines(context))
+    p = rows[-1]
+    assert p[2] == tags and p[3] == status, p
+    assert p[5].startswith("20"), "no first green stamp: %r" % (p,)
+
+
+@then('the record commit carries a quiz line for "{qid}" with seen, first answer and correct')
+def step_record_quiz_line(context, qid):
+    rows = [p for p in _record_lines(context) if p[0].endswith("#q:" + qid) and len(p) > 1 and p[1] == "q"]
+    assert rows, "no quiz line for %s in %r" % (qid, _record_lines(context))
+    p = rows[-1]
+    assert p[2].startswith("20") and p[3].startswith("20") and p[4].startswith("20"), "moments missing: %r" % (p,)
