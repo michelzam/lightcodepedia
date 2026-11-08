@@ -1623,4 +1623,37 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
   }
   if (document.readyState !== "loading") boot(); else document.addEventListener("DOMContentLoaded", boot);
 })();
+
+  /* ── 🧰 PLUGINS RIDE THE BENCH (Michel, 2026-11-08, "go hubs") ───────────
+     The lab's plugin (plugins/metrics.md) never reaches pedia: the hub gate
+     copies it into the org's session hub, 🔄 Sync brings it into each
+     learner's bench, and a page that has no plugin built in reads it from
+     the paired bench and runs it — so a cohort gets the 🧰 on pedia while a
+     stranger on pedia sees the pad as before. One read per page, only when
+     a bench is paired; hosts built before it lands are attached late
+     (data-lc-tools-pending). */
+  function loadBenchPlugins() {
+    if (window.lcMetrics || window._lcBenchPluginsTried) return;
+    window._lcBenchPluginsTried = true;
+    var b = window.lcBench; if (!b || !b.read) return;
+    var t; try { t = b.target(null); } catch (e) { t = null; }
+    if (!t || !t.repo || !t.pat || t.here) return;
+    b.read("/plugins/metrics.md", null).then(function (f) {
+      if (!f || !f.text || window.lcMetrics) return;
+      /* the file is a Liquid include: its header comment goes (the tag is spelt in two halves so this include stays Liquid-clean) */
+      var text = f.text.replace(new RegExp("\\{" + "%-?[\\s\\S]*?-?%" + "\\}", "g"), "");
+      (text.match(/<style>[\s\S]*?<\/style>/g) || []).forEach(function (blk) {
+        var st = document.createElement("style"); st.setAttribute("data-lc-plugin", "bench");
+        st.textContent = blk.replace(/^<style>/, "").replace(/<\/style>$/, ""); document.head.appendChild(st);
+      });
+      (text.match(/<script>[\s\S]*?<\/script>/g) || []).forEach(function (blk) {
+        var sc = document.createElement("script"); sc.setAttribute("data-lc-plugin", "bench");
+        sc.textContent = blk.replace(/^<script>/, "").replace(/<\/script>$/, ""); document.body.appendChild(sc);
+      });
+      document.documentElement.setAttribute("data-lc-plugins", "bench");
+    }).catch(function () {});
+  }
+  window.lcLoadBenchPlugins = loadBenchPlugins;
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(loadBenchPlugins, 0); });
+  else setTimeout(loadBenchPlugins, 0);
 </script>

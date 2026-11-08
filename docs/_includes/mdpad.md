@@ -49,7 +49,8 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   tools="load, a11y:on, focus:on, …, avatar:<agent id>"
-              🧰 the lower panel (lab only today): a LIST, never a boolean —
+              🧰 the lower panel (the lab, and a bench whose hub carries
+              plugins/metrics.md — never pedia alone): a LIST, never a boolean —
               the page designer offers the tools, the learner ticks the ones
               to show (Michel, 2026-11-08). One discreet 🧰 button in the bar
               opens a dropdown with a checkbox per listed tool, in the list's
@@ -1395,13 +1396,18 @@ Auto-included by docs/_layouts/default.html.
        🕘 Versions panel; the strip, the buttons, the press rules and the
        sections are the plugin's. Without the knob nothing here runs. */
     var toolsKnob = el.getAttribute("tools") || "";
-    if (toolsKnob && toolsKnob !== "false" && saveWrap && window.lcMetrics && window.lcMetrics.tools) {
-      var vers0 = (typeof vers !== "undefined") ? vers : null;
-      window.lcMetrics.tools(wrap, {
-        tools: toolsKnob, bar: saveWrap, scope: "page", path: benchPath,
-        source: function () { return ta.value; }, scopeEl: function () { return out; }, goto: padGoto,
-        versions: vers0 ? { panel: vers0, opts: (typeof versOpts !== "undefined") ? versOpts : null } : null
-      });
+    if (toolsKnob && toolsKnob !== "false" && saveWrap) {
+      var startTools = function () {
+        var vers0 = (typeof vers !== "undefined") ? vers : null;
+        window.lcMetrics.tools(wrap, {
+          tools: toolsKnob, bar: saveWrap, scope: "page", path: benchPath,
+          source: function () { return ta.value; }, scopeEl: function () { return out; }, goto: padGoto,
+          versions: vers0 ? { panel: vers0, opts: (typeof versOpts !== "undefined") ? versOpts : null } : null
+        });
+      };
+      /* the plugin may ride the bench and land after this host (xray_edit: loadBenchPlugins) */
+      if (window.lcMetrics && window.lcMetrics.tools) startTools();
+      else { wrap._lcToolsInit = startTools; wrap.setAttribute("data-lc-tools-pending", "1"); }
     }
 
     /* ── WIRES: the preview's model is what its text declares ──────────────

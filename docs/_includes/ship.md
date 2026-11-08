@@ -546,12 +546,17 @@ Auto-included by docs/_layouts/default.html.
     /* 🧰 tools="ships" — the bay's ledger as the plugin's strip, scope bay
        (metrics 4, 2026-11-07): the copies the ship already lists */
     var toolsKnob = el.getAttribute("tools") || "";
-    if (toolsKnob && toolsKnob !== "false" && window.lcMetrics && window.lcMetrics.tools) {
-      var toolsBar = document.createElement("div"); toolsBar.className = "lc-tools-bar";
-      box.parentNode.insertBefore(toolsBar, box.nextSibling);
-      window.lcMetrics.tools(box, { tools: toolsKnob, bar: toolsBar, scope: "bay", copies: function () {
-        try { return JSON.parse(box.getAttribute("data-lc-copies") || "[]"); } catch (e) { return []; }
-      } });
+    if (toolsKnob && toolsKnob !== "false") {
+      var startTools = function () {
+        var toolsBar = document.createElement("div"); toolsBar.className = "lc-tools-bar";
+        box.parentNode.insertBefore(toolsBar, box.nextSibling);
+        window.lcMetrics.tools(box, { tools: toolsKnob, bar: toolsBar, scope: "bay", copies: function () {
+          try { return JSON.parse(box.getAttribute("data-lc-copies") || "[]"); } catch (e) { return []; }
+        } });
+      };
+      /* the plugin may ride the bench and land after this host (xray_edit: loadBenchPlugins) */
+      if (window.lcMetrics && window.lcMetrics.tools) startTools();
+      else { box._lcToolsInit = startTools; box.setAttribute("data-lc-tools-pending", "1"); }
     }
 
     /* disarmed states name their reason — a dead control that explains

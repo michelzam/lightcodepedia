@@ -412,22 +412,27 @@ a.lc-folder-up-pill:hover { border-color: #0066cc; background: #eef4ff; color: #
        2026-11-07): the plugin's one strip, scope module; the key is the cards'
        common folder, read from the first card once the shelf is drawn */
     var toolsKnob = el.getAttribute("tools") || "";
-    if (toolsKnob && toolsKnob !== "false" && window.lcMetrics && window.lcMetrics.tools) {
-      var toolsBar = document.createElement("div"); toolsBar.className = "lc-tools-bar";
-      wrap.parentNode.insertBefore(toolsBar, wrap.nextSibling);
-      window.lcMetrics.tools(wrap, { tools: toolsKnob, bar: toolsBar, scope: "module", key: function () {
-        /* the cards may still be loading: wait for the first one, ten seconds at most */
-        return new Promise(function (resolve) {
-          var tries = 0;
-          (function look() {
-            var first = wrap.querySelector(".lc-card[data-url]");
-            if (first || tries++ > 50) {
-              var k = first && window.lcPageScores ? window.lcPageScores.norm(first.getAttribute("data-url")) : "";
-              resolve(k.replace(/\/[^/]*$/, ""));
-            } else setTimeout(look, 200);
-          })();
-        });
-      } });
+    if (toolsKnob && toolsKnob !== "false") {
+      var startTools = function () {
+        var toolsBar = document.createElement("div"); toolsBar.className = "lc-tools-bar";
+        wrap.parentNode.insertBefore(toolsBar, wrap.nextSibling);
+        window.lcMetrics.tools(wrap, { tools: toolsKnob, bar: toolsBar, scope: "module", key: function () {
+          /* the cards may still be loading: wait for the first one, ten seconds at most */
+          return new Promise(function (resolve) {
+            var tries = 0;
+            (function look() {
+              var first = wrap.querySelector(".lc-card[data-url]");
+              if (first || tries++ > 50) {
+                var k = first && window.lcPageScores ? window.lcPageScores.norm(first.getAttribute("data-url")) : "";
+                resolve(k.replace(/\/[^/]*$/, ""));
+              } else setTimeout(look, 200);
+            })();
+          });
+        } });
+      };
+      /* the plugin may ride the bench and land after this host (xray_edit: loadBenchPlugins) */
+      if (window.lcMetrics && window.lcMetrics.tools) startTools();
+      else { wrap._lcToolsInit = startTools; wrap.setAttribute("data-lc-tools-pending", "1"); }
     }
     /* No hard requirement on _lcSiteRepo any more: the manifest path lists a
        folder with no API. _lcSiteRepo is only needed for the API fallback and
