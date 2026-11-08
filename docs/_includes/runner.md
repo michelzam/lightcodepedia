@@ -716,7 +716,14 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
               function hintNow(text) {
                 var h = appBar.querySelector(".lc-app-record-hint");
                 if (!h) { h = document.createElement("div"); h.className = "lc-app-copy lc-app-record-hint"; appBar.querySelector(".lc-app-refresh").insertAdjacentElement("beforebegin", h); }
-                h.textContent = text;
+                h.textContent = text + " — ";
+                /* the door is one tap away: the Join page of this site takes the
+                   same key the frame took (Michel, 2026-11-08: the GitHub session
+                   is the student's, the site's key is not here yet) */
+                var go = document.createElement("a");
+                go.href = window.lcHref ? window.lcHref("/courses/join") : "/courses/join";
+                go.textContent = "paste your key here"; go.className = "lc-app-record-join";
+                h.appendChild(go);
               }
               if (!me && pat && tries++ < 40) { setTimeout(offerRecord, 500); return; }
               if (!me) { hintNow("🎬 to record from here, sign in on this site as @" + e.by); return; }

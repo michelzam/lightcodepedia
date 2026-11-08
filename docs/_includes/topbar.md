@@ -1235,6 +1235,37 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   window.lcUserPillRefresh = lcInitUserPill;
   lcInitUserPill();
 
+  // ── THE SIGN-IN FOLLOWS THE APP INTO ITS OWN TAB (Michel, 2026-11-08: "I can't
+  //    ask students to sign again") ──────────────────────────────────────────
+  //    A course page inside Canvas's frame holds the learner's key in storage
+  //    the browser keeps apart from the top-level site. The copy it opens is
+  //    the SAME site in a new tab, so the tab asks its opener for the key and
+  //    the opener answers — only another window of this very origin, only with
+  //    what that window could already read. Nothing travels in a URL. The tab
+  //    stores it and reloads once; from then on it is signed in like any tab.
+  (function () {
+    var ORIGIN = location.origin;
+    function held() {
+      var out = {};
+      ['lc_ed_pat', 'lc_ed_repo', 'lc_gh_user', 'lc_gh_user_for'].forEach(function (k) { var v = localStorage.getItem(k); if (v) out[k] = v; });
+      return out;
+    }
+    window.addEventListener('message', function (ev) {
+      if (ev.origin !== ORIGIN || !ev.data || typeof ev.data !== 'object') return;
+      if (ev.data.lc === 'key?' && ev.source && localStorage.getItem('lc_ed_pat')) {
+        try { ev.source.postMessage({ lc: 'key', held: held() }, ORIGIN); } catch (e) {}
+      }
+      if (ev.data.lc === 'key' && ev.data.held && ev.data.held.lc_ed_pat && !localStorage.getItem('lc_ed_pat')) {
+        Object.keys(ev.data.held).forEach(function (k) { try { localStorage.setItem(k, ev.data.held[k]); } catch (e) {} });
+        if (!sessionStorage.getItem('lc_key_handed')) { sessionStorage.setItem('lc_key_handed', '1'); location.reload(); }
+      }
+    });
+    if (!localStorage.getItem('lc_ed_pat') && window.opener && !sessionStorage.getItem('lc_key_handed')) {
+      try { window.opener.postMessage({ lc: 'key?' }, ORIGIN); } catch (e) {}
+    }
+    window.lcAskOpenerForKey = function () { try { window.opener.postMessage({ lc: 'key?' }, ORIGIN); } catch (e) {} };
+  })();
+
   // ── Recorder launchers (work in every auth state) ──────────────────────────
   /* ON A BAY, THE OWNER RECORDS, A VISITOR DOES NOT (Michel, 2026-11-06, the
      cohort's recording problem — Module 07 · Show Time recorded from the

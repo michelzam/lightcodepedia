@@ -420,7 +420,7 @@ Auto-included by docs/_layouts/default.html.
                                   : "🚀 Shipped · " + sha.slice(0, 7) + " · ";
         if (window.lcShipPicked) delete window.lcShipPicked[app];   /* a new ship shows the latest */
         var a = document.createElement("a");
-        a.href = link; a.target = "_blank"; a.rel = "noopener";
+        a.href = link; a.target = "_blank"; a.rel = "opener";   /* the copy keeps its opener: the sign-in is handed over, window to window (topbar.md, 2026-11-08) */
         a.textContent = "open your deployed app";
         var note = document.createElement("span");
         note.textContent = " — public: anyone with this link can see it." +
@@ -485,10 +485,10 @@ Auto-included by docs/_layouts/default.html.
           return "<li class='" + (on ? "lc-ship-on" : "") + "'><button type='button' class='lc-ship-pick' data-i='" + i + "'>" +
             (i === 0 ? "🆕 " : "📦 ") + h.sha.slice(0, 7) + " <span>" + when(h.at) + "</span>" +
             (i === 0 ? " <b>latest</b>" : "") + (h.note ? " <em class='lc-ship-note'>" + escNote(h.note) + "</em>" : "") + "</button> <a href='" + copyLink(bay, app, h) +
-            "' target='_blank' rel='noopener' title='open this copy on its own'>↗</a></li>";
+            "' target='_blank' rel='opener' title='open this copy on its own'>↗</a></li>";
         };
         panel.innerHTML = "<div class='lc-ship-last'>Last shipped " + when(list[0].at) + " · " +
-          "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='noopener'>open " + list[0].sha.slice(0, 7) + " ↗</a></div>" +
+          "<a href='" + copyLink(bay, app, list[0]) + "' target='_blank' rel='opener'>open " + list[0].sha.slice(0, 7) + " ↗</a></div>" +
           (list.length > 1 ? "<details class='lc-ship-all'" + (wasOpen ? " open" : "") + "><summary>🗂 All " + list.length + " copies</summary>" +
             "<button type='button' class='lc-ship-replay'>🎞 Time machine</button><ol>" +
             list.map(row).join("") + "</ol></details>" : "");
