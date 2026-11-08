@@ -466,6 +466,24 @@ Auto-included by docs/_layouts/default.html.
 
   /* what the card's grid was built for: the same fields under the same
      rules reuse it, only the values change */
+  /* THE GRID'S EMPTY HOLDERS (Michel, 2026-11-08, the ♿ tool on a form: "Empty
+     row holders inside a grid … 5 elements"): the library keeps five
+     containers for pinned and full-width rows, each a rowgroup with no row,
+     and the engine files every one as a doubt. Empty, they are presentation;
+     the library builds them once, so one pass after the first paint holds. */
+  function quietEmptyHolders(root) {
+    var sel = ".ag-full-width-container, .ag-sticky-top-container, .ag-sticky-top-full-width-container, .ag-sticky-bottom-container, .ag-sticky-bottom-full-width-container, .ag-pinned-left-cols-container, .ag-pinned-right-cols-container";
+    /* the library writes its roles again during its first paints: the pass
+       runs now and over the next three seconds, then on every data change */
+    function pass() {
+      Array.prototype.forEach.call(root.querySelectorAll(sel), function (c) {
+        if (!c.children.length) { if (c.getAttribute("role") !== "presentation") c.setAttribute("role", "presentation"); }
+        else if (c.getAttribute("role") !== "rowgroup") c.setAttribute("role", "rowgroup");
+      });
+    }
+    pass(); [150, 400, 800, 1500, 3000].forEach(function (ms) { setTimeout(pass, ms); });
+  }
+
   function formSig(obj, opts) {
     var o = opts || {};
     return JSON.stringify([Object.keys(obj), !!o.editable, o.locked || [], o.chips || [],
@@ -651,6 +669,7 @@ Auto-included by docs/_layouts/default.html.
 
       var api = bodyEl._lcGridApi = window.agGrid.createGrid(gridDiv, gridOptions);
       bodyEl._lcSig = formSig(obj, opts);
+      quietEmptyHolders(gridDiv); api.addEventListener("rowDataUpdated", function () { quietEmptyHolders(gridDiv); });
       wireLabelGrip(gridDiv, api, bodyEl);
     }).catch(function(e){
       bodyEl.innerHTML = '<div class="lc-form-err">' + escapeHtml("Could not load AG Grid: " + (e.message || String(e))) + '</div>';

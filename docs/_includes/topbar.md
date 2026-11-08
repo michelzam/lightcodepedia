@@ -154,6 +154,10 @@ window.lcFrameApply();
 }
 #lc-user-btn:hover { border-color: #0066cc; box-shadow: 0 0 0 2px #e8f0fe; }
 #lc-user-btn img { width: 28px; height: 28px; border-radius: 50%; display: block; }
+/* 🔄 on the avatar when the bench is behind its hub (Michel, 2026-11-08: "I see no sync button") */
+#lc-user-btn { position: relative; }
+#lc-user-sync-dot { position: absolute; right: -4px; bottom: -4px; font-size: 13px; line-height: 1; background: #fff; border-radius: 50%; padding: 1px; box-shadow: 0 0 0 1px #d0d0d0; }
+#lc-user-sync-dot[hidden] { display: none; }
 #lc-user-caret { display: none; }
 #lc-user-drop {
   display: none; position: absolute; right: 0; top: calc(100% + 6px);
@@ -563,6 +567,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
   <div id="lc-user-pill" style="display:none">
     <button id="lc-user-btn" aria-label="User menu" title="">
       <img id="lc-user-avatar" src="" alt="">
+      <span id="lc-user-sync-dot" hidden title="Your bench has updates to sync">🔄</span>
     </button>
     <div id="lc-user-drop">
       <div class="lc-ud-head">
@@ -587,7 +592,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       <a class="lc-ud-row" href="/courses/join"><span>🎓</span><span>My course</span></a>
       <a class="lc-ud-row" href="/start"><span>🚀</span><span>Onboarding</span></a>
       <div class="lc-ud-row" id="lc-ud-qr"><span>📷</span><span>QR code of this page</span></div>
-      <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Update from Lightcodepedia</span></div>
+      <div class="lc-ud-row" id="lc-ud-sync" style="display:none"><span>🔄</span><span id="lc-ud-sync-label">Sync your bench</span></div>
       {% if site.github.repository_name == "lightcodelab" %}
       {% comment %} HQ only: educator doors live HERE, behind the avatar —
          connected people only, zero menu pollution for learners. The rows
@@ -1182,9 +1187,15 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
             .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (cmp) {
               if (!cmp || !cmp.behind_by) return;
-              _syncLabel.textContent = 'Update from Lightcodepedia — ' + cmp.behind_by +
-                ' new improvement' + (cmp.behind_by > 1 ? 's' : '');
+              /* THE PARENT IS NAMED FOR WHAT IT IS (Michel, 2026-11-08, from Canvas:
+                 "I see no sync button"): a bench forks the class hub, a site forks
+                 Lightcodepedia; the row says which, counts what is new, and a 🔄
+                 on the avatar shows it before the menu opens. */
+              var fromHub = !/lightcodepedia$/i.test(parent);
+              _syncLabel.textContent = (fromHub ? 'Sync your bench — ' : 'Update from Lightcodepedia — ') + cmp.behind_by +
+                (fromHub ? ' new from the class hub' : ' new improvement' + (cmp.behind_by > 1 ? 's' : ''));
               _syncRow.style.display = '';
+              var dot = document.getElementById('lc-user-sync-dot'); if (dot) dot.hidden = false;
             });
         })
         .catch(function () {});
@@ -1199,7 +1210,8 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
         body: JSON.stringify({ branch: _syncMeta.branch })
       }).then(function (r) {
         if (r.ok) {
-          _syncLabel.textContent = '✔ Updated — your site is rebuilding';
+          _syncLabel.textContent = _syncMeta && !/lightcodepedia$/i.test(_syncMeta.parent) ? '✔ Synced — reload the page to see what came' : '✔ Updated — your site is rebuilding';
+          var dot2 = document.getElementById('lc-user-sync-dot'); if (dot2) dot2.hidden = true;
           setTimeout(function () { _syncRow.style.display = 'none'; }, 6000);
         } else if (r.status === 409) {
           _syncLabel.innerHTML = '⚠ Your copy has clashing edits — ' +
@@ -1223,6 +1235,8 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
       if (document.documentElement.classList.contains('lc-crumb-mode')) return;
       drop.classList.toggle('open'); checkSync();
     });
+    /* the check runs once the page is up, not only when the menu opens: the 🔄 on the avatar is the button a learner sees */
+    setTimeout(checkSync, 1500);
     document.addEventListener('click', function(){ drop.classList.remove('open'); });
     drop.addEventListener('click', function(e){ e.stopPropagation(); });
 

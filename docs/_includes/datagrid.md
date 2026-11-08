@@ -101,6 +101,25 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   var LC_BRANCH = "main";
   var LC_SHA    = {{ site.github.build_revision | default: "main" | jsonify }};
   var LC_CANON  = {{ site.lc_canonical_host | default: "" | jsonify }};
+
+  /* THE GRID'S EMPTY HOLDERS (Michel, 2026-11-08, the ♿ tool on a form: "Empty
+     row holders inside a grid … 5 elements"): the library keeps five
+     containers for pinned and full-width rows, each a rowgroup with no row,
+     and the engine files every one as a doubt. Empty, they are presentation;
+     the library builds them once, so one pass after the first paint holds. */
+  function quietEmptyHolders(root) {
+    var sel = ".ag-full-width-container, .ag-sticky-top-container, .ag-sticky-top-full-width-container, .ag-sticky-bottom-container, .ag-sticky-bottom-full-width-container, .ag-pinned-left-cols-container, .ag-pinned-right-cols-container";
+    /* the library writes its roles again during its first paints: the pass
+       runs now and over the next three seconds, then on every data change */
+    function pass() {
+      Array.prototype.forEach.call(root.querySelectorAll(sel), function (c) {
+        if (!c.children.length) { if (c.getAttribute("role") !== "presentation") c.setAttribute("role", "presentation"); }
+        else if (c.getAttribute("role") !== "rowgroup") c.setAttribute("role", "rowgroup");
+      });
+    }
+    pass(); [150, 400, 800, 1500, 3000].forEach(function (ms) { setTimeout(pass, ms); });
+  }
+
   function lcFileSrc(path) {
     return {
       raw: "https://raw.githubusercontent.com/" + LC_REPO + "/" + LC_BRANCH + "/" + path,
@@ -366,6 +385,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
       }
       var api = window.agGrid.createGrid(gridEl, gridOptions);
       window.lcMasterDetail.registerGrid(gridId, api);
+      quietEmptyHolders(gridEl); api.addEventListener("rowDataUpdated", function () { quietEmptyHolders(gridEl); });
 
       /* The rows scroll — sideways too, whenever the columns outgrow the
          page — and nothing in that scroll region was a tab stop, so a wheel
