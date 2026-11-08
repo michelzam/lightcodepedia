@@ -1700,7 +1700,7 @@ Auto-included by docs/_layouts/default.html.
     if (gridTitle) {
       var bar = document.createElement("div");
       bar.className = "lc-datagrid-title lc-dg-titlebar";
-      bar.appendChild(document.createTextNode("▦ "));
+      var glyph = document.createElement("span"); glyph.setAttribute("aria-hidden", "true"); glyph.textContent = "▦ "; bar.appendChild(glyph);   /* decoration, not text (♿, 2026-11-08) */
       var tn = document.createElement("span");
       tn.className = "lc-datagrid-name";
       tn.textContent = gridTitle;
@@ -1791,8 +1791,9 @@ Auto-included by docs/_layouts/default.html.
          "replacing the grid generic emoji") */
       var cdoc = window.lcDocOf && (window.lcModels || {})[bindId] ? window.lcDocOf(bindId) : null;
       var tbar = el.querySelector(".lc-dg-titlebar");
-      if (tbar && tbar.firstChild && tbar.firstChild.nodeType === 3) {
-        tbar.firstChild.nodeValue = (cdoc && cdoc.icon ? cdoc.icon : "▦") + " ";
+      var glyphEl = tbar && tbar.firstChild && tbar.firstChild.nodeType === 1 && tbar.firstChild.getAttribute("aria-hidden") === "true" ? tbar.firstChild : null;
+      if (glyphEl) {
+        glyphEl.textContent = (cdoc && cdoc.icon ? cdoc.icon : "▦") + " ";
         if (cdoc && cdoc.text) tbar.title = cdoc.text; else tbar.removeAttribute("title");
       }
       /* a list read from elsewhere — itself, or behind the query it shows:
@@ -1893,7 +1894,7 @@ Auto-included by docs/_layouts/default.html.
         var r = sorted[idx] || {}, kd = r._kind && window.lcDocOf ? window.lcDocOf(r._kind) : null;
         var mark = kd && kd.icon ? kd.icon : "⋯", tip = (r._kind ? "a " + r._kind + " — " : "") + "what this one can do";
         return "<td class='lc-dg-gut' data-row='" + idx + "'><button type='button' class='lc-dg-rowmenu" + (kd && kd.icon ? " lc-dg-kindmark" : "") + "'"
-          + " title='" + esc(tip) + "' aria-label='" + esc(tip) + "'>" + esc(mark) + "</button></td>";
+          + " title='" + esc(tip) + "' aria-label='" + esc(tip) + "'><span aria-hidden='true'>" + esc(mark) + "</span></button></td>";   /* the glyph is decoration: the label speaks, the ♿ contrast rule has no text to weigh (2026-11-08) */
       };
       function dressedCell0(row, c, idx) {
         var v = row[c] !== undefined && row[c] !== null ? row[c] : "";

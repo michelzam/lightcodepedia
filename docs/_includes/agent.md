@@ -83,7 +83,7 @@ Auto-included by docs/_layouts/default.html.
 /* an agent's on_response lines are the page's, not the reader's: never drawn */
 .on_response { display: none !important; }
 .lc-agent { border: 1px solid #e0e0e0; border-radius: 8px; margin: 1em 0; background: white; overflow: hidden; font-size: 0.95em; }
-.lc-agent-head { background: linear-gradient(135deg, #f5f5f5 0%, #fafafa 100%); padding: 0.55em 1em; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.5em; font-weight: 600; color: #444; font-size: 0.92em; }
+.lc-agent-head { background: #f6f6f6;   /* one colour: a gradient left the ♿ engine unable to measure the title's contrast (2026-11-08) */ padding: 0.55em 1em; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center; gap: 0.5em; font-weight: 600; color: #444; font-size: 0.92em; }
 .lc-agent-icon { font-size: 1.2em; }
 .lc-agent-title { flex: 1; }
 .lc-agent-bound { font-size: 0.78em; color: var(--lc-ink-mute, #616161); font-weight: 400; }
