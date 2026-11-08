@@ -246,6 +246,7 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
     }
 
     var _popHtml = "";
+    function esc(x) { return String(x == null ? '' : x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
     function renderPopover() {
       var p = pop(); if (!p) return;
       var won = order.filter(function(id){ return quizzes[id].correct; }).length;
@@ -265,8 +266,12 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
         body = '<h4>Quiz score</h4><div class="lc-score-line"><span>No quizzes answered yet</span><span></span></div>';
       }
       var hasScore = order.length || (seed && seed.total);
+      /* 🔄 the bench's sync, offered here too: inside an LMS frame the avatar is
+         a chip, not a menu, and this popover is the one door a learner can open
+         (Michel, 2026-11-08, from Canvas) */
+      var sync = window.lcBenchSync && window.lcBenchSync.behind ? '<button class="lc-score-sync" type="button">🔄 ' + esc(window.lcBenchSync.label) + '</button>' : '';
       var html = body +
-        (hasScore ? '<button class="lc-score-reset" type="button">🗑 Reset this page’s score</button>' : '');
+        (hasScore ? '<button class="lc-score-reset" type="button">🗑 Reset this page’s score</button>' : '') + sync;
       /* rebuild ONLY on change: an unconditional innerHTML write re-fires the
          MutationObserver → refresh → write… forever, replacing the reset
          button every frame — a click could land on a detached button and fall
@@ -288,6 +293,7 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
     });
 
     return {
+      redraw: function () { render(); renderPopover(); },
       update: function(quizId, correct) {
         if (!quizzes[quizId]) {
           order.push(quizId);
@@ -342,10 +348,17 @@ body.lc-slides-active .lc-score-popover { top: 3.4em; }
       p.classList.toggle('lc-score-popover-visible');
     });
     p.addEventListener('click', function(e){
+      if (e.target.closest('.lc-score-sync')) {
+        e.stopPropagation();
+        var b = e.target.closest('.lc-score-sync'); b.textContent = '🔄 syncing…'; b.disabled = true;
+        if (window.lcBenchSync) window.lcBenchSync.run();
+        return;
+      }
       if (!e.target.closest('.lc-score-reset')) return;
       e.stopPropagation();
       if (window.lcQuizScore && window.lcQuizScore.reset) window.lcQuizScore.reset();
     });
+    document.addEventListener('lc-bench-sync', function () { if (window.lcQuizScore && window.lcQuizScore.redraw) window.lcQuizScore.redraw(); });
     document.addEventListener('click', function(e){
       if (!p.contains(e.target) && !f.contains(e.target)) {
         p.classList.remove('lc-score-popover-visible');

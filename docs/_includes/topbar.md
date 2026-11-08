@@ -1196,6 +1196,9 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
                 (fromHub ? ' new from the class hub' : ' new improvement' + (cmp.behind_by > 1 ? 's' : ''));
               _syncRow.style.display = '';
               var dot = document.getElementById('lc-user-sync-dot'); if (dot) dot.hidden = false;
+              /* INSIDE A FRAME THE AVATAR IS A CHIP, NOT A MENU (Michel, 2026-11-08, from Canvas: "the avatar is not clickable … maybe the score drop down can help"): the state is published for the score popover to offer the same tap */
+              window.lcBenchSync = { behind: cmp.behind_by, label: _syncLabel.textContent, run: function () { _syncRow.click(); } };
+              document.dispatchEvent(new CustomEvent('lc-bench-sync'));
             });
         })
         .catch(function () {});
@@ -1212,6 +1215,7 @@ html.lc-not-editable .lc-edit-fab { display: none !important; }
         if (r.ok) {
           _syncLabel.textContent = _syncMeta && !/lightcodepedia$/i.test(_syncMeta.parent) ? '✔ Synced — reload the page to see what came' : '✔ Updated — your site is rebuilding';
           var dot2 = document.getElementById('lc-user-sync-dot'); if (dot2) dot2.hidden = true;
+          window.lcBenchSync = null; document.dispatchEvent(new CustomEvent('lc-bench-sync'));
           setTimeout(function () { _syncRow.style.display = 'none'; }, 6000);
         } else if (r.status === 409) {
           _syncLabel.innerHTML = '⚠ Your copy has clashing edits — ' +

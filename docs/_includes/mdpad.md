@@ -49,8 +49,8 @@ IAL knobs:
               pipeline as the runner. Debounced, not per keystroke: a
               component rebuilds, a word does not.
   tools="load, a11y:on, focus:on, …, avatar:<agent id>"
-              🧰 the lower panel (the lab, and a bench whose hub carries
-              plugins/metrics.md — never pedia alone): a LIST, never a boolean —
+              🧰 the lower panel (the lab, and a course whose vault carries
+              _plugins/metrics.md — never pedia alone): a LIST, never a boolean —
               the page designer offers the tools, the learner ticks the ones
               to show (Michel, 2026-11-08). One discreet 🧰 button in the bar
               opens a dropdown with a checkbox per listed tool, in the list's

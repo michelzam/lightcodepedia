@@ -548,6 +548,41 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
   /* one resolver for every ship: reader — the qr draws the same address */
   window.lcResolveShip = resolveShip;
 
+  /* ── 🧰 PLUGINS RIDE THE COURSE (Michel, 2026-11-08, "go hubs" → "why not in
+     the vault?") ─────────────────────────────────────────────────────────────
+     The lab's plugin (plugins/metrics.md) never reaches pedia itself. The
+     course gate copies it into each course's _plugins/ in the vault, beside
+     _bots/, and a page with no plugin built in reads it from the course it
+     came from — the same road as the lesson, the same key — and runs its
+     style and script. No sync, nothing per learner: the moment the course is
+     published, every reader of it has the 🧰; a stranger on pedia, no course
+     key, sees the pad as before. Hosts drawn before it lands wait
+     (data-lc-tools-pending) and the plugin attaches them. */
+  var _pluginsFor = null;
+  function loadCoursePlugins(repo, path) {
+    if (window.lcMetrics || !repo || !path) return;
+    var m = /^(.*?\bcourses\/[^\/]+)\//.exec(path);
+    if (!m) return;
+    var src = "gh:" + repo + "/" + m[1] + "/_plugins/metrics.md";
+    if (_pluginsFor === src) return;
+    _pluginsFor = src;
+    loadMd(src).then(function (text) {
+      if (!text || window.lcMetrics) return;
+      /* the file is a Liquid include: its header comment goes (the tag is spelt in two halves so this include stays Liquid-clean) */
+      text = text.replace(new RegExp("\\{" + "%-?[\\s\\S]*?-?%" + "\\}", "g"), "");
+      (text.match(/<style>[\s\S]*?<\/style>/g) || []).forEach(function (blk) {
+        var st = document.createElement("style"); st.setAttribute("data-lc-plugin", "course");
+        st.textContent = blk.replace(/^<style>/, "").replace(/<\/style>$/, ""); document.head.appendChild(st);
+      });
+      (text.match(/<script>[\s\S]*?<\/script>/g) || []).forEach(function (blk) {
+        var sc = document.createElement("script"); sc.setAttribute("data-lc-plugin", "course");
+        sc.textContent = blk.replace(/^<script>/, "").replace(/<\/script>$/, ""); document.body.appendChild(sc);
+      });
+      document.documentElement.setAttribute("data-lc-plugins", "course");
+    }).catch(function () { /* no _plugins in this course: the pad as before */ });
+  }
+  window.lcLoadCoursePlugins = loadCoursePlugins;
+
   /* ── ONE ROAD TO A MARKDOWN FILE ─────────────────────────────────────────
      The page render, and anything on the page that needs ANOTHER file of
      the same course (a .feature embedding a sibling lesson's proof), read
@@ -803,6 +838,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
     else if (src.indexOf(location.origin + "/_md/") === 0 && document.querySelector('meta[name="lc-host-serves"]') &&
              !document.querySelector('meta[name="lc-host-edit"]')) root.dataset.lcReadonly = "host";
     else delete root.dataset.lcReadonly;
+    loadCoursePlugins(root.dataset.lcSrcRepo, root.dataset.lcSrcPath);   /* the course's 🧰, from the vault the page came from */
     var barSt = { repo: root.dataset.lcSrcRepo, path: root.dataset.lcSrcPath, src: src, loading: true };
     if (bar) { pageTitle(bar.parentNode, true); paintBar(bar, barSt); }
     /* A LEARNER'S FILE (Michel, 2026-10-25: the app's Author tab, "Hire
