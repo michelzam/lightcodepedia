@@ -68,8 +68,10 @@ First row = column headers. `x=` picks the label column, `y=` picks the value co
 | `hover="col"` | — | Extra text on every point's hover |
 | `labels="col"` | — | The row's short text printed above its point — read without a hover, a note's emoji |
 | `top="col"` | — | A band of text above the plot, one cell per column — a stage's title; the cell holds what fits, hover for all of it |
-| `bottom="col"` | — | A band of text under the x labels, one cell per column — the touchpoints |
+| `bottom="col"` | — | A band under the x labels, one cell per column — the touchpoints. A cell's ` · `-separated items are **chips, one per line** (up to four), so three tools stay legible |
 | `color="col"` | — | The row's own colour for its point, a CSS colour — a tone per row |
+| `dips="col"` | — | The valley before the summit: when the row's value is above zero the line first dives to minus that value (a red ✗), then climbs to the point — a journey map's negative experiences on the way to a positive one |
+| `hints="y: … \| bars: … \| x: … \| top: … \| bottom: … \| dips: …"` | — | What a hover says about each part of the chart, in the page's words — the grid's `hints=` word and syntax |
 
 **Line chart — same data:**
 
@@ -102,6 +104,31 @@ Other,15
 - [ ] You must provide a `color=` attribute — there is no default palette.
 - [x] `x=` and `y=` match column names from the header row.
 {: .quiz multi="true" }
+
+## 🗺 A journey map: the story above and below the line
+
+A customer journey map draws experiences over time, positive above the axis
+and negative below, with the stages named above and the touchpoints below.
+The line chart draws that in three bands: `top=` the stage's title, the line
+in the middle with `dips=` for the setbacks met before each point, `bottom=`
+the touchpoints as chips, and `hints=` so every part explains itself on hover.
+
+```json
+[
+  {"stage":"1 research","title":"🔍 Researching","mood":1,"setbacks":0,"minutes":20,"touch":"web · dealer","tone":"#86efac"},
+  {"stage":"2 finance","title":"💳 Financing","mood":1,"setbacks":2,"minutes":45,"touch":"dealer · bank · phone","tone":"#15803d"},
+  {"stage":"3 wait","title":"⏳ Waiting","mood":-1,"setbacks":0,"minutes":5,"touch":"email","tone":"#dc2626"},
+  {"stage":"4 ride","title":"🚗 First ride","mood":1,"setbacks":0,"minutes":60,"touch":"car","tone":"#86efac"}
+]
+```
+{: .dataset #car_journey }
+
+[Car purchase](#)
+{: .chart #car_journey_chart bind="car_journey" type="line" x="stage" y="mood" bars="minutes" dips="setbacks" top="title" bottom="touch" color="tone" height="220" hints="y: the experience — above the line it went well, below it did not | bars: minutes spent at this stage, on the right scale | x: the stage, in order | top: the stage as the customer names it | bottom: who or what the customer touched here | dips: setbacks met before this stage turned out well" }
+
+Financing turned out well, but only after two setbacks: the line dives to −2
+before climbing to the point. Waiting stays below the axis. Hover any tick,
+chip or title: it says what it measures.
 
 ## 🏁 Final exam
 

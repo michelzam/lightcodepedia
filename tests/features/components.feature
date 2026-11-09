@@ -50,6 +50,20 @@ Feature: Component gallery behaviors
     Then the chart "days_chart" draws 2 points, 2 bars and 2 marks, the first mark reading "first save"
     And the chart "crew_chart" draws 2 series with "bo" in blue
 
+  Scenario: A line chart tells a journey — the valley before the summit, chips below, hints on every part
+    Michel, 2026-11-09, on the desk's learning journey: "catch the green/red story a bit like
+    in the snapshot, so we can see how the red was productive"; "use chips … one tool per
+    line, so 3 tools will be visible"; "tooltips to explain axis, scales and different parts
+    of the chart specifically, not globally". dips= dives the line to minus the setbacks
+    before a point, the bottom band is chips one per line, hints= speak on hover.
+
+    When I navigate to "/components/chart"
+    And I wait for the page to be interactive
+    Then the chart "car_journey_chart" draws a dip of 2 before "2 finance"
+    And the chart "car_journey_chart" shows the chips "dealer, bank, phone" under "2 finance"
+    And the chart "car_journey_chart" explains its "y" axis with "above the line it went well"
+    And the chart "car_journey_chart" explains its "bars" axis with "minutes spent"
+
   Scenario: The markdown pad renders a live preview
     When I navigate to "/components/text"
     And I wait for the page to be interactive

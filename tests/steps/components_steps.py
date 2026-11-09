@@ -1184,3 +1184,28 @@ def step_cue_visible(context):
 def step_cue_turned(context):
     st = _cue_style(context, "open")
     assert st["open"] and st["transform"] not in ("none", "matrix(1, 0, 0, 1, 0, 0)"), st
+
+
+# ── a journey on a line chart: dips, chips, hints (2026-11-09) ─────────────
+@then('the chart "{cid}" draws a dip of {n:d} before "{x}"')
+def step_chart_dip(context, cid, n, x):
+    chart = context.page.locator('[data-lc-id="%s"]' % cid)
+    expect(chart.locator("svg circle[data-dip]").first).to_be_visible(timeout=20_000)
+    dips = chart.evaluate("el => Array.from(el.querySelectorAll('svg circle[data-dip]')).map(c => [c.getAttribute('data-x'), c.getAttribute('data-dip')])")
+    assert [x, str(n)] in dips, "no dip of %d before %r: %r" % (n, x, dips)
+
+
+@then('the chart "{cid}" shows the chips "{chips}" under "{x}"')
+def step_chart_chips(context, cid, chips, x):
+    chart = context.page.locator('[data-lc-id="%s"]' % cid)
+    expect(chart.locator("svg text[data-band='bottom']").first).to_be_visible(timeout=20_000)
+    got = chart.evaluate("el => Array.from(el.querySelectorAll(\"svg text[data-band='bottom']\")).filter(t => t.getAttribute('data-x') === %r).map(t => t.querySelector('title').textContent.split('\\n')[0])" % x)
+    want = [c.strip() for c in chips.split(",")]
+    assert got == want, "chips under %r: %r, wanted %r" % (x, got, want)
+
+
+@then('the chart "{cid}" explains its "{axis}" axis with "{words}"')
+def step_chart_axis_hint(context, cid, axis, words):
+    chart = context.page.locator('[data-lc-id="%s"]' % cid)
+    titles = chart.evaluate("el => Array.from(el.querySelectorAll(\"svg [data-axis='%s'] title\")).map(t => t.textContent)" % axis)
+    assert any(words in t for t in titles), "the %s axis explains nothing of %r: %r" % (axis, words, titles)

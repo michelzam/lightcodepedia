@@ -30,6 +30,12 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     top="col"     a band of text above the plot, one cell per column (a stage's title)
     bottom="col"  a band of text under the x labels, one cell per column (the touchpoints)
     color="col"   the row's own colour for its point (a CSS colour)
+    dips="col"    the valley before the point: when the row's value is above zero
+                  the line first dives to minus that value (a red ✗), then climbs
+                  to the point — the customer journey map's negative experiences
+    hints="y: … | bars: … | x: … | top: … | bottom: … | dips: …"
+                  what a hover says about each part of the chart — the grid's
+                  hints= word and syntax, so an axis explains itself in the page's words
   and several measures (2026-10-25, the desk's attempts):
     y="a, b"      one line per column, each its own colour, one scale
     bars="col"    then reads on its own scale, at the right; a legend
@@ -215,7 +221,8 @@ Auto-included by docs/_layouts/default.html.
     var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
     var knobs = { series: el.getAttribute("series") || "", bars: el.getAttribute("bars") || "",
                   marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", labels: el.getAttribute("labels") || "",
-                  top: el.getAttribute("top") || "", bottom: el.getAttribute("bottom") || "", color: el.getAttribute("color") || "", focus: null };
+                  top: el.getAttribute("top") || "", bottom: el.getAttribute("bottom") || "", color: el.getAttribute("color") || "",
+                  dips: el.getAttribute("dips") || "", hints: parseHints(el.getAttribute("hints") || ""), focus: null };
     var masterRow = null;
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
@@ -337,6 +344,17 @@ Auto-included by docs/_layouts/default.html.
     svg.addEventListener("mousemove", function (e) { if (tip.style.display === "block") place(e); });
     svg.addEventListener("mouseleave", function () { tip.style.display = "none"; });
   }
+  /* hints="part: words | part: words" — the same word and syntax as the grid's
+     header hints (Michel, 2026-11-09: "tooltips to explain axis, scales and
+     different parts of the chart specifically, not globally") */
+  function parseHints(str) {
+    var h = {};
+    String(str || "").split("|").forEach(function (part) {
+      var i = part.indexOf(":");
+      if (i > 0) h[part.slice(0, i).trim()] = part.slice(i + 1).trim();
+    });
+    return h;
+  }
   function svgEl(c, NS, tag, attrs) {
     var el = document.createElementNS(NS, tag);
     Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
@@ -395,9 +413,20 @@ Auto-included by docs/_layouts/default.html.
     /* top="col" / bottom="col": a band of text per column — the journey map's
        stages above the line, its touchpoints below (Michel, 2026-11-10, "go
        bands": the page's title on top, the tools and concepts underneath) */
-    if (o.top) pT += 18;
-    if (o.bottom) pB += 16;
+    /* the title band sits higher when labels ride the points, or a note's emoji
+       lands on a title (Michel, 2026-11-09: "title band should be a bit higher") */
+    if (o.top) pT += o.labels ? 30 : 18;
+    /* the bottom band is chips, one per line: a cell's " · " items each get a
+       line, so three tools are three chips, all legible (Michel, 2026-11-09) */
+    var chipLines = 0;
+    if (o.bottom) {
+      data.forEach(function (d) { var n = String(d[o.bottom] || "").split(" · ").filter(Boolean).length; if (n > chipLines) chipLines = n; });
+      chipLines = Math.min(chipLines, 4);
+      pB += chipLines * 15 + 4;
+      H += Math.max(0, chipLines - 1) * 15;
+    }
     var cW = W - pL - pR, cH = H - pT - pB;
+    var hints = o.hints || {};
     /* one x axis shared by every series: the sorted set of x values —
        numbers in number order (run 10 after run 9, not after run 1) */
     var xs = [];
@@ -412,20 +441,34 @@ Auto-included by docs/_layouts/default.html.
     data.forEach(function (d) { ys.forEach(function (c) { vals.push(+d[c] || 0); }); });
     var maxV = Math.max.apply(null, vals), minV = Math.min.apply(null, vals);
     if (o.bars || o.series || multi) minV = Math.min(0, minV);
+    if (o.dips) {
+      var deepest = Math.max.apply(null, data.map(function (d) { return +d[o.dips] || 0; }).concat([0]));
+      minV = Math.min(minV, -deepest, 0); maxV = Math.max(maxV, 0);
+    }
     if (maxV === minV) { maxV += 1; if (!o.bars && !o.series && !multi) minV -= 1; }
     /* bars need room at both ends, or the first and last sit on the axes */
     var inset = o.bars ? 14 : 0;
+    if (o.dips) inset = Math.max(inset, 24);      /* the first valley needs room left of its point */
     var range = maxV - minV, step = (cW - 2 * inset) / Math.max(xs.length - 1, 1);
     var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
     function X(d) { return pL + inset + xi[String(d[xCol])] * step; }
     function Y(v) { return pT + cH - ((v - minV) / range) * cH; }
 
     /* grid lines */
-    [0, 0.25, 0.5, 0.75, 1].forEach(function (f) {
+    /* a short integer scale (a signed story, a count) ticks on the integers, not on quarters */
+    var fracs = [0, 0.25, 0.5, 0.75, 1];
+    if (range <= 8 && minV % 1 === 0 && vals.every(function (v) { return v % 1 === 0; })) {
+      fracs = []; for (var iv = minV; iv <= maxV; iv++) fracs.push((iv - minV) / range);
+    }
+    fracs.forEach(function (f) {
       var v = minV + range * f, y = pT + cH - f * cH;
       svgEl(svg, NS, "line", { x1: pL, y1: y, x2: pL + cW, y2: y, stroke: f === 0 ? "#9ca3af" : "#f3f4f6", "stroke-width": 1 });
-      svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" }).textContent = tickLabel(v, range);
+      var tk = svgEl(svg, NS, "text", { x: pL - 6, y: y + 4, "text-anchor": "end", "font-size": 9, fill: "#9ca3af" });
+      tk.textContent = tickLabel(v, range);
+      if (hints.y) svgEl(tk, NS, "title", {}).textContent = hints.y;
     });
+    /* a signed scale: the zero line is the axis the story crosses */
+    if (minV < 0 && maxV > 0) svgEl(svg, NS, "line", { x1: pL, y1: Y(0), x2: pL + cW, y2: Y(0), stroke: "#6b7280", "stroke-width": 1, "data-zero": "1" });
 
     /* bars behind the line: a second measure on its own scale (its ticks at
        the right), for the focused series only */
@@ -436,8 +479,9 @@ Auto-included by docs/_layouts/default.html.
       btop = [1, 2, 2.5, 5, 10].map(function (k) { return k * mag; }).filter(function (v) { return v >= bmax / 0.8; })[0] || btop;
       var bw = Math.max(3, Math.min(18, step * 0.5));
       [0, 0.5, 1].forEach(function (f) {
-        svgEl(svg, NS, "text", { x: pL + cW + 4, y: pT + cH - f * cH + 4, "text-anchor": "start", "font-size": 9, fill: multi ? "#be185d" : "#3b82f6" })
-          .textContent = tickLabel(btop * f, btop);
+        var rt = svgEl(svg, NS, "text", { x: pL + cW + 4, y: pT + cH - f * cH + 4, "text-anchor": "start", "font-size": 9, fill: multi ? "#be185d" : "#3b82f6", "data-axis": "bars" });
+        rt.textContent = tickLabel(btop * f, btop);
+        if (hints.bars) svgEl(rt, NS, "title", {}).textContent = hints.bars;
       });
       data.forEach(function (d) {
         if (o.series && o.focus != null && String(d[o.series]) !== o.focus) return;
@@ -445,7 +489,7 @@ Auto-included by docs/_layouts/default.html.
         var h = v / btop * cH;
         var r = svgEl(svg, NS, "rect", { x: X(d) - bw / 2, y: pT + cH - h, width: bw, height: h,
           fill: multi ? BAR_COLOR : "#93c5fd", opacity: 0.6, rx: 2, "data-bar": v });
-        svgEl(r, NS, "title", {}).textContent = d[xCol] + " — " + o.bars + ": " + v + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+        svgEl(r, NS, "title", {}).textContent = d[xCol] + " — " + o.bars + ": " + v + (hints.bars ? "\n" + hints.bars : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
       });
     }
 
@@ -454,7 +498,16 @@ Auto-included by docs/_layouts/default.html.
         var rows = groups[g].slice().sort(function (a, b) { return cmp(String(a[xCol]), String(b[xCol])); });
         var focused = !o.series || o.focus == null || g === o.focus;
         var color = !focused ? "#c7d2e0" : LINE_COLORS[yi % LINE_COLORS.length];
-        var pts = rows.map(function (d) { return X(d) + "," + Y(+d[yc] || 0); });
+        /* dips="col": the valley before the summit — the line dives to minus the
+           row's dips value just before its point, then climbs (Michel, 2026-11-09:
+           "catch the green/red story … so we can see how the red was productive") */
+        var dipOf = function (d) { var v = o.dips ? (+d[o.dips] || 0) : 0; return v > 0 && (+d[yc] || 0) >= 0 ? v : 0; };
+        var pts = [];
+        rows.forEach(function (d) {
+          var dv = dipOf(d);
+          if (dv) pts.push((X(d) - Math.min(step, 60) * 0.3) + "," + Y(-dv));
+          pts.push(X(d) + "," + Y(+d[yc] || 0));
+        });
         var pl = svgEl(svg, NS, "polyline", { points: pts.join(" "), stroke: color, fill: "none",
           "stroke-width": focused ? 2 : 1.2, "stroke-linejoin": "round", "data-series": o.series ? g : (multi ? yc : g) });
         if (o.series) svgEl(pl, NS, "title", {}).textContent = g;
@@ -467,6 +520,13 @@ Auto-included by docs/_layouts/default.html.
              light green at once, dark green after reds, red still red (Michel,
              2026-11-10: "those diamonds could be green, clear then darker") */
           var tone = o.color && d[o.color] ? String(d[o.color]) : "";
+          var dv = dipOf(d);
+          if (dv) {
+            var dx = x - Math.min(step, 60) * 0.3, dy = Y(-dv);
+            var dp = svgEl(svg, NS, "circle", { cx: dx, cy: dy, r: 5, fill: "#dc2626", "data-dip": dv, "data-x": String(d[xCol]) });
+            svgEl(svg, NS, "text", { x: dx, y: dy + 3, "text-anchor": "middle", "font-size": 8, fill: "#fff", "pointer-events": "none" }).textContent = "✗";
+            svgEl(dp, NS, "title", {}).textContent = d[xCol] + " — " + o.dips + ": " + dv + (hints.dips ? "\n" + hints.dips : "");
+          }
           if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: tone || "#b45309", "data-mark": mark, "data-tone": tone });
           else svgEl(svg, NS, "circle", { cx: x, cy: y, r: tone ? 4 : 3, fill: tone || color, "data-tone": tone });
           /* labels="col": the row's short text printed above its point — a note's
@@ -477,7 +537,7 @@ Auto-included by docs/_layouts/default.html.
           if (label) svgEl(svg, NS, "text", { x: x, y: y - 10, "text-anchor": "middle", "font-size": 12, "data-label": label }).textContent = label.length > 12 ? label.slice(0, 11) + "…" : label;
           var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
           svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yc + ": " + val
-            + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
+            + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "") + (hints.y ? "\n" + hints.y : "");
         });
       });
     });
@@ -485,9 +545,11 @@ Auto-included by docs/_layouts/default.html.
     /* x labels, thinned when dense */
     var lblEvery = Math.max(1, Math.ceil(xs.length / Math.max(2, Math.floor(cW / 40))));
     xs.forEach(function (x, i) {
-      if (i % lblEvery === 0 || i === xs.length - 1)
-        svgEl(svg, NS, "text", { x: pL + inset + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
-          .textContent = xText(x, 10);
+      if (i % lblEvery === 0 || i === xs.length - 1) {
+        var xl = svgEl(svg, NS, "text", { x: pL + inset + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280", "data-axis": "x" });
+        xl.textContent = xText(x, 10);
+        if (hints.x) svgEl(xl, NS, "title", {}).textContent = x + "\n" + hints.x;
+      }
     });
     /* the bands: one cell per column, the first row of that column speaks; the
        cell holds what fits and says it all on hover */
@@ -500,19 +562,30 @@ Auto-included by docs/_layouts/default.html.
         if (o.top && d[o.top]) {
           var t = svgEl(svg, NS, "text", { x: cx, y: 12, "text-anchor": "middle", "font-size": 10, "font-weight": 600, fill: "#1e293b", "data-band": "top" });
           t.textContent = String(d[o.top]).length > perCol ? String(d[o.top]).slice(0, perCol - 1) + "…" : String(d[o.top]);
-          svgEl(t, NS, "title", {}).textContent = String(d[o.top]);
+          svgEl(t, NS, "title", {}).textContent = String(d[o.top]) + (hints.top ? "\n" + hints.top : "");
         }
         if (o.bottom && d[o.bottom]) {
-          var b = svgEl(svg, NS, "text", { x: cx, y: H - 4, "text-anchor": "middle", "font-size": 9, fill: "#475569", "data-band": "bottom" });
-          b.textContent = String(d[o.bottom]).length > perCol ? String(d[o.bottom]).slice(0, perCol - 1) + "…" : String(d[o.bottom]);
-          svgEl(b, NS, "title", {}).textContent = String(d[o.bottom]);
+          /* chips, one per line, in the cell's order; what does not fit says itself on hover */
+          var items = String(d[o.bottom]).split(" · ").filter(Boolean).slice(0, chipLines);
+          var y0 = pT + cH + 24;
+          items.forEach(function (it, li) {
+            var txt = it.length > perCol ? it.slice(0, perCol - 1) + "…" : it;
+            var cw = Math.min(step || cW, txt.length * 5.4 + 10), cy = y0 + li * 15;
+            svgEl(svg, NS, "rect", { x: cx - cw / 2, y: cy, width: cw, height: 13, rx: 6.5, fill: "#eef2ff", stroke: "#c7d2fe", "stroke-width": 1, "data-chip": it });
+            var b = svgEl(svg, NS, "text", { x: cx, y: cy + 10, "text-anchor": "middle", "font-size": 9, fill: "#3730a3", "data-band": "bottom", "data-x": String(x) });
+            b.textContent = txt;
+            svgEl(b, NS, "title", {}).textContent = it + (hints.bottom ? "\n" + hints.bottom : "");
+          });
         }
       });
     }
 
-    if (!multi)
-      svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",
-        transform: "rotate(-90,8," + (pT + cH / 2) + ")" }).textContent = yCol;
+    if (!multi) {
+      var yl = svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af", "data-axis": "y",
+        transform: "rotate(-90,8," + (pT + cH / 2) + ")" });
+      yl.textContent = yCol;
+      if (hints.y) svgEl(yl, NS, "title", {}).textContent = hints.y;
+    }
 
     /* the legend: what each colour is — the lines on the left scale, the
        bars on the right one */

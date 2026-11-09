@@ -35,8 +35,8 @@ def test_journey_lanes_takes_and_words(tmp_path):
                       "On Stage became the tricky part,\n\nthe recording buttons hid from sight.\n\n\u00a0\n\nAt work, I would use Ship first.🎵\n")
     course = tmp_path / "course" / "module_07"
     course.mkdir(parents=True)
-    (course / "01_ship_it.md").write_text("# 🚀 Ship It\n\n## 📱 Can I see it on my phone?\n")
-    (course / "02_not_in_the_room.md").write_text("# 🧭 Add a Guide\n\n## 🌅 She opens it.\n\n```markdown\nx\n```\n{: .mdpad #g }\n\n[f](#)\n{: .form master=\"g\" }\n\n- [x] a\n{: .prerequisite }\n")
+    (course / "01_ship_it.md").write_text("# 🚀 Ship It\n\n## 📱 Can I see it on my phone?\n\n```gherkin\nFeature: x\n```\n{: .feature #ship_proof tags=\"ship, qr\" }\n\n```gherkin\nFeature: y\n```\n{: .feature #qr_proof tags=\"qr\" }\n")
+    (course / "02_not_in_the_room.md").write_text("# 🧭 Add a Guide\n\n## 🌅 She opens it.\n\n```markdown\nx\n```\n{: .mdpad #g }\n\n[f](#)\n{: .form master=\"g\" }\n\n- [x] a\n{: .prerequisite }\n\n```gherkin\nFeature: z\n```\n{: .feature #guide_proof tags=\"avatar\" visible=\"true\" }\n")
     (course / "03_send_it.md").write_text("# 🎤 On Stage\n\n## 🎤 Step in\n")
     notes_file = tmp_path / "journey_notes.csv"
     notes_file.write_text("login,module,page,who,when,note\n21joberoi,07,02_not_in_the_room,michelzam,2026-11-09T05:00:00Z,\"she said: almost quit, tried again\"\n21joberoi,07,,michelzam,2026-11-09T05:01:00Z,watched her ship live\n")
@@ -49,6 +49,7 @@ def test_journey_lanes_takes_and_words(tmp_path):
     assert guide["asks"] == "2" and guide["help_levels"] == "direct 1 socratic 1"
     assert guide["takes"] == "2" and guide["failed_takes"] == "1"
     assert guide["title"] == "🧭 Add a Guide" and guide["tools"] == "mdpad form" and ship["title"] == "🚀 Ship It"
+    assert ship["tags"] == "ship qr" and guide["tags"] == "avatar", (ship["tags"], guide["tags"])   # the tags the course cards wear
     # layer 2: each sentence on the page its words name; the rest on the module
     assert ship["value"].startswith("On the Ship It page, I shared my creation") and "Adoption Day" in ship["value"]
     assert guide["value"] == "On Add a Guide, I gave it a voice,"
