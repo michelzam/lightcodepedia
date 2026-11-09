@@ -330,6 +330,14 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         /* a named column shows even before any row fills it (no value yet) */
         cols = shown.map(function (f) { return byField[f] || { field: f, headerName: prettifyKey(f) }; });
       }
+      /* locked="a, b": these columns stay read-only on an editable grid — the
+         same word the form uses (Michel, 2026-11-09, layer 3 of the learning
+         journey: the computed lanes are facts, one notes column is the pen) */
+      var lockedSet = {};
+      String(opts.locked || "").split(",").map(function (c) { return c.trim(); }).filter(Boolean).forEach(function (f) { lockedSet[f] = 1; });
+      if (opts.editable && Object.keys(lockedSet).length) {
+        cols.forEach(function (c) { if (lockedSet[c.field]) { c.editable = false; c.cellClass = (c.cellClass ? c.cellClass + " " : "") + "lc-dg-locked"; } });
+      }
       if (computeSpecs.length) {
         cols.forEach(function (c) {
           if (computedSet[c.field]) {
@@ -694,6 +702,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
   function readDatagridOpts(el, prefix) {
     return {
       editable: el.getAttribute(prefix + "editable") === "true",
+      locked: el.getAttribute(prefix + "locked") || "",
       detailOf: el.getAttribute(prefix + "master") || el.getAttribute(prefix + "detail-of") || "",
       filterExpr: el.getAttribute(prefix + "filter") || "",
       compute: el.getAttribute(prefix + "compute") || "",

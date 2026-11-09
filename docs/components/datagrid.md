@@ -80,6 +80,7 @@ Each object becomes a row; its keys become the column headers. Header labels are
 | `dates="time, city_time@tz"` | These columns print as a date and an hour, `Oct 23 12:00 PM`: a time written without a zone as written, one with a zone on the reader's clock — or, with `@tz`, in the zone the row's `tz` column names (`Europe/London`) |
 | `format="yaml"` | `yaml` (default), `json`, or `csv` |
 | `editable="true"` | Double-click a cell to edit in place — see below |
+| `locked="a, b"` | With `editable`, these columns stay read-only — the facts stay facts, one column is the pen (the form's word too) |
 | `master="<id>"` | Filter this grid by the selected row in another grid — see below |
 | `save="dogs.yaml"` | The reader's edits persist in *their own* connected repo — relative lands beside the lesson, `/my/…` at the bench root; the fence stays the author's seed — see below |
 | `filter="<local>=<master>"` | Required with `master`: which field to match |

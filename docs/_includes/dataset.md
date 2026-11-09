@@ -1638,6 +1638,11 @@ Auto-included by docs/_layouts/default.html.
        device this course is read on: a contenteditable cell takes ONE tap,
        where AG needs a double-click that phones barely deliver. */
     var editable = el.getAttribute("editable") === "true";
+    /* locked="a, b": on an editable grid these columns stay plain cells — the
+       form's word, the datagrid's too (Michel, 2026-11-09: the journey's lanes
+       are facts, the notes column is the pen) */
+    var lockedSet = {};
+    String(el.getAttribute("locked") || "").split(",").map(function (c) { return c.trim(); }).filter(Boolean).forEach(function (c) { lockedSet[c] = 1; });
     /* a grid on a CLASS edits by default — a double click (or a second tap
        on the selected row) opens a cell; editable="false" says otherwise
        (Michel, 2026-10-16) */
@@ -1983,7 +1988,7 @@ Auto-included by docs/_layouts/default.html.
                   if (dt) return "<td title='" + v + "'>" + dt + "</td>";
                   var w = !editable && window.lcWhen ? window.lcWhen(v) : null;
                   if (w) return "<td title='" + w.utc + "'>" + w.text + "</td>";
-                  if (!editable) return "<td>" + v + "</td>";
+                  if (!editable || lockedSet[c]) return "<td>" + v + "</td>";
                   /* the row is found again by its position in the CURRENT
                      sort, so an edit after sorting still lands on the row
                      the reader is looking at */

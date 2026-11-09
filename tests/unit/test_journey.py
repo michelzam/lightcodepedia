@@ -38,9 +38,11 @@ def test_journey_lanes_takes_and_words(tmp_path):
     (course / "01_ship_it.md").write_text("# 🚀 Ship It\n\n## 📱 Can I see it on my phone?\n")
     (course / "02_not_in_the_room.md").write_text("# 🧭 Add a Guide\n\n## 🌅 She opens it.\n")
     (course / "03_send_it.md").write_text("# 🎤 On Stage\n\n## 🎤 Step in\n")
+    notes_file = tmp_path / "journey_notes.csv"
+    notes_file.write_text("login,module,page,who,when,note\n21joberoi,07,02_not_in_the_room,michelzam,2026-11-09T05:00:00Z,\"she said: almost quit, tried again\"\n21joberoi,07,,michelzam,2026-11-09T05:01:00Z,watched her ship live\n")
     out = tmp_path / "journey_latest"
     subprocess.run([sys.executable, os.path.join(ROOT, "tools", "journey.py"), "--notes", str(tmp_path / "notes"), "--out", str(out),
-                    "--essays", str(essays), "--seats", str(seats), "--course-dir", str(tmp_path / "course")], check=True)
+                    "--essays", str(essays), "--seats", str(seats), "--course-dir", str(tmp_path / "course"), "--notes-file", str(notes_file)], check=True)
     rows = {r["page"]: r for r in csv.DictReader(open(str(out) + ".csv"))}
     ship, guide = rows["01_ship_it"], rows["02_not_in_the_room"]
     assert ship["reds"] == "0" and ship["outcome"] == "green" and guide["reds"] == "1" and guide["effort_min"] == "15"
@@ -52,6 +54,9 @@ def test_journey_lanes_takes_and_words(tmp_path):
     stage = rows.get("03_send_it")   # no save on that page: its words still ride the module's rows
     assert stage is None
     assert "At work, I would use Ship first" in ship["module_value"] and "On Stage" not in ship["module_value"]
+    # layer 3: the desk's notes ride the rows, the module's on every row of the module
+    assert guide["notes"] == "she said: almost quit, tried again" and ship["notes"] == ""
+    assert ship["module_notes"] == "watched her ship live"
     events = list(csv.DictReader(open(str(out) + "_events.csv")))
     kinds = sorted({(e["kind"], e["outcome"]) for e in events})
     assert ("take", "failed") in kinds and ("take", "saved") in kinds and ("ask", "") in kinds and ("proof", "red") in kinds
