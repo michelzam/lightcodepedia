@@ -191,6 +191,7 @@ The runner above is graded. Edit it to print something else — the score badge 
 | `multi="true"` | Multi-select mode: checkboxes + Check button. **Automatic** whenever more than one option is marked `[x]` — the knob is only needed to force it with a single right answer |
 | nested `>` blockquote | Per-option explanation, shown after grading |
 | `id="…"` | Label in the 🏆 score popover; auto-generated if omitted |
+| `celebration="false"` | Keeps the quiz sober. By default a right answer on the **first try** bursts confetti (the engine's one celebration verb, a quiet ✨ under reduced motion) |
 
 **Q:** You have a 3-option quiz where option 2 is correct. Which IAL is equivalent to using `[x]` on option 2?
 
@@ -230,6 +231,27 @@ Quizzes work inside slides with no extra syntax. The slide engine **does not adv
 - [ ] Zero — three ✗ means the quiz gives up and grades itself.
 - [ ] Unknowable. The quiz keeps the secret forever.
 {: .quiz }
+
+## 🎉 Right on the first try
+
+Every quiz celebrates a first answer that is right — the same confetti a
+proof throws on its first green, nothing else. A right answer after a wrong
+pick is still right, still scores, and gets no storm: the party is for
+knowing, not for finding. A reopened page remembers the quiz was answered
+and stays quiet. Reduced motion gets a quiet ✨ instead.
+
+`celebration="false"` turns it off for one quiz — an exam, a sober page, a
+list where a guess is as likely as knowledge:
+
+**Q:** Which of these is a Python keyword?
+
+- [x] `while`
+- [ ] `loop`
+- [ ] `repeat`
+{: .quiz #sober_quiz celebration="false" }
+
+The verdict and the score are untouched either way (a score is the learner's,
+never machine-set): the knob changes the weather, not the grade.
 
 ## 🎁 A named quiz can unlock a reward
 

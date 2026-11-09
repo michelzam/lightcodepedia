@@ -40,7 +40,19 @@ def step_iframe_present(context, host):
 
 @when('I pick the quiz answer "{answer}"')
 def step_pick_quiz_answer(context, answer):
-    li = context.page.locator(".lc-quiz li", has_text=answer).first
+    context._quiz_sel = ".lc-quiz li"
+    li = context.page.locator(context._quiz_sel, has_text=answer).first
+    li.wait_for(state="visible", timeout=15_000)
+    li.click()
+    context._quiz_answer = answer
+    context.page.wait_for_timeout(300)
+
+
+@when('I pick "{answer}" in the quiz "{quiz_id}"')
+def step_pick_in_quiz(context, answer, quiz_id):
+    # a page with several quizzes: address one by its id (or its quiz-N seat)
+    context._quiz_sel = ".lc-quiz[data-lc-quiz-id='" + quiz_id + "'] li"
+    li = context.page.locator(context._quiz_sel, has_text=answer).first
     li.wait_for(state="visible", timeout=15_000)
     li.click()
     context._quiz_answer = answer
@@ -49,13 +61,15 @@ def step_pick_quiz_answer(context, answer):
 
 @then("that quiz answer is marked correct")
 def step_quiz_correct(context):
-    li = context.page.locator(".lc-quiz li", has_text=context._quiz_answer).first
+    li = context.page.locator(getattr(context, "_quiz_sel", ".lc-quiz li"),
+                              has_text=context._quiz_answer).first
     expect(li).to_have_class(re.compile(r"lc-quiz-correct"), timeout=5_000)
 
 
 @then("that quiz answer is marked wrong")
 def step_quiz_wrong(context):
-    li = context.page.locator(".lc-quiz li", has_text=context._quiz_answer).first
+    li = context.page.locator(getattr(context, "_quiz_sel", ".lc-quiz li"),
+                              has_text=context._quiz_answer).first
     expect(li).to_have_class(re.compile(r"lc-quiz-wrong"), timeout=5_000)
 
 

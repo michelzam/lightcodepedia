@@ -37,3 +37,30 @@ Feature: Quiz grading
     And I toggle the multi quiz option "while"
     And I press Check on the multi quiz
     Then the multi quiz says "All correct"
+
+  Scenario: A right answer on the first try bursts confetti
+    Michel, 2026-11-09: "for every quiz, if the first answer is right, we
+    display some animated confettis … with a knob, true by default." The
+    quiz speaks the engine's one confetti verb; the grade is untouched.
+
+    When I navigate to "/components/quiz"
+    And I wait for the page to be interactive
+    And I pick "Starts a new slide" in the quiz "quiz-1"
+    Then that quiz answer is marked correct
+    And a confetti burst appears
+
+  Scenario: A right answer after a wrong pick is right, scored, and quiet
+    When I navigate to "/components/quiz"
+    And I wait for the page to be interactive
+    And I pick "Centers the heading" in the quiz "quiz-1"
+    Then that quiz answer is marked wrong
+    When I pick "Starts a new slide" in the quiz "quiz-1"
+    Then that quiz answer is marked correct
+    And no confetti burst appears
+
+  Scenario: celebration="false" keeps a quiz sober on a first-try right answer
+    When I navigate to "/components/quiz"
+    And I wait for the page to be interactive
+    And I pick "while" in the quiz "sober_quiz"
+    Then that quiz answer is marked correct
+    And no confetti burst appears

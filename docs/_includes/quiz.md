@@ -179,10 +179,11 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
     function stamp(field) {
       try {
         var all = JSON.parse(localStorage.getItem(MOMENTS) || "{}"), k = momentKey(), m = all[k] || {};
-        if (m[field]) return;
+        if (m[field]) return false;
         m[field] = new Date().toISOString(); all[k] = m;
         localStorage.setItem(MOMENTS, JSON.stringify(all));
-      } catch (e) {}
+        return true;
+      } catch (e) { return true; }        /* no storage: the page's own memory decides */
     }
     if (window.IntersectionObserver) {
       var seenObs = new IntersectionObserver(function (entries) {
@@ -190,9 +191,19 @@ ol.lc-quiz[multi="true"] li.lc-quiz-selected:not(.lc-quiz-correct):not(.lc-quiz-
       }, { threshold: 0.5 });
       seenObs.observe(el);
     } else stamp("seen");
+    /* FIRST TRY RIGHT (Michel, 2026-11-09: "if the first answer is right, we
+       display some animated confettis … with a knob, true by default"): the
+       quiz speaks the engine's one confetti verb when the first answer and
+       the right answer are the same click — never on a reopened page (the
+       moment is stamped), never after a wrong pick, never twice. The verdict
+       and the score are untouched (doctrine 5). celebration="false" keeps a
+       quiz sober; reduced motion gets the verb's quiet ✨. */
+    var celebrate = el.getAttribute('celebration') !== 'false';
     function gradeAndReport(allCorrect) {
-      stamp("first");
+      var firstTry = !el.dataset.lcQuizGraded && stamp("first");
+      el.dataset.lcQuizGraded = '1';
       if (allCorrect) stamp("correct");
+      if (allCorrect && firstTry && celebrate && window.lcConfetti) window.lcConfetti(el);
       reportScore(quizId, allCorrect, el);
     }
 
