@@ -322,9 +322,14 @@ Auto-included by docs/_layouts/default.html.
     wireTip(el, svg);
     return { svg: svg, NS: NS };
   }
-  /* every shape that carries a <title> shows it in a tip the moment the
-     pointer arrives; the <title> itself stays for screen readers */
+  /* every shape carries a <title>: on a mouse the browser's own bubble says it
+     (one bubble, never two — Michel, 2026-11-09: "double bubbles … I prefer the
+     gray ones"); on a touch screen, where no title ever shows, a tap opens the
+     chart's own tip */
   function wireTip(el, svg) {
+    var touch = false;
+    try { touch = window.matchMedia("(hover: none)").matches; } catch (e) {}
+    if (!touch) return;
     var tip = el.querySelector(".lc-chart-tip");
     if (!tip) { tip = document.createElement("div"); tip.className = "lc-chart-tip"; el.appendChild(tip); }
     function titled(t) {
@@ -336,13 +341,12 @@ Auto-included by docs/_layouts/default.html.
       if (x + tip.offsetWidth > r.width) x = Math.max(0, e.clientX - r.left - tip.offsetWidth - 12);
       tip.style.left = x + "px"; tip.style.top = y + "px";
     }
-    svg.addEventListener("mouseover", function (e) {
+    svg.addEventListener("pointerdown", function (e) {
       var text = titled(e.target);
       if (!text) { tip.style.display = "none"; return; }
       tip.textContent = text; tip.style.display = "block"; place(e);
     });
-    svg.addEventListener("mousemove", function (e) { if (tip.style.display === "block") place(e); });
-    svg.addEventListener("mouseleave", function () { tip.style.display = "none"; });
+    document.addEventListener("pointerdown", function (e) { if (!svg.contains(e.target)) tip.style.display = "none"; });
   }
   /* hints="part: words | part: words" — the same word and syntax as the grid's
      header hints (Michel, 2026-11-09: "tooltips to explain axis, scales and
@@ -546,8 +550,13 @@ Auto-included by docs/_layouts/default.html.
     var lblEvery = Math.max(1, Math.ceil(xs.length / Math.max(2, Math.floor(cW / 40))));
     xs.forEach(function (x, i) {
       if (i % lblEvery === 0 || i === xs.length - 1) {
+        /* an x value is a name: underscores read as spaces, and under a title
+           band only its number stays — the title above already says the rest
+           (Michel, 2026-11-09: "file name is truncated … keep the page number") */
+        var lx = String(x).replace(/_/g, " ");
+        if (o.top) lx = lx.split(" ")[0];
         var xl = svgEl(svg, NS, "text", { x: pL + inset + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280", "data-axis": "x" });
-        xl.textContent = xText(x, 10);
+        xl.textContent = xText(lx, 10);
         if (hints.x) svgEl(xl, NS, "title", {}).textContent = x + "\n" + hints.x;
       }
     });
