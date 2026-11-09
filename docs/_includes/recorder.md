@@ -727,9 +727,22 @@ Auto-included by docs/_layouts/default.html.
       if (isActive()) { e.preventDefault(); e.returnValue = "You're recording — leaving this page will discard it."; return e.returnValue; }
     });
 
+    /* A TAKE IS AN EVENT (Michel, 2026-11-09: Jesse's verses named the recorder as
+       her valley — "buttons hid from sight, almost quit" — and the proofs saw
+       nothing, since tool friction never turns a proof red): started, saved,
+       empty, failed and uploaded go to the page's doc log like an ask, flushed
+       at once, read by the journey gather as the takes lane. */
+    function take(state, detail) {
+      try {
+        if (!window.lcDocLog || !window.lcDocLog.log) return;
+        window.lcDocLog.log({ host: el }, "🎬 recording", String(detail || ""), "recorder " + state);
+        window.lcDocLog.flush();
+      } catch (e) {}
+    }
     function startRecording() {
       btnEl.disabled = true;
       setStatus("Requesting screen share…");
+      take("started", (isSafari ? "safari" : "chrome") + (window.top !== window ? " · framed" : ""));
       // Hide the launcher overlay (or in-page widget) immediately — before
       // getDisplayMedia runs — so it's absent from every captured frame.
       if (hooks.onStart) hooks.onStart();
@@ -831,7 +844,8 @@ Auto-included by docs/_layouts/default.html.
                 [optCam, optMic, optSnd].filter(Boolean).forEach(function(o){ o.style.pointerEvents = ""; o.style.opacity = ""; });
                 if (hooks.onStop) hooks.onStop();
                 var blob = new Blob(chunks, { type: mimeType || "video/webm" });
-                if (!blob.size) { setStatus("Nothing was recorded.", "err"); return; }
+                if (!blob.size) { take("empty", endNote || "nothing recorded"); setStatus("Nothing was recorded.", "err"); return; }
+                take(endNote ? "failed" : "saved", (endNote ? endNote + " · " : "") + Math.round(blob.size / 1024) + " KB");
                 setStatus("Review your recording…");
                 showReview(blob);
               };
@@ -886,6 +900,7 @@ Auto-included by docs/_layouts/default.html.
               frameWayOut("❌ This page is embedded in a frame that doesn't allow screen capture.");
               return;
             }
+            take("failed", e.name === "NotAllowedError" ? "screen share cancelled" : (e.message || e.name));
             setStatus("❌ " + (e.name === "NotAllowedError" ? "Screen share was cancelled." : e.message), "err");
           });
     }
@@ -1593,13 +1608,17 @@ Auto-included by docs/_layouts/default.html.
         })
           .then(function (videoUrl) {
             st.textContent = "✅ Uploaded (unlisted): " + videoUrl;
+            if (window.lcDocLog && window.lcDocLog.log) { try { window.lcDocLog.log({ host: null }, "🎬 recording", videoUrl, "recorder uploaded"); window.lcDocLog.flush(); } catch (e) {} }
             if (!embed) return;
             st.textContent += " · embedding…";
             return embedOnPage(videoUrl).then(function (n) {
               st.textContent = "✅ Uploaded and embedded as Short " + n + ": " + videoUrl;
             });
           })
-          .catch(function (e) { st.textContent = "❌ " + (e && e.message || e); up.disabled = false; });
+          .catch(function (e) {
+            if (window.lcDocLog && window.lcDocLog.log) { try { window.lcDocLog.log({ host: null }, "🎬 recording", String(e && e.message || e), "recorder upload failed"); window.lcDocLog.flush(); } catch (x) {} }
+            st.textContent = "❌ " + (e && e.message || e); up.disabled = false;
+          });
       });
     }
 
