@@ -6381,7 +6381,7 @@
     "url": "/assets/ux-report.html#scenario_708"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The runtime opens the rich page editor bound to the rendered source",
     "feature": "The instant runner (RT) — Phase A parity",
     "tags": "",
