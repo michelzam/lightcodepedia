@@ -64,6 +64,9 @@ First row = column headers. `x=` picks the label column, `y=` picks the value co
 | `height="N"` | `300` | Canvas height in pixels |
 | `source="<id>"` | — | Bind to a dataset / query result by id — the chart redraws when that data changes. A name nothing answers to rests on `empty=`; an **empty** name (`source=""`, a knob cleared in the ⚙️) keeps the box, says so, and keeps its gear |
 | `master="<grid-id>"` | — | Follow another grid: redraw from the row selected in it (master → detail) |
+| `marks="col"` | — | Rows whose value is set become diamonds — a key point, its text on hover |
+| `hover="col"` | — | Extra text on every point's hover |
+| `labels="col"` | — | The row's short text printed above its point — read without a hover, a note's emoji |
 
 **Line chart — same data:**
 

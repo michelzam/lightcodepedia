@@ -25,6 +25,8 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     marks="col"   rows whose value is set become diamonds — a key point,
                   its text on hover
     hover="col"   extra text on every point's hover
+    labels="col"  the row's short text printed above its point — read
+                  without a hover (a note's emoji)
   and several measures (2026-10-25, the desk's attempts):
     y="a, b"      one line per column, each its own colour, one scale
     bars="col"    then reads on its own scale, at the right; a legend
@@ -209,7 +211,7 @@ Auto-included by docs/_layouts/default.html.
     var masterId = el.getAttribute("master") || "", filterExpr = el.getAttribute("filter") || "";
     var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
     var knobs = { series: el.getAttribute("series") || "", bars: el.getAttribute("bars") || "",
-                  marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", focus: null };
+                  marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", labels: el.getAttribute("labels") || "", focus: null };
     var masterRow = null;
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
@@ -454,6 +456,12 @@ Auto-included by docs/_layouts/default.html.
           var mark = o.marks ? String(d[o.marks] || "") : "";
           if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
           else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
+          /* labels="col": the row's short text printed above its point — a note's
+             emoji on the learning journey reads without a hover, which a phone
+             has none of (Michel, 2026-11-10: "not clear how notes and values are
+             used in the visual journey") */
+          var label = o.labels ? String(d[o.labels] || "") : "";
+          if (label) svgEl(svg, NS, "text", { x: x, y: y - 10, "text-anchor": "middle", "font-size": 12, "data-label": label }).textContent = label.length > 12 ? label.slice(0, 11) + "…" : label;
           var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
           svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yc + ": " + val
             + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "");
