@@ -27,6 +27,9 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     hover="col"   extra text on every point's hover
     labels="col"  the row's short text printed above its point — read
                   without a hover (a note's emoji)
+    top="col"     a band of text above the plot, one cell per column (a stage's title)
+    bottom="col"  a band of text under the x labels, one cell per column (the touchpoints)
+    color="col"   the row's own colour for its point (a CSS colour)
   and several measures (2026-10-25, the desk's attempts):
     y="a, b"      one line per column, each its own colour, one scale
     bars="col"    then reads on its own scale, at the right; a legend
@@ -211,7 +214,8 @@ Auto-included by docs/_layouts/default.html.
     var masterId = el.getAttribute("master") || "", filterExpr = el.getAttribute("filter") || "";
     var fm = filterExpr.match(/^\s*([\w-]+)\s*=\s*([\w-]+)\s*$/);
     var knobs = { series: el.getAttribute("series") || "", bars: el.getAttribute("bars") || "",
-                  marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", labels: el.getAttribute("labels") || "", focus: null };
+                  marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", labels: el.getAttribute("labels") || "",
+                  top: el.getAttribute("top") || "", bottom: el.getAttribute("bottom") || "", color: el.getAttribute("color") || "", focus: null };
     var masterRow = null;
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
@@ -388,6 +392,11 @@ Auto-included by docs/_layouts/default.html.
     var multi = ys.length > 1;
     var W = Math.max(el.offsetWidth || 0, 300), H = 220;
     var pL = 44, pB = 36, pT = 14, pR = o.bars ? 40 : 10;
+    /* top="col" / bottom="col": a band of text per column — the journey map's
+       stages above the line, its touchpoints below (Michel, 2026-11-10, "go
+       bands": the page's title on top, the tools and concepts underneath) */
+    if (o.top) pT += 18;
+    if (o.bottom) pB += 16;
     var cW = W - pL - pR, cH = H - pT - pB;
     /* one x axis shared by every series: the sorted set of x values —
        numbers in number order (run 10 after run 9, not after run 1) */
@@ -454,8 +463,12 @@ Auto-included by docs/_layouts/default.html.
         rows.forEach(function (d) {
           var val = +d[yc] || 0, x = X(d), y = Y(val);
           var mark = o.marks ? String(d[o.marks] || "") : "";
-          if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: "#b45309", "data-mark": mark });
-          else svgEl(svg, NS, "circle", { cx: x, cy: y, r: 3, fill: color });
+          /* color="col": the row's own colour for its point — the journey's tone,
+             light green at once, dark green after reds, red still red (Michel,
+             2026-11-10: "those diamonds could be green, clear then darker") */
+          var tone = o.color && d[o.color] ? String(d[o.color]) : "";
+          if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: tone || "#b45309", "data-mark": mark, "data-tone": tone });
+          else svgEl(svg, NS, "circle", { cx: x, cy: y, r: tone ? 4 : 3, fill: tone || color, "data-tone": tone });
           /* labels="col": the row's short text printed above its point — a note's
              emoji on the learning journey reads without a hover, which a phone
              has none of (Michel, 2026-11-10: "not clear how notes and values are
@@ -476,6 +489,26 @@ Auto-included by docs/_layouts/default.html.
         svgEl(svg, NS, "text", { x: pL + inset + i * step, y: pT + cH + 14, "text-anchor": "middle", "font-size": 9, fill: "#6b7280" })
           .textContent = xText(x, 10);
     });
+    /* the bands: one cell per column, the first row of that column speaks; the
+       cell holds what fits and says it all on hover */
+    if (o.top || o.bottom) {
+      var perCol = Math.max(6, Math.floor((step || cW) / 6.5));
+      var firstOf = {};
+      data.forEach(function (d) { var k = String(d[xCol]); if (!(k in firstOf)) firstOf[k] = d; });
+      xs.forEach(function (x, i) {
+        var d = firstOf[String(x)] || {}, cx = pL + inset + i * step;
+        if (o.top && d[o.top]) {
+          var t = svgEl(svg, NS, "text", { x: cx, y: 12, "text-anchor": "middle", "font-size": 10, "font-weight": 600, fill: "#1e293b", "data-band": "top" });
+          t.textContent = String(d[o.top]).length > perCol ? String(d[o.top]).slice(0, perCol - 1) + "…" : String(d[o.top]);
+          svgEl(t, NS, "title", {}).textContent = String(d[o.top]);
+        }
+        if (o.bottom && d[o.bottom]) {
+          var b = svgEl(svg, NS, "text", { x: cx, y: H - 4, "text-anchor": "middle", "font-size": 9, fill: "#475569", "data-band": "bottom" });
+          b.textContent = String(d[o.bottom]).length > perCol ? String(d[o.bottom]).slice(0, perCol - 1) + "…" : String(d[o.bottom]);
+          svgEl(b, NS, "title", {}).textContent = String(d[o.bottom]);
+        }
+      });
+    }
 
     if (!multi)
       svgEl(svg, NS, "text", { x: 8, y: pT + cH / 2, "text-anchor": "middle", "font-size": 9, fill: "#9ca3af",

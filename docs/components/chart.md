@@ -67,6 +67,9 @@ First row = column headers. `x=` picks the label column, `y=` picks the value co
 | `marks="col"` | — | Rows whose value is set become diamonds — a key point, its text on hover |
 | `hover="col"` | — | Extra text on every point's hover |
 | `labels="col"` | — | The row's short text printed above its point — read without a hover, a note's emoji |
+| `top="col"` | — | A band of text above the plot, one cell per column — a stage's title; the cell holds what fits, hover for all of it |
+| `bottom="col"` | — | A band of text under the x labels, one cell per column — the touchpoints |
+| `color="col"` | — | The row's own colour for its point, a CSS colour — a tone per row |
 
 **Line chart — same data:**
 

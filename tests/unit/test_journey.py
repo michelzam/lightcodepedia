@@ -36,7 +36,7 @@ def test_journey_lanes_takes_and_words(tmp_path):
     course = tmp_path / "course" / "module_07"
     course.mkdir(parents=True)
     (course / "01_ship_it.md").write_text("# 🚀 Ship It\n\n## 📱 Can I see it on my phone?\n")
-    (course / "02_not_in_the_room.md").write_text("# 🧭 Add a Guide\n\n## 🌅 She opens it.\n")
+    (course / "02_not_in_the_room.md").write_text("# 🧭 Add a Guide\n\n## 🌅 She opens it.\n\n```markdown\nx\n```\n{: .mdpad #g }\n\n[f](#)\n{: .form master=\"g\" }\n\n- [x] a\n{: .prerequisite }\n")
     (course / "03_send_it.md").write_text("# 🎤 On Stage\n\n## 🎤 Step in\n")
     notes_file = tmp_path / "journey_notes.csv"
     notes_file.write_text("login,module,page,who,when,note\n21joberoi,07,02_not_in_the_room,michelzam,2026-11-09T05:00:00Z,\"she said: almost quit, tried again\"\n21joberoi,07,,michelzam,2026-11-09T05:01:00Z,watched her ship live\n")
@@ -48,6 +48,7 @@ def test_journey_lanes_takes_and_words(tmp_path):
     assert ship["reds"] == "0" and ship["outcome"] == "green" and guide["reds"] == "1" and guide["effort_min"] == "15"
     assert guide["asks"] == "2" and guide["help_levels"] == "direct 1 socratic 1"
     assert guide["takes"] == "2" and guide["failed_takes"] == "1"
+    assert guide["title"] == "🧭 Add a Guide" and guide["tools"] == "mdpad form" and ship["title"] == "🚀 Ship It"
     # layer 2: each sentence on the page its words name; the rest on the module
     assert ship["value"].startswith("On the Ship It page, I shared my creation") and "Adoption Day" in ship["value"]
     assert guide["value"] == "On Add a Guide, I gave it a voice,"
