@@ -71,7 +71,7 @@ First row = column headers. `x=` picks the label column, `y=` picks the value co
 | `bottom="col"` | — | A band under the x labels, one cell per column — the touchpoints. A cell's ` · `-separated items are **chips, one per line** (up to four), so three tools stay legible |
 | `color="col"` | — | The row's own colour for its point, a CSS colour — a tone per row |
 | `dips="col"` | — | The valley before the summit: when the row's value is above zero the line first dives to minus that value (a red ✗), then climbs to the point — a journey map's negative experiences on the way to a positive one |
-| `trail="col"` | — | The row's runs in time order, a string of ✗ and ✓ — beads before the point, ✗ below the axis (one deeper for each red in a row), ✓ above, the line threading them; a row with a trail ignores `dips=` |
+| `trail="col"` | — | The row's beats in time order, a string of ✗ ✓ and ? — beads around the point, ✗ below the axis (one deeper for each red in a row), ✓ above, ? on the axis (a question asked), the line threading them; the last run is the point; a row with a trail ignores `dips=` |
 | `title="… [col] …"` | — | A title may hold `[col]` placeholders, filled from the first row drawn — a name over a map that follows a master (square brackets: the markdown keeps braces for itself) |
 | `hints="y: … \| bars: … \| x: … \| top: … \| bottom: … \| dips: … \| trail: …"` | — | What a hover says about each part of the chart, in the page's words — the grid's `hints=` word and syntax |
 
@@ -118,7 +118,7 @@ the touchpoints as chips, and `hints=` so every part explains itself on hover.
 ```json
 [
   {"stage":"1 research","title":"🔍 Researching","mood":1,"setbacks":0,"minutes":20,"touch":"web · dealer","tone":"#86efac"},
-  {"stage":"2 finance","title":"💳 Financing","mood":1,"setbacks":2,"runs":"✗✓✗✓","minutes":45,"touch":"dealer · bank · phone","tone":"#15803d"},
+  {"stage":"2 finance","title":"💳 Financing","mood":1,"setbacks":2,"runs":"✗?✓✗✓","minutes":45,"touch":"dealer · bank · phone","tone":"#15803d"},
   {"stage":"3 wait","title":"⏳ Waiting","mood":-1,"setbacks":0,"minutes":5,"touch":"email","tone":"#dc2626"},
   {"stage":"4 ride","title":"🚗 First ride","mood":1,"setbacks":0,"minutes":60,"touch":"car","tone":"#86efac"}
 ]
@@ -128,9 +128,9 @@ the touchpoints as chips, and `hints=` so every part explains itself on hover.
 [Car purchase](#)
 {: .chart #car_journey_chart bind="car_journey" type="line" x="stage" y="mood" bars="minutes" dips="setbacks" trail="runs" top="title" bottom="touch" color="tone" height="220" title="🚗 [title] and after" hints="trail: one visit, in order — ✗ it went wrong, ✓ it went well | y: the experience — above the line it went well, below it did not | bars: minutes spent at this stage, on the right scale | x: the stage, in order | top: the stage as the customer names it | bottom: who or what the customer touched here | dips: setbacks met before this stage turned out well" }
 
-Financing carries its runs (`trail="runs"`, ✗✓✗✓): a refusal, an offer, a
-refusal, the offer that held — a sawtooth before the point, where a plain
-`dips=` would show one dive. Waiting stays below the axis. The title names
+Financing carries its beats (`trail="runs"`, ✗?✓✗✓): a refusal, a question
+to the bank, an offer, a refusal, the offer that held — a sawtooth before the
+point, the question on the axis, where a plain `dips=` would show one dive. Waiting stays below the axis. The title names
 the first stage drawn (`[title]`). Hover any bead, tick, chip or title: it
 says what it measures.
 

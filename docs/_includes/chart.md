@@ -33,10 +33,10 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     dips="col"    the valley before the point: when the row's value is above zero
                   the line first dives to minus that value (a red ✗), then climbs
                   to the point — the customer journey map's negative experiences
-    trail="col"   the row's runs in time order, a string of ✗ and ✓: beads across
+    trail="col"   the row's beats in time order, a string of ✗ ✓ and ?: beads across
                   the column — ✗ below the axis (deeper with each red in a row), ✓
-                  above — the line threading them to the point; replaces dips for
-                  the rows that carry one
+                  above, ? on the axis (a question asked) — the line threading them
+                  to the point; replaces dips for the rows that carry one
     title="… [col] …"   a title may hold [col] placeholders, filled from the first row drawn
     hints="y: … | bars: … | x: … | top: … | bottom: … | dips: … | trail: …"
                   what a hover says about each part of the chart — the grid's
@@ -477,7 +477,7 @@ Auto-included by docs/_layouts/default.html.
     /* trail="col": a row's runs as beads — ✗ below, each red in a row one deeper,
        ✓ above at the row's own height (Michel, 2026-11-10, "go trail": three reds
        alternating with three greens read as a sawtooth, not as one dip) */
-    var beadsOf = function (d) { return o.trail && d[o.trail] ? String(d[o.trail]).replace(/[^✗✓]/g, "").split("") : []; };
+    var beadsOf = function (d) { return o.trail && d[o.trail] ? String(d[o.trail]).replace(/[^✗✓?]/g, "").split("") : []; };
     var trailMax = 0;
     if (o.dips || o.trail) {
       var deepest = Math.max.apply(null, data.map(function (d) {
@@ -547,13 +547,17 @@ Auto-included by docs/_layouts/default.html.
            "catch the green/red story … so we can see how the red was productive") */
         var dipOf = function (d) { if (beadsOf(d).length) return 0; var v = o.dips ? (+d[o.dips] || 0) : 0; return v > 0 && (+d[yc] || 0) >= 0 ? v : 0; };
         /* the beads before a point: every run but the last, the last being the point itself */
+        /* the last RUN is the point itself; every other beat is a bead — ✗ below,
+           ✓ above, ? on the axis (a question asked of a page agent, in its moment);
+           beats after the last run stand to the right of the point */
         var beadPts = function (d) {
-          var beads = beadsOf(d), out = [], run = 0, n = beads.length;
-          if (n < 2) return out;
-          var bw = Math.min(12, (step * 0.75) / (n - 1)), top = +d[yc] || 1;
+          var beads = beadsOf(d), out = [], run = 0, n = beads.length, last = -1;
+          beads.forEach(function (b, i) { if (b !== "?") last = i; });
+          if (n < 2 || last < 0) return out;
+          var bw = Math.min(12, (step * 0.75) / Math.max(n - 1, 1)), top = +d[yc] || 1;
           beads.forEach(function (b, i) {
-            if (b === "✗") run++; else run = 0;
-            if (i < n - 1) out.push({ x: X(d) - (n - 1 - i) * bw, y: Y(b === "✗" ? -run : (top > 0 ? top : 1)), red: b === "✗", i: i + 1, n: n });
+            if (b === "✗") run++; else if (b === "✓") run = 0;
+            if (i !== last) out.push({ x: X(d) + (i - last) * bw, y: Y(b === "✗" ? -run : b === "?" ? 0 : (top > 0 ? top : 1)), kind: b, i: i + 1, n: n });
           });
           return out;
         };
@@ -577,8 +581,10 @@ Auto-included by docs/_layouts/default.html.
              2026-11-10: "those diamonds could be green, clear then darker") */
           var tone = o.color && d[o.color] ? String(d[o.color]) : "";
           beadPts(d).forEach(function (b) {
-            var bd = svgEl(svg, NS, "circle", { cx: b.x, cy: b.y, r: 4, fill: b.red ? "#dc2626" : "#86efac", "data-bead": b.red ? "✗" : "✓", "data-x": String(d[xCol]) });
-            svgEl(bd, NS, "title", {}).textContent = d[xCol] + " — run " + b.i + " of " + b.n + ": " + (b.red ? "✗ red" : "✓ green") + (hints.trail ? "\n" + hints.trail : "");
+            var fill = b.kind === "✗" ? "#dc2626" : b.kind === "?" ? "#2563eb" : "#86efac";
+            var bd = svgEl(svg, NS, "circle", { cx: b.x, cy: b.y, r: 4, fill: fill, "data-bead": b.kind, "data-x": String(d[xCol]) });
+            if (b.kind === "?") svgEl(svg, NS, "text", { x: b.x, y: b.y + 2.5, "text-anchor": "middle", "font-size": 7, fill: "#fff", "pointer-events": "none" }).textContent = "?";
+            svgEl(bd, NS, "title", {}).textContent = d[xCol] + " — beat " + b.i + " of " + b.n + ": " + (b.kind === "✗" ? "✗ red" : b.kind === "?" ? "? asked" : "✓ green") + (hints.trail ? "\n" + hints.trail : "");
           });
           var dv = dipOf(d);
           if (dv) {

@@ -51,7 +51,7 @@ def test_journey_lanes_takes_and_words(tmp_path):
     assert guide["takes"] == "2" and guide["failed_takes"] == "1"
     assert guide["title"] == "🧭 Add a Guide" and guide["tools"] == "mdpad form" and ship["title"] == "🚀 Ship It"
     assert ship["tags"] == "ship qr" and guide["tags"] == "avatar", (ship["tags"], guide["tags"])   # the tags the course cards wear
-    assert guide["trail"] == "✗✓" and ship["trail"] == "✓", (guide["trail"], ship["trail"])         # the runs, in order
+    assert guide["trail"] == "✗??✓" and ship["trail"] == "✓", (guide["trail"], ship["trail"])      # runs and asks, in order
     assert guide["module_title"] == "Module 07 — Show Time", guide["module_title"]
     # layer 2: each sentence on the page its words name; the rest on the module
     assert ship["value"].startswith("On the Ship It page, I shared my creation") and "Adoption Day" in ship["value"]
