@@ -1,5 +1,19 @@
 # Changelog — @karmicsoft/lc-gateway
 
+## 0.3.4 — 2026-11-10
+
+Asked by Toni after the full run of 2026-11-08 (PASSERELLE.md, question 9):
+a person created in a bundle (pull request 1), sent again as a new fiche
+while that request was still open, opened pull request 2 creating the same
+file. A creation checked `main` only, an edit also checked the waiting
+pull requests.
+
+- **A new record is created once.** `/contrib/new`, and a new record inside a
+  bundle, answer `409 open pull request` when a waiting pull request already
+  creates that file — `message: this record is new and still waiting: #n`,
+  `path`, `pending: { number, url, mine }` (and `file` in a bundle). Nothing
+  is written. With `mine: true` the form saves into it through `/contrib`.
+
 ## 0.3.3 — 2026-10-18
 
 Asked by Toni, with 0.3.2 in service: a bundle's pull request took the type

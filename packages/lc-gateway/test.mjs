@@ -653,6 +653,48 @@ await scenario('A bundle refuses the same file twice, and more than ten files', 
   eq(many.status, 400);
   eq(gh.commits.length, 0);
 });
+
+feature('A new record is created once (0.3.4, Toni: question 9)');
+await scenario('A new record of my waiting bundle, sent again as new, answers 409 and points to my pull request', async () => {
+  /* Toni, 2026-11-09: "a person created in a bundle (PR 1), sent again as a
+     new fiche: the gateway opened PR 2, which creates the same file" */
+  const { call, gh, signIn, clock } = rig();
+  const ada = await signIn('ada@example.org');
+  const b = await call('POST', '/contrib', { files: [
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } },
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+  ] }, ada);
+  eq(b.status, 201, JSON.stringify(b.body));
+  clock.t += 60000;
+  const r = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person', gender: 'féminin' } }, ada);
+  eq(r.status, 409, JSON.stringify(r.body)); eq(r.body.error, 'open pull request'); eq(r.body.keep, true);
+  eq(r.body.path, JT); eq(r.body.pending.mine, true); eq(r.body.pending.number, b.body.pr.number);
+  ok(/new and still waiting: #\d+/.test(r.body.message), r.body.message);
+  eq(gh.prs.length, 1, 'a second pull request creates the same file'); eq(gh.commits.length, 2);
+});
+await scenario('Someone else\'s new record still waiting refuses my creation of the same slug', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const zoe = await signIn('zoe@example.org');
+  const c = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } }, zoe);
+  clock.t += 60000;
+  const ada = await signIn('ada@example.org');
+  const r = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } }, ada);
+  eq(r.status, 409, JSON.stringify(r.body)); eq(r.body.pending.mine, false); eq(r.body.pending.number, c.body.pr.number);
+  eq(gh.prs.length, 1);
+});
+await scenario('Inside a bundle, a new record already waiting refuses the bundle, saying which file', async () => {
+  const { call, gh, signIn, clock } = rig();
+  const ada = await signIn('ada@example.org');
+  const c = await call('POST', '/contrib/new', { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } }, ada);
+  clock.t += 60000;
+  const r = await call('POST', '/contrib', { files: [
+    { path: LM, baseSha: gh.sha(LM), record: edit(LM, (o) => { o.gender = 'femme'; }) },
+    { kind: 'persons', title: 'Jeanne Test', record: { type: 'person' } },
+  ] }, ada);
+  eq(r.status, 409, JSON.stringify(r.body)); eq(r.body.file, 1); eq(r.body.path, JT);
+  eq(r.body.pending.mine, true); eq(r.body.pending.number, c.body.pr.number);
+  eq(gh.prs.length, 1); eq(gh.commits.length, 1);
+});
 })();
 
 console.log(`\n${scen} scenarios, ${fail} failed.`);

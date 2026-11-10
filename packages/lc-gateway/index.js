@@ -19,7 +19,7 @@ import { createHmac, createSign, randomBytes, createHash, timingSafeEqual } from
 import { patch } from '@karmicsoft/lc-patch';
 import { load, dump } from '@karmicsoft/lc-serialize';
 
-export const GATEWAY_VERSION = '0.3.3';
+export const GATEWAY_VERSION = '0.3.4';
 
 const DEFAULTS = {
   baseBranch: 'main',
@@ -409,6 +409,9 @@ export function createGateway(config, deps = {}) {
         if (seen[path]) return json(400, { error: 'the same file twice', path, ...where, keep: true });
         const exists = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
         if (exists.ok) return json(409, { error: 'a record with this slug already exists', path, ...where, keep: true });
+        const waiting = await openPrFor(path);                    /* 0.3.4: new, but already waiting */
+        if (waiting) return json(409, { error: 'open pull request', path, ...where, keep: true, pending: pendingOf(waiting, sess),
+          message: 'this record is new and still waiting: #' + waiting.number });
         const record = { id: slug, slug, ...it.record };
         record.id = slug; record.slug = slug; record.title = title;
         const touched = touchedProtected({ id: slug, slug }, record).filter((f) => f !== 'id' && f !== 'slug');
@@ -469,6 +472,12 @@ export function createGateway(config, deps = {}) {
     const path = dir.replace(/\/$/, '') + '/' + slug + '.yaml';
     const exists = await gh('/repos/' + cfg.repo + '/contents/' + path + '?ref=' + encodeURIComponent(cfg.baseBranch));
     if (exists.ok) return json(409, { error: 'a record with this slug already exists', path, keep: true });
+    /* 0.3.4, Toni (question 9): a record a waiting pull request already
+       creates is not created twice — the second PR would add the same file */
+    const waiting = await openPrFor(path);
+    if (waiting) return json(409, { error: 'open pull request', path, keep: true, pending: pendingOf(waiting, sess),
+      message: 'this record is new and still waiting: #' + waiting.number,
+      pr: { number: waiting.number, url: waiting.html_url } });
     const record = { id: slug, slug, ...(body.record || {}) };
     record.id = slug; record.slug = slug; record.title = title;
     const touched = touchedProtected({ id: slug, slug }, record).filter((f) => f !== 'id' && f !== 'slug');
