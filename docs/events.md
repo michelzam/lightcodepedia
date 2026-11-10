@@ -1,4 +1,5 @@
 # 🎭 Events
+
 [🏛 BUILD-AI Microcredential](#) — Summer 2026, Milwaukee, USA 🇺🇸
 
 [🏛 LightCode Certificate](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/Dauphine-Certificat.pdf) - Fall 2025, Paris, France 🇫🇷
@@ -15,7 +16,19 @@
 
 
 ## 🎓 Publications & Presentations
-[ACM MODELS 26 — Lightning talk, Demo & Poster](#upcoming) - 2026 St. Louis, Missouri 🇺🇸
+
+🏛 **ACM SIGCSE 27** — Lightning talk & Demo - 2027 Sacramento, CA 🇺🇸 🆕
+
+⭐️  _Two Probabilistic Systems Walk into a Classroom: Teaching Humans and AI Agents to Build Predictable Software, Together_
+ 
+⭐️  _A11y for All with Executable Markdown_ 
+
+
+[ACM SIGCSE 26 — Lightning talk, demo & poster](https://conf.researchr.org/profile/michelzam1) - 2026 St. Louis, Missouri 🇺🇸
+[🎙️](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-lightning-talks/15/Enlightning-Learning-Experiences)
+[🤹](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-demos/12/Lightcodepedia-A-Distributed-Model-Driven-Low-Code-Platform-for-Computing-Education)
+[📰](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-posters/83/Enlightening-Pathways-into-Computing)
+
 
 [ACM SIGCSE 25 — Tutorial and Workshop presentation]() - 2025, Portand, Oregon 🇺🇸 [🧰](https://sigcse2025.sigcse.org/details/sigcse-ts-2025-tutorials/17/Tutorial-402-Customize-Your-Class-for-Anyone-An-AI-Aristotelian-Gamified-Approach-t) 
 [📜](https://cdn.jsdelivr.net/gh/michelzam/lightcodepedia@main/pdfs/zam-talk-workshop-short.pdf)
@@ -31,15 +44,10 @@
 [ACM MODELS 22 — Conference paper & Poster](https://conf.researchr.org/profile/models-2022/michelzam1) - October 2022, Montreal, Canada  🇨🇦 [🎬](https://www.youtube.com/watch?v=fLoV7TiLIew) [📜](https://www.researchgate.net/publication/362733911_Teaching_Modeling_to_Anyone_the_Aristotelian_Way_Anyone_can_cook_a_sound_model)
 
 
-## 🗓️ Recent echoes
+## 🗣️ Feedback & Quotes
 
-[ACM SIGCSE 26 — Lightning talk, demo & poster](https://conf.researchr.org/profile/michelzam1) - 2026 St. Louis, Missouri 🇺🇸
-[🎙️](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-lightning-talks/15/Enlightning-Learning-Experiences)
-[🤹](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-demos/12/Lightcodepedia-A-Distributed-Model-Driven-Low-Code-Platform-for-Computing-Education)
-[📰](https://sigcse2026.sigcse.org/details/sigcse-ts-2026-posters/83/Enlightening-Pathways-into-Computing)
-### 🗣️ Feedback & Quotes
+Anonymous peer feedback from educators and evaluation committees — ACM SIGCSE TS 2026 & 2027:
 
-Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE TS 2026
 
 💬 _This demo delivers a rare fusion of low-code technology and computing pedagogy that feels both innovative and grounded._
 
@@ -62,3 +70,13 @@ Anonymous Peer Feedback from Educators and Evaluation Committees — ACM SIGCSE 
 💬 _Very relevant and timely submission._
 
 💬 _Fascinating work, would love to see it._
+
+💬 _A clear idea with a good hook, and the demo should be easy to follow_
+
+💬 _Using executable specifications as shared evidence between student and agent is a nice way to keep AI help accountable_
+
+💬 _This is a compelling lightning-talk proposal with a memorable central idea and a clear classroom workflow._
+
+💬 _This is a very cool idea that I think a lot of SIGCSE attendees would be interested in learning more about._
+
+
