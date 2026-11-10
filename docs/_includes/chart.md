@@ -495,6 +495,11 @@ Auto-included by docs/_layouts/default.html.
     if (o.trail && trailMax > 1) inset = Math.max(inset, Math.min(90, 12 * Math.min(trailMax - 1, 7) + 8));
     var range = maxV - minV, step = (cW - 2 * inset) / Math.max(xs.length - 1, 1);
     var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
+    /* a column's title and its chips carry ids — <chart>__top__<x>, <chart>__chips__<x> —
+       so a guide can walk the map page by page (Michel, 2026-11-10: "smaller steps
+       inside the chart, to see it jump from page to page") */
+    var chartId = el.getAttribute("data-lc-id") || "";
+    var colId = function (part, x) { return chartId ? chartId + "__" + part + "__" + String(x).replace(/[^\w-]/g, "_") : ""; };
     function X(d) { return pL + inset + xi[String(d[xCol])] * step; }
     function Y(v) { return pT + cH - ((v - minV) / range) * cH; }
 
@@ -594,14 +599,14 @@ Auto-included by docs/_layouts/default.html.
             svgEl(dp, NS, "title", {}).textContent = d[xCol] + " — " + o.dips + ": " + dv + (hints.dips ? "\n" + hints.dips : "");
           }
           if (mark) svgEl(svg, NS, "path", { d: "M" + x + "," + (y - 6) + " l6,6 l-6,6 l-6,-6 z", fill: tone || "#b45309", "data-mark": mark, "data-tone": tone });
-          else svgEl(svg, NS, "circle", { cx: x, cy: y, r: tone ? 4 : 3, fill: tone || color, "data-tone": tone });
+          else svgEl(svg, NS, "circle", { cx: x, cy: y, r: tone ? 4 : 3, fill: tone || color, "data-tone": tone, "data-x": String(d[xCol]) });
           /* labels="col": the row's short text printed above its point — a note's
              emoji on the learning journey reads without a hover, which a phone
              has none of (Michel, 2026-11-10: "not clear how notes and values are
              used in the visual journey") */
           var label = o.labels ? String(d[o.labels] || "") : "";
           if (label) svgEl(svg, NS, "text", { x: x, y: y - 10, "text-anchor": "middle", "font-size": 12, "data-label": label }).textContent = label.length > 12 ? label.slice(0, 11) + "…" : label;
-          var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all" });
+          var hit = svgEl(svg, NS, "circle", { cx: x, cy: y, r: 9, fill: "transparent", "pointer-events": "all", "data-x": String(d[xCol]) });
           svgEl(hit, NS, "title", {}).textContent = xCol + " " + d[xCol] + " — " + yc + ": " + val
             + (mark ? "\n" + mark : "") + (o.hover && d[o.hover] ? "\n" + d[o.hover] : "") + (hints.y ? "\n" + hints.y : "");
         });
@@ -632,6 +637,7 @@ Auto-included by docs/_layouts/default.html.
         var d = firstOf[String(x)] || {}, cx = pL + inset + i * step;
         if (o.top && d[o.top]) {
           var t = svgEl(svg, NS, "text", { x: cx, y: 12, "text-anchor": "middle", "font-size": 10, "font-weight": 600, fill: "#1e293b", "data-band": "top" });
+          if (colId("top", x)) t.setAttribute("id", colId("top", x));
           t.textContent = String(d[o.top]).length > perCol ? String(d[o.top]).slice(0, perCol - 1) + "…" : String(d[o.top]);
           svgEl(t, NS, "title", {}).textContent = String(d[o.top]) + (hints.top ? "\n" + hints.top : "");
         }
@@ -639,13 +645,14 @@ Auto-included by docs/_layouts/default.html.
           /* chips, one per line, in the cell's order; what does not fit says itself on hover */
           var lines = chipRows(String(d[o.bottom]).split(" · ").filter(Boolean), colW0);
           var y0 = pT + cH + 24;
+          var group = svgEl(svg, NS, "g", colId("chips", x) ? { id: colId("chips", x), "data-chips": String(x) } : { "data-chips": String(x) });
           lines.forEach(function (line, li) {
             var widths = line.map(chipW), total = widths.reduce(function (a, b) { return a + b; }, 0) + 4 * (line.length - 1);
             var lx = cx - total / 2, cy = y0 + li * 15;
             line.forEach(function (it, ci) {
               var cw = widths[ci], txt = chipText(it);
-              svgEl(svg, NS, "rect", { x: lx, y: cy, width: cw, height: 13, rx: 6.5, fill: "#eef2ff", stroke: "#c7d2fe", "stroke-width": 1, "data-chip": txt });
-              var b = svgEl(svg, NS, "text", { x: lx + cw / 2, y: cy + 10, "text-anchor": "middle", "font-size": 9, fill: "#3730a3", "data-band": "bottom", "data-x": String(x) });
+              svgEl(group, NS, "rect", { x: lx, y: cy, width: cw, height: 13, rx: 6.5, fill: "#eef2ff", stroke: "#c7d2fe", "stroke-width": 1, "data-chip": txt });
+              var b = svgEl(group, NS, "text", { x: lx + cw / 2, y: cy + 10, "text-anchor": "middle", "font-size": 9, fill: "#3730a3", "data-band": "bottom", "data-x": String(x) });
               b.textContent = txt;
               svgEl(b, NS, "title", {}).textContent = txt + (hints.bottom ? "\n" + hints.bottom : "");
               lx += cw + 4;

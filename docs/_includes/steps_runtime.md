@@ -1530,11 +1530,13 @@ class Datagrid(Block):
                   {"n": "y", "t": "str", "data": True, "d": ""},
                   {"n": "bar_count", "t": "int"},
                   {"n": "point_count", "t": "int"},
+                  {"n": "title", "t": "str"},
                   {"n": "height", "t": "int", "data": True, "attr": "height", "d": 300}, {"n": "bars", "t": "str", "data": True, "attr": "bars"}, {"n": "series", "t": "str", "data": True, "attr": "series"}, {"n": "empty", "t": "str", "data": True, "attr": "empty"}],
            assoc=[{"n": "source", "target": "Dataset"},
                   {"n": "master", "target": "Datagrid"},
                   {"n": "bind", "target": "Datagrid"},
-                  {"n": "bars", "target": "Bar", "list": True}])
+                  {"n": "bars", "target": "Bar", "list": True}],
+           methods=["beads", "chips", "tone"])
 class Chart(Block):
     @property
     def bars(self):
@@ -1566,6 +1568,39 @@ class Chart(Block):
     @property
     def point_count(self):
         return len(self._qq("circle"))
+
+    # THE MAP, READ IN PYTHON (Michel, 2026-11-10: "use more the pythonistic
+    # interface offered in Object than js expressions"): the title over the map,
+    # its columns, and per column the beads, the chips and the point's tone.
+    @property
+    def title(self):
+        t = self._q(".lc-chart-title")
+        return (t.text if t is not None else "").strip()
+
+    @property
+    def xs(self):
+        """the x values drawn, in order — the pages of a journey"""
+        out = []
+        for c in self._qq("svg circle[pointer-events][data-x]"):
+            x = c._attr("data-x")
+            if x not in out:
+                out.append(x)
+        return out
+
+    def beads(self, x):
+        """the beats drawn before the point of x, in time order: ✗ ✓ ?"""
+        return [c._attr("data-bead") for c in self._qq("svg circle[data-bead]") if c._attr("data-x") == x]
+
+    def chips(self, x):
+        """the chips under x, in order (a chip's own words, not its hover title)"""
+        return [str(t._el.childNodes.item(0).textContent or "").strip() for t in self._qq("svg text[data-band='bottom']") if t._attr("data-x") == x]
+
+    def tone(self, x):
+        """the colour of x's point"""
+        for c in self._qq("svg circle[data-tone][data-x]"):
+            if c._attr("data-x") == x:
+                return c._attr("data-tone")
+        return ""
 
 
 @component(icon="🦄",
@@ -4337,7 +4372,41 @@ def _lc_crew_check(cid, fn, text, verdict, row_json):
         js.window.lcCrewAnswer(cid, False, str(e))
 
 
+# BATCH: every attribute set publishes its whole class to the page — right for a
+# person typing, quadratic for a landing that sets seven fields on two hundred
+# objects (Michel, 2026-11-10: "module rows 42345 ms · day rows 63081 ms").
+# Inside `with batch():` sets are remembered, not published; the exit publishes
+# each touched class once.
+_LC_BATCH = [0]
+_LC_BATCH_SEEN = []
+
+
+class _LcBatch:
+    def __enter__(self):
+        _LC_BATCH[0] += 1
+        return self
+
+    def __exit__(self, *a):
+        _LC_BATCH[0] -= 1
+        if not _LC_BATCH[0]:
+            seen = list(_LC_BATCH_SEEN)
+            del _LC_BATCH_SEEN[:]
+            for c in seen:
+                _lc_publish_class(c)
+        return False
+
+
+def batch():
+    """Hold the page's repaints while many objects change; publish once at the end."""
+    return _LcBatch()
+
+
 def _lc_push_obj(obj):
+    if _LC_BATCH[0]:
+        c = type(obj)
+        if c not in _LC_BATCH_SEEN:
+            _LC_BATCH_SEEN.append(c)
+        return
     elid = getattr(obj, "_lc_elid", None)
     if elid:
         _lc_inspect_push(elid)
@@ -5223,7 +5292,7 @@ _inject_store()
   /* a plain row as a read card: short values in a two-column list, long texts
      (a story, a narration) as paragraphs under their name, in the row's order */
   function rowCard(row) {
-    var keys = Object.keys(row).filter(function (k) { return k[0] !== "_" && row[k] !== undefined && row[k] !== null && String(row[k]) !== ""; });
+    var keys = Object.keys(row).filter(function (k) { return k[0] !== "_" && row[k] !== undefined && row[k] !== null && String(row[k]) !== "" && !/^[\[{]/.test(String(row[k])); });
     var short = keys.filter(function (k) { return String(row[k]).length <= 60; }), long = keys.filter(function (k) { return String(row[k]).length > 60; });
     var html = "<div class='lc-ins-row' data-row-card='1'>";
     if (short.length) html += "<dl class='lc-ins-dl'>" + short.map(function (k) { return "<dt>" + esc(k) + "</dt><dd>" + esc(String(row[k])) + "</dd>"; }).join("") + "</dl>";

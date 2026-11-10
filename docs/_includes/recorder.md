@@ -780,8 +780,13 @@ Auto-included by docs/_layouts/default.html.
               : { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 1280 } };
             if (useMic)   constraints.audio = true;
 
+            // THE MIC MUST SURVIVE THE CAMERA (Michel, 2026-11-10, Safari on the Mac:
+            // "the sound is not recorded"): one call asks for both, and when the camera
+            // is refused or busy the whole call fails — and the narration went with it.
+            // Ask again for the microphone alone before giving up.
             var avPromise = (wantCam || useMic)
-              ? navigator.mediaDevices.getUserMedia(constraints).then(function(s){ return s; }).catch(function(){ return null; })
+              ? navigator.mediaDevices.getUserMedia(constraints).then(function(s){ return s; }).catch(function(){
+                  return useMic && wantCam ? navigator.mediaDevices.getUserMedia({ audio: true }).catch(function(){ return null; }) : null; })
               : Promise.resolve(null);
 
             avPromise.then(function(av) {

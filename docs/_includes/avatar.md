@@ -742,6 +742,7 @@ Auto-included by docs/_layouts/default.html.
                input: x.input || null,
                cues: Array.isArray(x.cues) ? x.cues : [],
                fn: (typeof x.fn === "function" ? x.fn : null),  /* action hook run as the line starts (lcAvatarPlay callers — e.g. demo replay re-applying a recorded edit) */
+               lines: String(x.lines || ""),                       /* a cell answering a JSON list of lines that take this line's place */
                do: String(x.do || ""),                             /* presentation verb from the page's registry (open/close/present/reel/…) */
                arg: (x.with !== undefined ? x.with : (x.arg !== undefined ? x.arg : null)),
                step: (x.step === undefined ? null : x.step),   /* per-line override of the avatar's step */
@@ -1507,6 +1508,25 @@ Auto-included by docs/_layouts/default.html.
        data from the page? For instance, personae's name"): {= expr } in a say
        is a cell, evaluated as it is spoken, through the page's own cells —
        the line waits for its values, then plays. The script keeps its words. */
+    /* lines: "{= expr }" — a line that STANDS FOR a list of lines the page computes
+       (a module's walk, built from its rows): the cell answers a JSON list of
+       { at, say } and they take this line's place (Michel, 2026-11-10: Doc
+       jumping page to page on the learning journey map) */
+    if (line.lines && window.lcCellEval && !line._expanded) {
+      var i0 = av.idx - 1, expr = String(line.lines).replace(/^\s*\{=\s*|\s*\}\s*$/g, "");
+      window.lcCellEval(expr).catch(function () { return "[]"; }).then(function (v) {
+        var arr = [];
+        try { arr = typeof v === "string" ? JSON.parse(v || "[]") : v; } catch (e) { arr = []; }
+        if (!Array.isArray(arr)) arr = [];
+        var specs = arr.map(lineSpec);
+        if (!specs.length) specs = [lineSpec({ say: line.say || "Nothing to walk yet." })];
+        specs.forEach(function (sp) { sp._expanded = true; });
+        av.script = av.script.slice(0, i0).concat(specs, av.script.slice(i0 + 1));
+        av.idx = i0;
+        nextLine(id);
+      });
+      return;
+    }
     if (av._liveFor === line) { shown = av._liveSay; av._liveFor = null; }
     else if (/\{=[^}]*\}/.test(shown) && window.lcCellEval) {
       var cells = shown.match(/\{=[^}]*\}/g);

@@ -130,9 +130,40 @@ the touchpoints as chips, and `hints=` so every part explains itself on hover.
 
 Financing carries its beats (`trail="runs"`, ✗?✓✗✓): a refusal, a question
 to the bank, an offer, a refusal, the offer that held — a sawtooth before the
-point, the question on the axis, where a plain `dips=` would show one dive. Waiting stays below the axis. The title names
-the first stage drawn (`[title]`). Hover any bead, tick, chip or title: it
-says what it measures.
+point, the question on the axis, where a plain `dips=` would show one dive.
+Waiting stays below the axis. The title names the first stage drawn
+(`[title]`). Hover any bead, tick, chip or title: it says what it measures.
+Every column is addressable — its title above as `<chart>__top__<x>`, its
+chips below as `<chart>__chips__<x>` — so a guide's `at:` can walk the map
+page by page.
+
+In Python, the map reads itself — the title, the columns, and per column the
+beads, the chips and the point's tone:
+
+```gherkin
+Feature: A journey map reads itself in Python
+  As a page author
+  I want to ask the chart what it drew, column by column
+  So that a proof speaks the page's words, never a selector
+
+  Scenario: Financing's beats, chips and tone
+    Given the car journey map
+    :::python
+    self.map: Chart = self.page.car_journey_chart
+    :::
+    Then its title names the first stage
+    :::python
+    assert self.map.title == "🚗 🔍 Researching and after", self.map.title
+    assert self.map.xs == ["1 research", "2 finance", "3 wait", "4 ride"], self.map.xs
+    :::
+    And financing shows its beats before the point, its chips below, and a dark green point
+    :::python
+    assert self.map.beads("2 finance") == ["✗", "?", "✓", "✗"], self.map.beads("2 finance")
+    assert self.map.chips("2 finance") == ["dealer", "bank", "phone"], self.map.chips("2 finance")
+    assert self.map.tone("2 finance") == "#15803d" and self.map.tone("3 wait") == "#dc2626"
+    :::
+```
+{: .feature #car_journey_proof tags="chart" status="pending" }
 
 ## 🏁 Final exam
 
