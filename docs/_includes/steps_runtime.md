@@ -4838,6 +4838,10 @@ _inject_store()
 .lc-ins-meths button .lc-ins-post { opacity: 0.75; font-size: 0.9em; }
 .lc-ins-err { flex-basis: 100%; font-family: monospace; font-size: 0.85em; color: #b91c1c; background: #fef2f2;
   border: 1px solid #fecaca; border-radius: 6px; padding: 5px 10px; }
+.lc-ins-dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.15em 0.9em; font-size: 0.86em; margin: 0.3em 0 0.5em; }
+.lc-ins-dl dt { color: #6b7280; } .lc-ins-dl dd { margin: 0; color: #1f2937; }
+.lc-ins-h { font-size: 0.8em; color: #6b7280; margin: 0.6em 0 0.15em; font-weight: 600; text-transform: none; }
+.lc-ins-p { margin: 0; font-size: 0.92em; line-height: 1.45; white-space: pre-wrap; }
 .lc-ins-loading { color: #94a3b8; font-size: 0.9em; padding: 8px 0; }
 /* the console under the cards — the editor's own, so a verb that prints
    shows it, prompt and all (Michel, 2026-10-12: "I see nothing when I
@@ -5194,7 +5198,12 @@ _inject_store()
         if (follow) {
           host.innerHTML = "<div class='lc-ins-loading'>👉 click a row to open its object</div>";
           if (window.lcMasterDetail) window.lcMasterDetail.subscribe(follow, function (row) {
-            if (!row || !row.obj) return;
+            if (!row) return;
+            /* A DATASET ROW HAS NO OBJECT: it opens as a read card — every field,
+               the long ones as paragraphs (Michel, 2026-11-10: "which narration?
+               which inspector???" — the desk's module rows are a plain dataset
+               since the 9th and the inspector stayed on its hint). */
+            if (!row.obj) { host.innerHTML = rowCard(row); return; }
             pySend("_lc_inspect_bind_names(" + JSON.stringify(elid) + "," + JSON.stringify(String(row.obj)) + ")");
           });
         }
@@ -5209,6 +5218,17 @@ _inject_store()
       host.innerHTML = "<div class='lc-ins-err'>⚠️ Python runtime failed to load</div>";
       console.error("[lc-inspector]", e);
     });
+  }
+
+  /* a plain row as a read card: short values in a two-column list, long texts
+     (a story, a narration) as paragraphs under their name, in the row's order */
+  function rowCard(row) {
+    var keys = Object.keys(row).filter(function (k) { return k[0] !== "_" && row[k] !== undefined && row[k] !== null && String(row[k]) !== ""; });
+    var short = keys.filter(function (k) { return String(row[k]).length <= 60; }), long = keys.filter(function (k) { return String(row[k]).length > 60; });
+    var html = "<div class='lc-ins-row' data-row-card='1'>";
+    if (short.length) html += "<dl class='lc-ins-dl'>" + short.map(function (k) { return "<dt>" + esc(k) + "</dt><dd>" + esc(String(row[k])) + "</dd>"; }).join("") + "</dl>";
+    long.forEach(function (k) { html += "<h4 class='lc-ins-h'>" + esc(k) + "</h4><p class='lc-ins-p' data-field='" + esc(k) + "'>" + esc(String(row[k])) + "</p>"; });
+    return html + "</div>";
   }
 
   /* ── the MODEL block: the page's classes as a first-class structural
