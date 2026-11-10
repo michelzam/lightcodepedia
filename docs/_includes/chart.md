@@ -33,7 +33,12 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     dips="col"    the valley before the point: when the row's value is above zero
                   the line first dives to minus that value (a red ✗), then climbs
                   to the point — the customer journey map's negative experiences
-    hints="y: … | bars: … | x: … | top: … | bottom: … | dips: …"
+    trail="col"   the row's runs in time order, a string of ✗ and ✓: beads across
+                  the column — ✗ below the axis (deeper with each red in a row), ✓
+                  above — the line threading them to the point; replaces dips for
+                  the rows that carry one
+    title="… [col] …"   a title may hold [col] placeholders, filled from the first row drawn
+    hints="y: … | bars: … | x: … | top: … | bottom: … | dips: … | trail: …"
                   what a hover says about each part of the chart — the grid's
                   hints= word and syntax, so an axis explains itself in the page's words
   and several measures (2026-10-25, the desk's attempts):
@@ -222,7 +227,8 @@ Auto-included by docs/_layouts/default.html.
     var knobs = { series: el.getAttribute("series") || "", bars: el.getAttribute("bars") || "",
                   marks: el.getAttribute("marks") || "", hover: el.getAttribute("hover") || "", labels: el.getAttribute("labels") || "",
                   top: el.getAttribute("top") || "", bottom: el.getAttribute("bottom") || "", color: el.getAttribute("color") || "",
-                  dips: el.getAttribute("dips") || "", hints: parseHints(el.getAttribute("hints") || ""), focus: null };
+                  dips: el.getAttribute("dips") || "", trail: el.getAttribute("trail") || "",
+                  hints: parseHints(el.getAttribute("hints") || ""), focus: null };
     var masterRow = null;
     var wrap = document.createElement("div");
     wrap.className = "lc-chart";
@@ -237,11 +243,18 @@ Auto-included by docs/_layouts/default.html.
     /* the TITLE belongs to the frame, not to the data: an author who wrote
        one is telling the reader what should appear here, and that promise is
        most useful precisely when nothing has appeared yet */
-    function paintTitle() {
+    /* [col] in a title is filled from the first row drawn — the module's name
+       over its map (Michel, 2026-11-10: "add the module name as a title for the
+       chart, so you can have labels for my snapshots"). Square brackets, not
+       braces: kramdown closes an attribute list at the first "}" */
+    function paintTitle(rows) {
       if (!title) return;
+      var first = rows && rows.length ? rows[0] : null;
+      var text = title.replace(/\[(\w+)\]/g, function (m, k) { return first && first[k] != null ? String(first[k]) : ""; })
+        .replace(/\s*[·—–-]\s*(?=[·—–-]|$)/g, "").trim();
       var h = document.createElement("div");
       h.className = "lc-chart-title";
-      h.textContent = title;
+      h.textContent = text;
       wrap.appendChild(h);
     }
     function note(text) {
@@ -279,7 +292,7 @@ Auto-included by docs/_layouts/default.html.
       }
       if (!rows.length) { if (data && data.length === 0 && !painted) return; note(emptyMsg || "Nothing to draw yet."); return; }
       painted = true;
-      paintTitle();
+      paintTitle(rows);
       if (type === "line" || yCol.indexOf(",") >= 0) renderLine(wrap, rows, xCol, yCol, knobs);
       else                 renderBar(wrap, rows, xCol, yCol);
     }
@@ -422,10 +435,26 @@ Auto-included by docs/_layouts/default.html.
     if (o.top) pT += o.labels ? 30 : 18;
     /* the bottom band is chips, one per line: a cell's " · " items each get a
        line, so three tools are three chips, all legible (Michel, 2026-11-09) */
-    var chipLines = 0;
+    /* chips flow: as many on a line as the column holds, the rest wrap
+       (Michel, 2026-11-10: "if there is enough room, tags can stay on the same
+       line"); an underscore in a tag reads as a space */
+    var chipText = function (it) { return String(it).replace(/_/g, " "); };
+    var chipW = function (it) { return chipText(it).length * 5.4 + 10; };
+    function chipRows(items, colW) {
+      var lines = [], cur = [], w = 0;
+      items.forEach(function (it) {
+        var cw = chipW(it);
+        if (cur.length && w + 4 + cw > colW) { lines.push(cur); cur = []; w = 0; }
+        cur.push(it); w += (w ? 4 : 0) + cw;
+      });
+      if (cur.length) lines.push(cur);
+      return lines.slice(0, 4);
+    }
+    var chipLines = 0, colW0 = 0;
     if (o.bottom) {
-      data.forEach(function (d) { var n = String(d[o.bottom] || "").split(" · ").filter(Boolean).length; if (n > chipLines) chipLines = n; });
-      chipLines = Math.min(chipLines, 4);
+      var nx = {}; data.forEach(function (d) { nx[String(d[xCol])] = 1; });
+      colW0 = Math.max(40, (W - pL - pR) / Math.max(Object.keys(nx).length, 1) * 0.95);
+      data.forEach(function (d) { var n = chipRows(String(d[o.bottom] || "").split(" · ").filter(Boolean), colW0).length; if (n > chipLines) chipLines = n; });
       pB += chipLines * 15 + 4;
       H += Math.max(0, chipLines - 1) * 15;
     }
@@ -445,14 +474,25 @@ Auto-included by docs/_layouts/default.html.
     data.forEach(function (d) { ys.forEach(function (c) { vals.push(+d[c] || 0); }); });
     var maxV = Math.max.apply(null, vals), minV = Math.min.apply(null, vals);
     if (o.bars || o.series || multi) minV = Math.min(0, minV);
-    if (o.dips) {
-      var deepest = Math.max.apply(null, data.map(function (d) { return +d[o.dips] || 0; }).concat([0]));
+    /* trail="col": a row's runs as beads — ✗ below, each red in a row one deeper,
+       ✓ above at the row's own height (Michel, 2026-11-10, "go trail": three reds
+       alternating with three greens read as a sawtooth, not as one dip) */
+    var beadsOf = function (d) { return o.trail && d[o.trail] ? String(d[o.trail]).replace(/[^✗✓]/g, "").split("") : []; };
+    var trailMax = 0;
+    if (o.dips || o.trail) {
+      var deepest = Math.max.apply(null, data.map(function (d) {
+        var beads = beadsOf(d), run = 0, deep = 0;
+        beads.forEach(function (b) { if (b === "✗") { run++; if (run > deep) deep = run; } else run = 0; });
+        if (beads.length > trailMax) trailMax = beads.length;
+        return beads.length ? deep : (o.dips ? (+d[o.dips] || 0) : 0);
+      }).concat([0]));
       minV = Math.min(minV, -deepest, 0); maxV = Math.max(maxV, 0);
     }
     if (maxV === minV) { maxV += 1; if (!o.bars && !o.series && !multi) minV -= 1; }
     /* bars need room at both ends, or the first and last sit on the axes */
     var inset = o.bars ? 14 : 0;
     if (o.dips) inset = Math.max(inset, 24);      /* the first valley needs room left of its point */
+    if (o.trail && trailMax > 1) inset = Math.max(inset, Math.min(90, 12 * Math.min(trailMax - 1, 7) + 8));
     var range = maxV - minV, step = (cW - 2 * inset) / Math.max(xs.length - 1, 1);
     var s = chartSVG(el, W, H), svg = s.svg, NS = s.NS;
     function X(d) { return pL + inset + xi[String(d[xCol])] * step; }
@@ -505,9 +545,21 @@ Auto-included by docs/_layouts/default.html.
         /* dips="col": the valley before the summit — the line dives to minus the
            row's dips value just before its point, then climbs (Michel, 2026-11-09:
            "catch the green/red story … so we can see how the red was productive") */
-        var dipOf = function (d) { var v = o.dips ? (+d[o.dips] || 0) : 0; return v > 0 && (+d[yc] || 0) >= 0 ? v : 0; };
+        var dipOf = function (d) { if (beadsOf(d).length) return 0; var v = o.dips ? (+d[o.dips] || 0) : 0; return v > 0 && (+d[yc] || 0) >= 0 ? v : 0; };
+        /* the beads before a point: every run but the last, the last being the point itself */
+        var beadPts = function (d) {
+          var beads = beadsOf(d), out = [], run = 0, n = beads.length;
+          if (n < 2) return out;
+          var bw = Math.min(12, (step * 0.75) / (n - 1)), top = +d[yc] || 1;
+          beads.forEach(function (b, i) {
+            if (b === "✗") run++; else run = 0;
+            if (i < n - 1) out.push({ x: X(d) - (n - 1 - i) * bw, y: Y(b === "✗" ? -run : (top > 0 ? top : 1)), red: b === "✗", i: i + 1, n: n });
+          });
+          return out;
+        };
         var pts = [];
         rows.forEach(function (d) {
+          beadPts(d).forEach(function (b) { pts.push(b.x + "," + b.y); });
           var dv = dipOf(d);
           if (dv) pts.push((X(d) - Math.min(step, 60) * 0.3) + "," + Y(-dv));
           pts.push(X(d) + "," + Y(+d[yc] || 0));
@@ -524,6 +576,10 @@ Auto-included by docs/_layouts/default.html.
              light green at once, dark green after reds, red still red (Michel,
              2026-11-10: "those diamonds could be green, clear then darker") */
           var tone = o.color && d[o.color] ? String(d[o.color]) : "";
+          beadPts(d).forEach(function (b) {
+            var bd = svgEl(svg, NS, "circle", { cx: b.x, cy: b.y, r: 4, fill: b.red ? "#dc2626" : "#86efac", "data-bead": b.red ? "✗" : "✓", "data-x": String(d[xCol]) });
+            svgEl(bd, NS, "title", {}).textContent = d[xCol] + " — run " + b.i + " of " + b.n + ": " + (b.red ? "✗ red" : "✓ green") + (hints.trail ? "\n" + hints.trail : "");
+          });
           var dv = dipOf(d);
           if (dv) {
             var dx = x - Math.min(step, 60) * 0.3, dy = Y(-dv);
@@ -575,15 +631,19 @@ Auto-included by docs/_layouts/default.html.
         }
         if (o.bottom && d[o.bottom]) {
           /* chips, one per line, in the cell's order; what does not fit says itself on hover */
-          var items = String(d[o.bottom]).split(" · ").filter(Boolean).slice(0, chipLines);
+          var lines = chipRows(String(d[o.bottom]).split(" · ").filter(Boolean), colW0);
           var y0 = pT + cH + 24;
-          items.forEach(function (it, li) {
-            var txt = it.length > perCol ? it.slice(0, perCol - 1) + "…" : it;
-            var cw = Math.min(step || cW, txt.length * 5.4 + 10), cy = y0 + li * 15;
-            svgEl(svg, NS, "rect", { x: cx - cw / 2, y: cy, width: cw, height: 13, rx: 6.5, fill: "#eef2ff", stroke: "#c7d2fe", "stroke-width": 1, "data-chip": it });
-            var b = svgEl(svg, NS, "text", { x: cx, y: cy + 10, "text-anchor": "middle", "font-size": 9, fill: "#3730a3", "data-band": "bottom", "data-x": String(x) });
-            b.textContent = txt;
-            svgEl(b, NS, "title", {}).textContent = it + (hints.bottom ? "\n" + hints.bottom : "");
+          lines.forEach(function (line, li) {
+            var widths = line.map(chipW), total = widths.reduce(function (a, b) { return a + b; }, 0) + 4 * (line.length - 1);
+            var lx = cx - total / 2, cy = y0 + li * 15;
+            line.forEach(function (it, ci) {
+              var cw = widths[ci], txt = chipText(it);
+              svgEl(svg, NS, "rect", { x: lx, y: cy, width: cw, height: 13, rx: 6.5, fill: "#eef2ff", stroke: "#c7d2fe", "stroke-width": 1, "data-chip": txt });
+              var b = svgEl(svg, NS, "text", { x: lx + cw / 2, y: cy + 10, "text-anchor": "middle", "font-size": 9, fill: "#3730a3", "data-band": "bottom", "data-x": String(x) });
+              b.textContent = txt;
+              svgEl(b, NS, "title", {}).textContent = txt + (hints.bottom ? "\n" + hints.bottom : "");
+              lx += cw + 4;
+            });
           });
         }
       });

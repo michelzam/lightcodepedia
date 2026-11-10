@@ -59,7 +59,8 @@ Feature: Component gallery behaviors
 
     When I navigate to "/components/chart"
     And I wait for the page to be interactive
-    Then the chart "car_journey_chart" draws a dip of 2 before "2 finance"
+    Then the chart "car_journey_chart" draws the beads "✗ ✓ ✗" before "2 finance"
+    And the chart "car_journey_chart" is titled "🚗 🔍 Researching and after"
     And the chart "car_journey_chart" shows the chips "dealer, bank, phone" under "2 finance"
     And the chart "car_journey_chart" explains its "y" axis with "above the line it went well"
     And the chart "car_journey_chart" explains its "bars" axis with "minutes spent"

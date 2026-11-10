@@ -1209,3 +1209,17 @@ def step_chart_axis_hint(context, cid, axis, words):
     chart = context.page.locator('[data-lc-id="%s"]' % cid)
     titles = chart.evaluate("el => Array.from(el.querySelectorAll(\"svg [data-axis='%s'] title\")).map(t => t.textContent)" % axis)
     assert any(words in t for t in titles), "the %s axis explains nothing of %r: %r" % (axis, words, titles)
+
+
+@then('the chart "{cid}" draws the beads "{beads}" before "{x}"')
+def step_chart_beads(context, cid, beads, x):
+    chart = context.page.locator('[data-lc-id="%s"]' % cid)
+    expect(chart.locator("svg circle[data-bead]").first).to_be_visible(timeout=20_000)
+    got = chart.evaluate("el => Array.from(el.querySelectorAll('svg circle[data-bead]')).filter(c => c.getAttribute('data-x') === %r).map(c => c.getAttribute('data-bead'))" % x)
+    assert got == beads.split(" "), "beads before %r: %r" % (x, got)
+
+
+@then('the chart "{cid}" is titled "{text}"')
+def step_chart_titled(context, cid, text):
+    chart = context.page.locator('[data-lc-id="%s"]' % cid)
+    expect(chart.locator(".lc-chart-title").first).to_have_text(text, timeout=20_000)
