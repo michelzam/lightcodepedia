@@ -95,6 +95,11 @@ Learn and earn credits.
 - 💬 The submission stands out for its creativity, global scope, and relevance.
 - 💬 Very relevant and timely submission.
 - 💬 Fascinating work, would love to see it.
+- 💬 A clear idea with a good hook.
+- 💬 Using executable specifications as shared evidence between student and agent is a nice way to keep AI help accountable.
+- 💬 This is a compelling lightning-talk proposal with a memorable central idea and a clear classroom workflow.
+- 💬 This is a very cool idea
+- 💬 I think a lot of SIGCSE attendees would be interested in learning more about.
 {: .carousel delay="8000" }
 
 _— Anonymous peer feedback, ACM SIGCSE TS 2026_

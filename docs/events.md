@@ -71,12 +71,13 @@ Anonymous peer feedback from educators and evaluation committees — ACM SIGCSE 
 
 💬 _Fascinating work, would love to see it._
 
-💬 _A clear idea with a good hook, and the demo should be easy to follow_
+💬 _A clear idea with a good hook_
 
 💬 _Using executable specifications as shared evidence between student and agent is a nice way to keep AI help accountable_
 
 💬 _This is a compelling lightning-talk proposal with a memorable central idea and a clear classroom workflow._
 
-💬 _This is a very cool idea that I think a lot of SIGCSE attendees would be interested in learning more about._
+💬 _This is a very cool idea_
 
+💬 _I think a lot of SIGCSE attendees would be interested in learning more about._
 
