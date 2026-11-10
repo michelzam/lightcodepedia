@@ -1539,7 +1539,7 @@ Auto-included by docs/_layouts/default.html.
       var long = meta.ms > shortMs();
       var kind = long ? "Video" : "Short";
       var note = meta.note || (long ? "Longer than a Short (" + fmt(meta.ms) + ") — it uploads as a regular unlisted video, not a Short." : "");
-      if (meta.audio === false) note = (note ? note + " " : "") + "No tab audio in the share — the clip is silent. Next time tick “Share tab audio” in Chrome's picker and share the tab itself.";
+      if (meta.audio === false) note = (note ? note + " " : "") + "No tab audio in the share — the clip is silent. Next time tick “Share tab audio” in Chrome's picker and share the tab itself. The guide's browser voice never reaches a tab's audio either: for his voice in a clip, give him a studio voice (🎙️ on the guide — your ElevenLabs key and voice on this device).";
       var ov = document.createElement("div");
       ov.className = "lc-rec-ov lc-short-ov";
       var mb = (blob.size / 1048576).toFixed(1);

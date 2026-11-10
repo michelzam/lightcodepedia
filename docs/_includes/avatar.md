@@ -414,10 +414,22 @@ Auto-included by docs/_layouts/default.html.
     return cand[0];
   }
 
+  /* THE VOICE READS WORDS, NOT PICTURES (Michel, 2026-11-10: "Doc should not read
+     the audio transcription of the emojis"): a page's title keeps its emoji in
+     the bubble, the voice gets the words — emoji, the map's glyphs (◆ ◇ ✗ ✓ ?)
+     and the empty space they leave are taken out before any synth hears them */
+  function sayable(text) {
+    return String(text || "")
+      .replace(/(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})(?:\uFE0F|\u200D(?:\p{Extended_Pictographic}|\p{Emoji_Presentation})|[\u{1F3FB}-\u{1F3FF}])*/gu, " ")
+      .replace(/[◆◇✗✓●○▶⏹⋯—]/g, function (g) { return g === "—" ? "," : " "; })
+      .replace(/\s*\?\s(?=[a-z])/g, " ")   /* a bare ? bead in a trail, not a question mark ending a sentence */
+      .replace(/ {2,}/g, " ").replace(/\s+([,.;:])/g, "$1").trim();
+  }
+  window.lcSayable = sayable;
   function speak(text, voiceTag, tune, onBoundary, onEnd) {
     if (!window.speechSynthesis) { onEnd && onEnd(); return; }
     window.speechSynthesis.cancel();
-    var utt = new SpeechSynthesisUtterance(text);
+    var utt = new SpeechSynthesisUtterance(sayable(text));
     utt.rate  = (tune && tune.rate)  || 0.95;
     utt.pitch = (tune && tune.pitch) || 1.05;
     /* also set the utterance language: if the voices list hasn't populated yet
@@ -1493,6 +1505,21 @@ Auto-included by docs/_layouts/default.html.
     updateTriggers(id);
   }
 
+  /* a line's studio voice made now, kept for the session (voice|model|text → blob url) */
+  var _adhoc = {};
+  function adhocVoice(key, voice, model, text) {
+    text = sayable(text);
+    var k = voice + "|" + model + "|" + text;
+    if (_adhoc[k]) return _adhoc[k];
+    _adhoc[k] = fetch("https://api.elevenlabs.io/v1/text-to-speech/" + encodeURIComponent(voice) + "?output_format=mp3_44100_128", {
+      method: "POST", headers: { "xi-api-key": key, "Content-Type": "application/json" },
+      body: JSON.stringify({ text: text, model_id: model })
+    }).then(function (r) { if (!r.ok) throw new Error("11labs " + r.status); return r.blob(); })
+      .then(function (b) { return URL.createObjectURL(b); })
+      .catch(function () { delete _adhoc[k]; return ""; });
+    return _adhoc[k];
+  }
+
   function nextLine(id) {
     var av = window._lcAvatars[id];
     if (!av || !av.playing) return;
@@ -1521,9 +1548,21 @@ Auto-included by docs/_layouts/default.html.
         var specs = arr.map(lineSpec);
         if (!specs.length) specs = [lineSpec({ say: line.say || "Nothing to walk yet." })];
         specs.forEach(function (sp) { sp._expanded = true; });
-        av.script = av.script.slice(0, i0).concat(specs, av.script.slice(i0 + 1));
-        av.idx = i0;
-        nextLine(id);
+        /* A VOICE THE TAB CAN HEAR (Michel, 2026-11-10, the short's clip silent): the
+           browser's own voice never reaches a tab's audio, so a page-made line is
+           voiced on the spot with the device's studio voice — the author's own
+           ElevenLabs key and voice (doctrine 4) — and plays as audio the recorder
+           captures; no key, the browser speaks as before. Nothing is committed. */
+        var key = "", voice = av.genVoice || "";
+        try { key = localStorage.getItem("lc_11_key") || ""; voice = voice || localStorage.getItem("lc_11_voice") || ""; } catch (e) {}
+        var voiced = (key && voice)
+          ? Promise.all(specs.map(function (sp) { return sp.say ? adhocVoice(key, voice, av.genModel || "eleven_multilingual_v2", sp.say).then(function (u) { if (u) sp.audio = u; }) : null; }))
+          : Promise.resolve();
+        voiced.then(function () {
+          av.script = av.script.slice(0, i0).concat(specs, av.script.slice(i0 + 1));
+          av.idx = i0;
+          nextLine(id);
+        });
       });
       return;
     }
