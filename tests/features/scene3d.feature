@@ -27,6 +27,14 @@ Feature: Scene3D — Lucky & Wanda 3D playground
     Then the scene console logs ">>> lucky.bark()"
     And the scene console logs "Woof! Woof!"
 
+  Scenario: The console keeps the whole session and scrolls
+    Michel, 2026-11-11: "I need to be able to scroll the content of the console, otherwise I lose
+    the beginning after a while" — the console kept six lines.
+    When I navigate to "/components/examples/lucky3d"
+    And I wait for the page to be interactive
+    And I call the scene methods 12 times, noting the first
+    Then the scene console still holds its first line, and scrolls
+
   Scenario: Editing an attribute logs the assignment
     When I navigate to "/components/examples/lucky3d"
     And I wait for the page to be interactive

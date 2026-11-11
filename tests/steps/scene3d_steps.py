@@ -64,3 +64,21 @@ def step_wanda_not_adopted(context):
 @then('the scene console never mentions "{snippet}"')
 def step_console_never(context, snippet):
     expect(context.page.locator(SEL_CONSOLE).first).not_to_contain_text(snippet)
+
+
+@then("the scene console still holds its first line, and scrolls")
+def step_console_keeps_all(context):
+    box = context.page.locator(SEL_CONSOLE).first
+    expect(box.locator("div").first).to_contain_text(context.lc_first_console_line)
+    assert box.evaluate("e => getComputedStyle(e).overflowY") == "auto", "the console does not scroll"
+
+
+@when("I call the scene methods {times:d} times, noting the first")
+def step_many_calls(context, times):
+    btn = context.page.locator(SEL_METHOD_BTN, has_text="run()").first
+    btn.wait_for(state="visible", timeout=SCENE_TIMEOUT)
+    btn.click()
+    context.lc_first_console_line = ">>> lucky.run()"
+    for _ in range(times - 1):
+        context.page.locator(SEL_METHOD_BTN, has_text="wag_tail()").first.click()
+    context.page.wait_for_timeout(300)

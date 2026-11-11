@@ -45,7 +45,7 @@ Auto-included by docs/_layouts/default.html.
 .lc-s3d-methods button:hover { background: #0052a3; }
 .lc-s3d-console { margin-top: 14px; background: #0f172a; color: #a5f3fc;
   border-radius: 8px; padding: 10px 14px; font-family: monospace;
-  font-size: 0.82em; min-height: 86px; }
+  font-size: 0.82em; min-height: 86px; max-height: 200px; overflow-y: auto; }
 .lc-s3d-console div { opacity: 0.55; }
 .lc-s3d-console div:last-child { opacity: 1; }
 .lc-s3d-console .lc-s3d-out { color: #e2e8f0; }
@@ -228,7 +228,7 @@ Auto-included by docs/_layouts/default.html.
         }
         consoleLine(">>> " + code.trim());
         if (out) consoleLine(out, "lc-s3d-out");
-        while (consoleEl.children.length > 6) consoleEl.removeChild(consoleEl.firstChild);
+        consoleEl.scrollTop = consoleEl.scrollHeight;   /* keeps the whole session; follows the latest */
       }
       if (trailBody) {
         var t = document.createElement("div");
