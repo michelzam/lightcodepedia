@@ -48,6 +48,7 @@ Auto-included by docs/_layouts/default.html.
   font-size: 0.82em; min-height: 86px; }
 .lc-s3d-console div { opacity: 0.55; }
 .lc-s3d-console div:last-child { opacity: 1; }
+.lc-s3d-console .lc-s3d-out { color: #e2e8f0; }
 
 /* ── quest mode (goal="adopt_wanda") ─────────────────── */
 .lc-s3d-goal { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 10px;
@@ -206,11 +207,29 @@ Auto-included by docs/_layouts/default.html.
       wrap.appendChild(trailEl);
     }
 
-    function log(line) {
+    /* the console reads like the inspector's: ">>> the call", then what it
+       answers — never the comments (a quest's comments name the transitions
+       the learner is there to find; the trail keeps them). quiet = a
+       consequence, not a click: trail only. (Michel, 2026-11-11) */
+    function consoleLine(text, cls) {
+      if (hint.parentNode) hint.parentNode.removeChild(hint);   /* the placeholder leaves at the first call */
       var d = document.createElement("div");
-      d.textContent = line;
+      d.textContent = text;
+      if (cls) d.className = cls;
       consoleEl.appendChild(d);
-      while (consoleEl.children.length > 6) consoleEl.removeChild(consoleEl.firstChild);
+    }
+    function log(line, quiet) {
+      if (!quiet && line.charAt(0) !== "#") {
+        var code = line.replace(/\s+#.*$/, "");
+        var out = null, arrow = code.indexOf("→");
+        if (arrow >= 0) {
+          out = code.slice(arrow + 1).trim().replace(/^"(.*)"$/, "$1");
+          code = code.slice(0, arrow);
+        }
+        consoleLine(">>> " + code.trim());
+        if (out) consoleLine(out, "lc-s3d-out");
+        while (consoleEl.children.length > 6) consoleEl.removeChild(consoleEl.firstChild);
+      }
       if (trailBody) {
         var t = document.createElement("div");
         t.textContent = line;
@@ -389,8 +408,8 @@ Auto-included by docs/_layouts/default.html.
           log('lucky.bark()  → "Woof!"');
           if (sm.lucky === "fed" && sm.wanda === "ready") {
             sm.wanda = "adopted";
-            log("# 📣 only Lucky can reach Wanda — his bark calls her home");
-            log("wanda.adopted = True   # 🏰 adopted!");
+            log("# 📣 only Lucky can reach Wanda — his bark calls her home", true);
+            log("wanda.adopted = True   # 🏰 adopted!", true);
             W.adopted = true; W3.castle.visible = true;
             if (wPanel.setAdopted) wPanel.setAdopted(true);
             showWin();

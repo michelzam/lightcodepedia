@@ -42,3 +42,25 @@ def step_console_logs(context, snippet):
     expect(context.page.locator(SEL_CONSOLE).first).to_contain_text(
         snippet, timeout=5_000
     )
+
+
+@then('the scene\'s "{name}" button is grey')
+def step_method_grey(context, name):
+    btn = context.page.locator(SEL_METHOD_BTN, has_text=name + "()").first
+    btn.wait_for(state="visible", timeout=SCENE_TIMEOUT)
+    expect(btn).to_be_disabled()
+
+
+@then("the scene says Wanda is adopted")
+def step_wanda_adopted(context):
+    expect(context.page.locator(".lc-s3d-win").first).to_be_visible(timeout=5_000)
+
+
+@then("the scene says Wanda is not adopted yet")
+def step_wanda_not_adopted(context):
+    expect(context.page.locator(".lc-s3d-win").first).to_be_hidden()
+
+
+@then('the scene console never mentions "{snippet}"')
+def step_console_never(context, snippet):
+    expect(context.page.locator(SEL_CONSOLE).first).not_to_contain_text(snippet)

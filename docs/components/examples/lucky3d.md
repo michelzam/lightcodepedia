@@ -28,6 +28,8 @@ wanda:
 | Clicked `run()` | the animation speed comes from `top_speed_kmh` — methods read attributes |
 | Ticked adopted | a **boolean** attribute with a visible consequence (collar / castle) |
 
+The console under the cards is read-only and reads like Python's prompt: each click shows as the call it stands for, `>>> lucky.bark()`, then what the call answers, `Woof! Woof!`. A quest (`goal="adopt_wanda"`) hides it unless `console="true"`, and it never names a state change: finding those is the learner's job. The KARMA trail (`trail="true"`) keeps the annotated record.
+
 The YAML forms in [Tutorial 101](/tutorial101) and these 3D bodies are **the same objects** — one shows the state as text, the other as behavior. Alt-hover any component on this site (or use 📽️ → X-ray on mobile) to see this structure everywhere.
 
 ## 🎙️ Narrated tour {#narrated_tour}

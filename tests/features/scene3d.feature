@@ -24,7 +24,8 @@ Feature: Scene3D — Lucky & Wanda 3D playground
     When I navigate to "/components/examples/lucky3d"
     And I wait for the page to be interactive
     And I call the "bark" method on the scene
-    Then the scene console logs "lucky.bark()"
+    Then the scene console logs ">>> lucky.bark()"
+    And the scene console logs "Woof! Woof!"
 
   Scenario: Editing an attribute logs the assignment
     When I navigate to "/components/examples/lucky3d"
