@@ -165,3 +165,44 @@ Feature: The authored guide owns its page — the generic one yields
     And I record the guide's voices
     Then the recordings filed under "courses-demo-mod-02_two" are of "The second page speaks."
     And no recording is of "The first page speaks."
+
+  Scenario: A guide with another name takes over the seed after a hop — its tour, its voices
+    Michel, 2026-11-12, Build-AI Module 08: the module's front page docks #tour, each lesson
+    docks #guide. Opened on the front page, the seed stayed #tour on pages 2–4: "ask Doc for a
+    tour is a different script and not my voice", and 🎙️ Voices filed #tour's four lines under
+    each lesson while every lesson's own guide stayed robotic.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And every line's audio is already in the repo
+    And the voice manifest is watched
+    And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # The module
+
+      ```yaml
+      script:
+        - say: "The module tour speaks."
+      ```
+      {: .avatar #tour dock="true" }
+
+      [Start](02_two.md)
+      """
+    And the GitHub contents API serves "courses/demo/mod/02_two.md" with the document:
+      """
+      # Two
+
+      ```yaml
+      script:
+        - say: "The lesson guide speaks."
+      ```
+      {: .avatar #guide dock="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/index.md"
+    And I wait for the page to be interactive
+    And I walk to the next lesson through "Start"
+    And I record the guide's voices
+    Then the recordings filed under "courses-demo-mod-02_two" are of "The lesson guide speaks."
+    And no recording is of "The module tour speaks."

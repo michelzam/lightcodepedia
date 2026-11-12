@@ -1068,6 +1068,7 @@ Auto-included by docs/_layouts/default.html.
         genVoice: genVoice, genModel: genModel,
         botName: (cfg.bot ? String(cfg.bot) : ""),
         stories: storiesCfg,
+        src: el,   /* the page's own fence: gone from the document = gone from the page */
         /* steps: — what Doc types into a pad and the film it makes, one list
            for both scripts (type with: n, save with: n, replay) */
         steps: Array.isArray(cfg.steps) ? cfg.steps : []
@@ -2344,7 +2345,25 @@ Auto-included by docs/_layouts/default.html.
          undocked: a stale char that ignores clicks, and a menu without the
          page's kept stories (Canvas vault render, 2026-07-30). The authored
          page owns its guide — evict the generic, then build normally. */
-      if (existing.dataset.lcGeneric && elId !== 'site_guide') {
+      /* THE GUIDE OF A PAGE THAT LEFT (Michel, 2026-11-12: "ask Doc for a
+         tour is a different script and not my voice, but the doc bottom
+         right…"). The seed lives on <body> and outlives an in-frame hop:
+         opened on the module's front page, it stayed #tour on pages 2–4, and
+         its 🎙️ Voices recorded #tour's four lines under each of their slugs,
+         while every page's own #guide went unvoiced. A seed whose avatar's
+         fence has left the document gives way to this page's guide. */
+      var ownerId = existing.dataset.lcFor || '';
+      var owner = ownerId && window._lcAvatars && window._lcAvatars[ownerId];
+      var ownerGone = ownerId && ownerId !== elId && owner && owner.src && !document.contains(owner.src);
+      if (ownerGone) {
+        existing.remove();
+        var om0 = document.querySelector('.lc-guide-menu'); if (om0) om0.remove();
+        if (!owner.playing) {
+          if (owner._idleT) clearInterval(owner._idleT);
+          if (owner.host) owner.host.remove();
+          delete window._lcAvatars[ownerId];
+        }
+      } else if (existing.dataset.lcGeneric && elId !== 'site_guide') {
         existing.remove();
         var om = document.querySelector('.lc-guide-menu'); if (om) om.remove();
         var g = window._lcAvatars && window._lcAvatars.site_guide;
@@ -2363,6 +2382,7 @@ Auto-included by docs/_layouts/default.html.
     av.host.classList.add('lc-avatar-docked');   /* idle big face hides; the seed represents */
     var seed = document.createElement('button');
     seed.id = 'guide_seed'; seed.type = 'button';
+    seed.dataset.lcFor = elId;   /* whose guide this is — a hop to another page hands it over */
     seed.className = 'lc-guide-seed';
     seed.setAttribute('aria-label', 'Guide — tour and help');
     seed.setAttribute('aria-haspopup', 'menu');
