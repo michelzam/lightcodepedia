@@ -1162,22 +1162,41 @@
   }
  },
  "courses-micro_build_ai-module_08-02_zim_and_pitch": {
-  "tour": {
-   "2d0d2f03c4de9b66": "lc-fc05e011ca920289.mp3",
-   "b920445eb299cf34": "lc-e8d5c64973b90f0c.mp3",
-   "dff11f0b5a6ef43d": "lc-302bc0246a3f78fc.mp3",
-   "6406bb0e133181f6": "lc-cb5d498ce64ff415.mp3"
+  "guide": {
+   "377b21fd9bee2e51": "lc-3a55e0b0bcd54254.mp3",
+   "b8402c32c74d43a0": "lc-727dd50a01b7b397.mp3",
+   "f5fadd6f7fb9abef": "lc-39682306e962a7cc.mp3",
+   "15a2337e3dcc2d32": "lc-f00c4a990d6fcf97.mp3",
+   "af98d81d30995aec": "lc-23618a849660dfd0.mp3"
   }
  },
  "courses-micro_build_ai-module_08-03_map": {
-  "tour": {
-   "2d0d2f03c4de9b66": "lc-fc05e011ca920289.mp3",
-   "b920445eb299cf34": "lc-e8d5c64973b90f0c.mp3",
-   "dff11f0b5a6ef43d": "lc-302bc0246a3f78fc.mp3",
-   "6406bb0e133181f6": "lc-cb5d498ce64ff415.mp3"
+  "guide": {
+   "296e4a0c691dcf8e": "lc-455632f845688927.mp3",
+   "df494688aa1f2569": "lc-f8d5a3cd9339c2b1.mp3",
+   "b93fbb5cb7bc5e08": "lc-4af4fa96b6775f30.mp3",
+   "843f458f5a39244a": "lc-197b6ca2ca667c17.mp3",
+   "8e0d0f63df4bda1b": "lc-bad2322740a9979b.mp3",
+   "b79801dce919cf4d": "lc-7a89f37d86ec986c.mp3"
   }
  },
  "courses-micro_build_ai-module_08-04_brief": {
+  "guide": {
+   "f3b7503bdec38998": "lc-a7afeda1061bd595.mp3",
+   "cca877c4ee58f883": "lc-1f4fee7181a8232e.mp3",
+   "95ad0a71b530f0fb": "lc-1efcd92da2b46b10.mp3",
+   "928a7ba9f74ce829": "lc-72891b23b617312a.mp3",
+   "63b2e4b95921cfd0": "lc-c0c9ff2fefb4943f.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_08-01_choice": {
+  "guide": {
+   "db7b9650b0803ea9": "lc-e1f070f1f73d7dfc.mp3",
+   "14541f140218af31": "lc-6f134f3edbb127a8.mp3",
+   "5f22e9933bcaed3e": "lc-9d2b8087cacc2351.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_08-index": {
   "tour": {
    "2d0d2f03c4de9b66": "lc-fc05e011ca920289.mp3",
    "b920445eb299cf34": "lc-e8d5c64973b90f0c.mp3",
