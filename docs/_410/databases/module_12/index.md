@@ -30,7 +30,7 @@ its **engaging query** — a real question someone in that business asks.
 |---|---|---|
 | 1 | 🤝 Freelance Work Platform — SkillBridge | A client reviews the freelancers they hired in the past year |
 | 2 | 🧑‍🏫 Multilingual Course Management | A director looks for the most demanded languages |
-| 3 | 🩺 Mobile Health Tracker — **the worked example, not for you to pick** | A doctor checks medication adherence |
+| 3 | 🩺 Mobile Health Tracker — **the worked example, not for you to pick**{: .red} | A doctor checks medication adherence |
 | 4 | 🚛 Smart Logistics System | A manager looks for the routes with the most delays |
 | 5 | 🖼️ Cultural Events Archive | The board highlights events with multilingual feedback |
 
