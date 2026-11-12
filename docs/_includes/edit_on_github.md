@@ -427,9 +427,16 @@ Auto-included by docs/_layouts/default.html. Skipped for:
       <div id="ed-sidebar">
         <details id="ed-setup">
           <summary>⚙️ Connect</summary>
-          <label>Personal access token
-            <input id="ed-pat" type="password" placeholder="ghp_…" autocomplete="current-password">
-          </label>
+          <!-- its own form, under the course key's keychain name (Join's
+               trick): a password field outside any form is lumped with every
+               form-less field on the page, and Chrome then offered to "save the
+               password" on a 💾 Save of the pitch (Michel, 2026-11-12) -->
+          <form class="ed-pat-form" autocomplete="on" onsubmit="return false">
+            <input type="text" name="username" value="lc-course-key" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager" style="position:absolute;left:-9999px;width:1px">
+            <label>Personal access token
+              <input id="ed-pat" type="password" name="password" placeholder="ghp_…" autocomplete="current-password">
+            </label>
+          </form>
           <label>Repository
             <input id="ed-repo" type="text" placeholder="owner/repo-name" autocomplete="off">
           </label>
