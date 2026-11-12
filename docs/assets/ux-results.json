@@ -1577,7 +1577,7 @@
     "url": "/assets/ux-report.html#scenario_174"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "The sitemap graph builds without the GitHub API",
     "feature": "Component gallery behaviors",
     "tags": "",
