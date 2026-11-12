@@ -433,11 +433,17 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
          it is a confident wrong number. Skip the echo of our OWN edit (same
          array back again) so an edit never resets scroll or selection. */
       if (opts.bindId && window.lcDatasetListeners) {
+        var adoptReady = false;
         var adopt = function (rows) {
           if (!Array.isArray(rows) || rows === data) return;
           data = rows;
           api.setGridOption("rowData", rows);
           recompute();
+          /* ROWS A BUTTON BROUGHT ARE NOT SAVED ROWS (Michel, 2026-11-12: the
+             shipped backlog was empty — 📥 Import and ✍️ Apply had filled the
+             grid, nobody pressed 💾, and the ship found no features.yaml).
+             Anything but the bench's own copy arriving is an unsaved change. */
+          if (adoptReady && opts.save && !wrapper._lcBenchLoading) wrapper.setAttribute("data-lc-dirty", "1");
         };
         window.lcDatasetListeners[opts.bindId] = window.lcDatasetListeners[opts.bindId] || [];
         window.lcDatasetListeners[opts.bindId].push(adopt);
@@ -446,6 +452,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
            saved copy arriving is exactly that case. Adopt whatever is current
            before trusting the stream. */
         if (window.lcDatasets) adopt(window.lcDatasets[opts.bindId]);
+        adoptReady = true;
       }
 
       /* Recompute every ƒ column — the shared formula engine above, then a
@@ -737,6 +744,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
     /* a grid that saves says so, by the name a learner knows it by — a
        proof standing on unsaved rows names it in its verdict */
     if (opts.save) wrapper.setAttribute("data-lc-save", (title || id).split(" — ")[0]);
+    if (opts.save) wrapper.setAttribute("data-lc-save-path", opts.save);   /* the file itself: the ship refuses it unsaved */
     el.parentNode.replaceChild(wrapper, el);
     var dataPromise;
     if (bindId) {
@@ -780,7 +788,8 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
             if (!Array.isArray(rows)) return;
             wrapper.setAttribute("data-lc-mine", "1");
             wrapper._lcBenchSha = f.sha;
-            opts.saveApply(rows);       /* the listener above repaints this grid */
+            wrapper._lcBenchLoading = true;   /* the bench's copy: saved, not dirty */
+            try { opts.saveApply(rows); } finally { wrapper._lcBenchLoading = false; }   /* the listener above repaints this grid */
           });
         }).catch(function () {});
       } else {

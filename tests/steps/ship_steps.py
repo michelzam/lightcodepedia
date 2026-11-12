@@ -309,3 +309,17 @@ def step_ship_embed_tab(context, name):
     inner = context.page.locator(".lc-runner-embed .lc-run[data-lc-ship-bay]").first
     inner.locator(".lc-tab-bar button, .lc-tab-bar [role=tab]", has_text=name).first.click()
     context.page.wait_for_timeout(800)
+
+
+
+@when('I open the shipped app\'s tab "{name}"')
+def step_shipped_app_tab(context, name):
+    """an app opened on its own wears its tabs in its own bar"""
+    context.page.get_by_text(name, exact=False).first.click()
+    context.page.wait_for_timeout(800)
+
+
+@then('the bay never received "{path}"')
+def step_bay_never_received(context, path):
+    assert path not in getattr(context, "bay_puts", {}), "the bay got %s" % path
+

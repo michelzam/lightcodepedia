@@ -158,6 +158,22 @@ Auto-included by docs/_layouts/default.html.
   function shipIt(box, btn, status, ctx, bay, app, files, note) {
     files = files.slice();   /* this ship's own list: the app's embeds join it below */
     note = String(note || "").trim().slice(0, 120);
+    /* SAVE FIRST (Michel, 2026-11-12, "go save-first"): a file of this ship
+       still changed on the page and not 💾 saved would ship as the bench
+       last held it — an empty backlog after 📥 Import and ✍️ Apply. Refuse,
+       and say which one. */
+    var dirty = [];
+    document.querySelectorAll("[data-lc-save][data-lc-dirty='1']").forEach(function (el) {
+      if (el.closest(".lc-run[data-lc-app]")) return;   /* a shipped copy shown on the page is not the learner's draft */
+      var sp = el.getAttribute("data-lc-save-path") || el.getAttribute("data-lc-save") || "";
+      if (files.some(function (f) { return sp === f || sp.slice(-(f.length + 1)) === "/" + f.replace(/^(\.\.\/)+/, ""); })
+          && dirty.indexOf(sp) < 0) dirty.push(sp);
+    });
+    if (dirty.length) {
+      status.textContent = "💾 " + dirty.join(" and ") + (dirty.length > 1 ? " have" : " has") +
+        " changes not saved yet — press 💾 under " + (dirty.length > 1 ? "them" : "it") + " first, then ship. A ship sends what is saved.";
+      return;
+    }
     btn.disabled = true;
     status.textContent = "Shipping…";
     var folder, sha;
