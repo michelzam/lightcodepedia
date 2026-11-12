@@ -20,6 +20,7 @@ Start with the first module, then follow the quest:
 - [🤑 09 · TILT — Transactions, Integrity, Logic, and Trust](module_09/index.md)
 - [🧙 10 · Advanced SQL — Procedures, Cursors, and Triggers](module_10/index.md)
 - [🌉 11 · From SQL Mastery to NoSQL Beginnings](module_11/index.md)
+- [🐘 12 · Your Project, One Bite at a Time](module_12/index.md)
 
 [Browse](#)
 {: .folder }
@@ -45,6 +46,7 @@ stories:
     - Module 09 changes data safely with TILT, on a tiny shop database: a transaction that fails on purpose and rolls back.
     - Module 10 moves logic inside the database: a procedure you call, a trigger that reacts, a cursor that walks row by row.
     - Module 11 plays SQuizL to prove your SQL, then opens NoSQL: documents, graphs, and how to choose with CAP.
+    - Module 12 walks the final project through its worked example, one bite at a time, parents first.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }
