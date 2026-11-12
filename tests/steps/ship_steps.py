@@ -302,3 +302,10 @@ def step_ship_site_link(context, path):
     expect(status).to_contain_text("Shipped", timeout=15_000)
     href = context.page.locator(".lc-ship .lc-ship-status a").first.get_attribute("href") or ""
     assert href.endswith(path) and "#src=gh:" not in href, href
+
+
+@when('I open the ship embed\'s tab "{name}"')
+def step_ship_embed_tab(context, name):
+    inner = context.page.locator(".lc-runner-embed .lc-run[data-lc-ship-bay]").first
+    inner.locator(".lc-tab-bar button, .lc-tab-bar [role=tab]", has_text=name).first.click()
+    context.page.wait_for_timeout(800)

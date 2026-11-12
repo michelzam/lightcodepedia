@@ -1158,6 +1158,24 @@ body.lc-xray-deco .lc-noted::after { content: "👁️‍🗨️"; position: abs
     read: function (path, fromEl) {    /* → {text, sha} | null (no file yet) */
       if (HERE.test(path || "")) return here.read(path);
       var t = this.target(fromEl);
+      /* A SHIPPED COPY READS ITS OWN FILES (Michel, 2026-11-12: "in the app,
+         the persona and the pitch are empty, while in page 2 they are ok and
+         saved in my bench"). It has no bench, so a save= card found nothing
+         and said "nothing saved yet" — though the ship had copied zim.yaml
+         beside app.md. It reads that copy, read-only (sha null: no 💾). */
+      if (t.frozen) {
+        var root = fromEl && fromEl.closest ? fromEl.closest("[data-lc-src]") : null;
+        if (!root || !window.lcLoadRelMd) return Promise.resolve(null);
+        var rel = String(path || "").trim();
+        if (rel.charAt(0) === "/") {   /* bench-absolute = the app folder's root */
+          var sp = root.dataset.lcSrcPath || "";
+          var m = /^((?:.*\/)?[^\/]+_[0-9a-f]{7,40})\//.exec(sp);
+          var depth = m ? sp.slice(m[1].length + 1).split("/").length - 1 : 0;
+          rel = new Array(depth + 1).join("../") + rel.slice(1);
+        }
+        return window.lcLoadRelMd(root, rel)
+          .then(function (text) { return { text: text, sha: null }; }, function () { return null; });
+      }
       path = this.resolve(path, fromEl);
       if (!t.repo || !t.pat) return Promise.resolve(null);
       return fetch("https://api.github.com/repos/" + t.repo + "/contents/" + path,
