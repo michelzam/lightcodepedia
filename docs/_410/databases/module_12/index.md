@@ -202,7 +202,7 @@ The order is your diagram read top-down. For Scenario 3:
 | 2 | UserMedications, Appointments | their parents now exist |
 | 3 | MedicationLogs | its parent, UserMedications, now exists |
 
-Insert a child before its parent, and MySQL refuses with **error 1452**:
+**If** you insert a child before its parents, **then** MySQL refuses with **error 1452**:
 the foreign key points to a row that is not there yet. You met it in
 module 09. Write this order in your report: it is your **data-loading
 workflow**.
@@ -672,7 +672,7 @@ script:
     say: "Step three. The diagram. Parents on top, children below, every line one to many. A many to many goes through a table in the middle."
   - at: build
     do: open
-    say: "Step four. Create, then populate, parents first. A child before its parent, and MySQL says error fourteen fifty two. That order is your data loading workflow."
+    say: "Step four. Create, then populate, parents first. If you insert a child before its parents, then MySQL says error fourteen fifty two. That order is your data loading workflow."
   - at: query
     do: open
     say: "Step five. The engaging query. One join per table the answer names, names in the result, and a screenshot with the query and its results."
