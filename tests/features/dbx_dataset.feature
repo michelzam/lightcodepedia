@@ -4,6 +4,8 @@ Feature: A dataset runs a SQL statement on a Databricks warehouse, with this dev
   data with anyone else". The fence is SQL, dbx= names the warehouse, the
   statement goes through a same-origin proxy that forwards the browser's
   own token and stores nothing. Rows land on the bus like any dataset.
+  With no token on the device the page asks once without one: a host that
+  signs its users in (Entra, 2026-11-15) forwards theirs.
 
   Background:
     Given I have a clean browser page
@@ -34,14 +36,26 @@ Feature: A dataset runs a SQL statement on a Databricks warehouse, with this dev
     And the warehouse was asked with the token "tok-1" for "wh-0123"
     And the number columns arrived as numbers
 
-  Scenario: Without a token, the bar asks for one and the query runs once it is pasted
+  Scenario: Without a token, the host refuses, the bar asks for one and the query runs once it is pasted
     When I navigate to "/run.html#src=gh:acme/demo/apps/arr.md"
     And I wait for the page to be interactive
     Then the bar of "arr" asks for a token
-    And the warehouse was not asked
+    And the warehouse was asked once, without a token
     When I paste the Databricks token "tok-2" in the bar of "arr"
     Then the grid "arr_grid" shows 3 rows
     And the warehouse was asked with the token "tok-2" for "wh-0123"
+
+  Scenario: Behind a host that signs its users in, nobody pastes a token
+    Michel, 2026-11-15, for Georges at Sodexo: the container signs the user
+    in with Entra and forwards the user's own token to Databricks, so the
+    page asks the host first and the bar stays quiet.
+    Given the host behind "/dbx" signs its users in
+    When I navigate to "/run.html#src=gh:acme/demo/apps/arr.md"
+    And I wait for the page to be interactive
+    Then the grid "arr_grid" shows 3 rows
+    And the bar of "arr" reads "3 rows"
+    And the bar of "arr" does not ask for a token
+    And every call left this browser without a token
 
   Scenario: A refused token is said in the bar, not swallowed
     Given a Databricks token "dead" on this device

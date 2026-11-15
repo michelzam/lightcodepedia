@@ -1552,17 +1552,20 @@ Auto-included by docs/_layouts/default.html.
     change.addEventListener("click", function () { ask(input.hidden); });
     save.addEventListener("click", function () { dbxKeep(input.value.trim()); input.value = ""; ask(false); run(); });
     input.addEventListener("keydown", function (e) { if (e.key === "Enter") save.click(); });
-    function headers(tok) { return { Authorization: "Bearer " + tok, "Content-Type": "application/json", Accept: "application/json" }; }
+    function headers(tok) { var h = { "Content-Type": "application/json", Accept: "application/json" }; if (tok) h.Authorization = "Bearer " + tok; return h; }
     function asJson(r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; }); }
     function run() {
+      /* NO TOKEN ON THIS DEVICE: ask the host once without one — a host that
+         signs its users in (Entra at Sodexo, 2026-11-15) forwards their own
+         token; a plain pass-through refuses, and only then the bar asks */
       var tok = dbxToken();
-      if (!tok) { window.lcSetDataset(id, []); say("🔑 paste your Databricks token to run this query", "lc-dbx-err"); ask(true); return; }
       say("⏳ running on warehouse " + wh + "…");
       var H = headers(tok);
       fetch(host + "/api/2.0/sql/statements", { method: "POST", headers: H, cache: "no-store",
         body: JSON.stringify({ warehouse_id: wh, statement: sql, wait_timeout: "30s", disposition: "INLINE", format: "JSON_ARRAY" }) })
         .then(asJson)
         .then(function step(d) {
+          if (!d.ok && !tok && (d.status === 401 || d.status === 403)) { var no = new Error("no token"); no.ask = true; throw no; }
           if (!d.ok) throw new Error(d.status === 401 || d.status === 403 ? "token refused — paste a fresh one" : ("HTTP " + d.status + (d.j && d.j.message ? " — " + d.j.message : "")));
           var st = d.j.status && d.j.status.state;
           if (st === "PENDING" || st === "RUNNING")
@@ -1594,7 +1597,10 @@ Auto-included by docs/_layouts/default.html.
           return more((d.j.result || {}).next_chunk_internal_link);
         })
         .then(function (rows) { window.lcSetDataset(id, rows); say("✓ " + rows.length + " row" + (rows.length === 1 ? "" : "s") + " from warehouse " + wh, "lc-dbx-ok"); })
-        .catch(function (e) { window.lcSetDataset(id, [{ "⚠️": e.message }]); say("⚠️ " + e.message, "lc-dbx-err"); });
+        .catch(function (e) {
+          if (e.ask) { window.lcSetDataset(id, []); say("🔑 paste your Databricks token to run this query", "lc-dbx-err"); ask(true); return; }
+          window.lcSetDataset(id, [{ "⚠️": e.message }]); say("⚠️ " + e.message, "lc-dbx-err");
+        });
     }
     run();
     if (every > 0) setInterval(run, Math.max(10, every) * 1000);

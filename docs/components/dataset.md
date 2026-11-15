@@ -57,6 +57,12 @@ Numeric columns arrive as numbers, results in chunks are followed to the
 end, `refresh="60"` re-runs the statement every minute, and a refused token
 says so in the bar instead of failing silently.
 
+**A host that signs its users in** needs no paste at all. With no token on
+the device, the page asks the host once without one: a host behind the
+company's own sign-in (Lightcode Local in a container, behind Entra ID)
+forwards the user's own token, and the bar stays quiet; a plain pass-through
+refuses, and only then the bar asks.
+
 ## Master/detail — dataset → grid → chart
 
 Give the bound grid an **id** and it becomes a master/detail source: clicking
