@@ -858,7 +858,11 @@ Auto-included by docs/_layouts/default.html.
           if (mine !== turn) return;
           renderFormBody(body, shown, {
             editable: model ? editableSaid !== "false" : editable,
-            locked: locked, chips: chips, options: model ? picks : undefined, required: required, numbers: numbers,
+            /* options= picks on a card that follows a grid's row too, not only
+               on a card with its own fence (Michel, 2026-11-15, Module 09: "a
+               picklist to link with the first feature" — the backlog is a plain
+               list the learner's 💾 saves); a class's enum wins for its field */
+            locked: locked, chips: chips, options: model ? Object.assign({}, optionsMap, picks) : optionsMap, required: required, numbers: numbers,
             refs: model ? refNames : undefined, model: model || undefined,
             /* an edit lands on the master's own row (the shown object may be
                the derived copy), then the grid repaints */
