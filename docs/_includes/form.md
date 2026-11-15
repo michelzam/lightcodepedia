@@ -794,8 +794,25 @@ Auto-included by docs/_layouts/default.html.
           /* the object's card: the state LAST, as a chip, beside its verbs;
              locked and state fields read-only; enum fields pick lists; the
              rest editable through the object unless editable="false" */
-          var copy = {};
-          Object.keys(row).forEach(function (k) { if (k !== "obj" && k.charAt(0) !== "_" && k !== model.state && !(model.fields[k] && model.fields[k].hidden)) copy[k] = row[k]; });
+          /* THE CLASS IS THE CARD'S SHAPE (Michel, 2026-11-15, Module 09: "any
+             feature should have the fields in THIS order … If it's OO, it
+             should follow"). The row's own keys came in the file's order, an
+             attribute the row did not hold yet was not shown, so its enum
+             never became a pick list. Now: the class's attributes, in the
+             order the class declares them (each field's ord), each one shown —
+             empty until typed; then the list's own columns, in the file's
+             order (model.order: MicroPython's dicts keep none). The GRID keeps
+             the file's order (Michel, 2026-10-17); columns= orders it. */
+          var copy = {}, shown0 = function (k) { return k !== "obj" && k.charAt(0) !== "_" && k !== model.state && !(model.fields[k] && model.fields[k].hidden); };
+          var all = model.order || Object.keys(model.fields);
+          var declared = all.filter(function (k) { return model.fields[k] && model.fields[k].ord != null; })
+            .sort(function (a, b) { return model.fields[a].ord - model.fields[b].ord; });
+          declared.concat(all.filter(function (k) { return declared.indexOf(k) < 0; })).forEach(function (k) {
+            var f = model.fields[k];
+            if (!f || !shown0(k)) return;
+            copy[k] = k in row ? row[k] : (f.d != null ? f.d : (f.t === "int" || f.t === "float" ? null : ""));
+          });
+          Object.keys(row).forEach(function (k) { if (!(k in copy) && shown0(k)) copy[k] = row[k]; });
           if (model.state && model.state in row) copy[model.state] = row[model.state];
           row = copy;
           Object.keys(model.fields).forEach(function (k) {

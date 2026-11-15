@@ -2419,15 +2419,18 @@ Auto-included by docs/_layouts/default.html.
        see the line. Ownership resolves async and is cached per session, so
        the first render asks and re-renders once the answer is in. */
     var shortOwner = null;
-    function shortLine() {
-      if (!window.lcShort || !window.lcShort.supported()) return;
+    function isOwner() {
       var k = ''; try { k = localStorage.getItem('lc_ed_pat') || ''; } catch (e) {}
-      if (!k || !window.lcAuthorMode) return;
+      if (!k || !window.lcAuthorMode) return false;
       if (shortOwner === null) {
         shortOwner = false;
         window.lcAuthorMode.check().then(function (ok) { shortOwner = !!ok; if (ok) render(); });
       }
-      if (!shortOwner) return;
+      return shortOwner;
+    }
+    function shortLine() {
+      if (!window.lcShort || !window.lcShort.supported()) return;
+      if (!isOwner()) return;
       menu.appendChild(check('🎬 Short next walk', window.lcShort.armed(), function (on) {
         window.lcShort.arm(on);
         menu.classList.remove('open');
@@ -2478,13 +2481,24 @@ Auto-included by docs/_layouts/default.html.
         if (av._lastAnswer && _pat0 && _repo0) {
           menu.appendChild(item('📌 Keep & voice', function () { menu.classList.remove('open'); keepAnswer(elId, live()); }));
         }
-        if (_pat0 && _repo0 && (av.script.length || (av.stories && Object.keys(av.stories).length))) {
+        /* 🎙️ Voices and 🎙️ Change voice commit to the repo: the OWNER's verbs,
+           never a learner's — a learner holds an editor key too, for their
+           own bench (Michel, 2026-11-15: "only when I'm connected as a repo
+           owner"). The ownership answer is the one 🎬 Short asks. */
+        if (_pat0 && _repo0 && (av.script.length || (av.stories && Object.keys(av.stories).length)) && isOwner()) {
           menu.appendChild(item('🎙️ Voices', function () {
             menu.classList.remove('open');
             seedToast('🎙️ generating…');
             runVoices(live(), elId === 'site_guide' ? 'guide' : elId, { shift: false, status: function () {} })
               .then(function (sum) { seedToast(sum || '🎙️ cancelled'); });
           }));
+          if (!av.genVoice || av._genAdhoc) {
+            menu.appendChild(item('🎙️ Change voice', function () {
+              menu.classList.remove('open');
+              var vid = askVoice(live());
+              seedToast(vid ? '🎙️ voice ' + vid + ' — the next voicing speaks with it' : '🎙️ voice unchanged');
+            }));
+          }
         }
         if (av.script.length || (av.stories && Object.keys(av.stories).length)) shortLine();
       } else if (av._waiting || av._curStep || av.step) {
@@ -2644,15 +2658,33 @@ Auto-included by docs/_layouts/default.html.
   /* the shared voicing core: tour + ALL stories, prompts once for voice/key,
      content-addressed files, manifest commit. Used by the 🎙️ button and by
      the guide's own menu (so a kept story can be voiced later from any page). */
+  /* THE VOICE ID, ASKED AGAIN. Once a page had voiced, its guide held the
+     id for the rest of the visit and the prompt sat behind `!av.genVoice`,
+     so a Shift-click went straight to generating with the OLD voice
+     (Michel, 2026-11-15, Safari, a new ElevenLabs voice: "doesn't ask for a
+     new id!!!") — and a phone has no Shift at all. askVoice() is the one
+     place the id is asked: Shift-click and the menu's 🎙️ Change voice both
+     reach it. A fence's `elevenlabs:` pin is content and stays the page's. */
+  function askVoice(av) {
+    if (av.genVoice && !av._genAdhoc) return av.genVoice;
+    var cur = av.genVoice || "";
+    try { cur = cur || localStorage.getItem("lc_11_voice") || ""; } catch (e) {}
+    var vid = String(window.prompt("ElevenLabs voice id (from elevenlabs.io — your cloned voice works):", cur) || "").trim();
+    if (!vid) return null;
+    try { localStorage.setItem("lc_11_voice", vid); } catch (err) {}
+    Object.keys(window._lcAvatars || {}).forEach(function (k) {
+      var a = window._lcAvatars[k];
+      if (a && a._genAdhoc) a.genVoice = vid;
+    });
+    av.genVoice = vid; av._genAdhoc = true;
+    return vid;
+  }
   async function runVoices(av, targetId, ui) {
-    if (!av.genVoice) {
-      var vid = localStorage.getItem("lc_11_voice") || "";
-      if (!vid || ui.shift) {
-        vid = window.prompt("ElevenLabs voice id (from elevenlabs.io — your cloned voice works):", vid) || "";
-      }
-      if (!vid) return null;
-      av.genVoice = vid.trim(); av._genAdhoc = true;
-      try { localStorage.setItem("lc_11_voice", av.genVoice); } catch (err) {}
+    if (!av.genVoice || (ui.shift && av._genAdhoc)) {
+      var vid = "";
+      try { vid = localStorage.getItem("lc_11_voice") || ""; } catch (e0) {}
+      if (!vid || ui.shift) { if (!askVoice(av)) return null; }
+      else { av.genVoice = vid.trim(); av._genAdhoc = true; }
     }
     var key = localStorage.getItem("lc_11_key") || "";
     if (!key || ui.shift) {
@@ -2667,7 +2699,7 @@ Auto-included by docs/_layouts/default.html.
     var lines = av.script.slice();
     if (av.stories) Object.keys(av.stories).forEach(function (t) { lines = lines.concat(av.stories[t]); });
     lines = lines.filter(function (l) { return l.say && !l.video; });
-    var made = 0, cached = 0, committed = 0, failed = 0, vox = {}, lastErr = "";
+    var made = 0, cached = 0, waiting = 0, committed = 0, failed = 0, vox = {}, lastErr = "";
     for (var i = 0; i < lines.length; i++) {
       var l = lines[i], text = String(l.say).trim();
       ui.status("🎙️ " + (i + 1) + "/" + lines.length + "…");
@@ -2677,6 +2709,17 @@ Auto-included by docs/_layouts/default.html.
         var f = "lc-" + h.slice(0, 16) + ".mp3", url = (window.lcHref || String)("/assets/audio/" + f);
         var head = await fetch(url, { method: "HEAD" }).catch(function () { return { ok: false }; });
         if (head.ok) { l.audio = url; vox[th] = f; cached++; continue; }
+        /* IN THE REPO, NOT YET ON THE SITE. A clip committed a minute ago is
+           not served until Pages rebuilds — and each click's commits cancel
+           the build before. Asking the site alone made every click "3
+           generated": ElevenLabs paid again, the same bytes committed again,
+           the rebuild pushed back again (Michel, 2026-11-15). The repo is
+           asked too: there, it waits for the site; it is never made twice. */
+        if (pat && repo) {
+          var inRepo = await fetch("https://api.github.com/repos/" + repo + "/contents/docs/assets/audio/" + f,
+            { headers: HAuth }).catch(function () { return { ok: false }; });
+          if (inRepo.ok) { vox[th] = f; waiting++; continue; }
+        }
         var r = await fetch("https://api.elevenlabs.io/v1/text-to-speech/" +
             encodeURIComponent(av.genVoice) + "?output_format=mp3_44100_128", {
           method: "POST",
@@ -2764,10 +2807,11 @@ Auto-included by docs/_layouts/default.html.
       } catch (e3) { if (window.console) console.warn("[avatar-voices] manifest: " + (e3 && e3.message)); }
     }
     return "✔ " + made + " generated · " + cached + " cached" +
+      (waiting ? " · " + waiting + " already in the repo, the site publishes them in a few minutes" : "") +
       (committed ? " · " + committed + " committed" : ((pat && repo) ? "" : " · not committed — connect the ✏️ editor (PAT + repo) first")) +
       (manifestOk ? " · playback wired automatically" : "") +
       (failed ? " · ✖ " + failed + " failed — " + (lastErr || "see console") : "") +
-      (av._genAdhoc && (made || cached) && !manifestOk ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
+      (av._genAdhoc && (made || cached || waiting) && !manifestOk ? " · add elevenlabs: " + av.genVoice + " to the fence to keep it" : "");
   }
 
   function upgradeVoices(el) {

@@ -103,3 +103,121 @@ def step_no_recording_of(context, line):
         for lines in ids.values():
             assert stray not in lines, (
                 "%r was recorded under %r — the page the learner left" % (line, slug))
+
+
+# ── a new voice id (Michel, 2026-11-15) ───────────────────────────────────
+# A page that had voiced once held the id for the visit: a Shift-click went
+# straight to generating with the OLD voice, and a phone had no Shift at all.
+
+@given('the voice prompt answers "{vid}"')
+def step_voice_prompt(context, vid):
+    context.voice_asked = []
+
+    def answer(dialog):
+        if "voice id" in dialog.message:
+            context.voice_asked.append(dialog.default_value)
+            dialog.accept(vid)
+        else:
+            dialog.accept(dialog.default_value)
+
+    context.page.on("dialog", answer)
+
+
+@when('I click "{label}" with Shift held')
+def step_shift_click(context, label):
+    context.page.get_by_text(label).first.click(modifiers=["Shift"])
+
+
+@when('I click the voices button "{label}"')
+def step_plain_click(context, label):
+    context.page.get_by_text(label).first.click()
+
+
+@when("the studio has committed {n:d} voice manifest")
+@when("the studio has committed {n:d} voice manifests")
+def step_wait_manifests(context, n):
+    for _ in range(60):
+        if len(context.vox_puts) >= n:
+            return
+        context.page.wait_for_timeout(250)
+    raise AssertionError("the studio committed %d manifest(s), not %d" % (len(context.vox_puts), n))
+
+
+@when("I change the guide's voice from its menu")
+def step_change_voice(context):
+    context.page.click("#guide_seed")
+    item = context.page.get_by_text("🎙️ Change voice")
+    expect(item).to_be_visible(timeout=5_000)
+    item.click()
+
+
+@then('the voice prompt offered "{vid}" to replace')
+def step_prompt_offered(context, vid):
+    assert context.voice_asked, "the voice id was never asked"
+    assert context.voice_asked[-1] == vid, "the prompt offered %r" % context.voice_asked[-1]
+
+
+@then('the last manifest voices "{line}" with "{vid}"')
+def step_last_manifest_voice(context, line, vid):
+    body = _json.loads(context.vox_puts[-1])
+    man = _json.loads(_b64.b64decode(body["content"]).decode("utf-8"))
+    files = set()
+    for ids in man.values():
+        for lines in ids.values():
+            files |= set(lines.values())
+    h = hashlib.sha1(("%s|eleven_multilingual_v2|%s" % (vid, line)).encode()).hexdigest()[:16]
+    assert "lc-%s.mp3" % h in files, "%r is not voiced with %r — files: %r" % (line, vid, sorted(files))
+
+
+@then('this browser remembers the voice "{vid}"')
+def step_remembers_voice(context, vid):
+    got = context.page.evaluate("() => localStorage.getItem('lc_11_voice')")
+    assert got == vid, "this browser holds the voice %r" % got
+
+
+@given("every line's audio is in the repo but not yet on the site")
+def step_audio_in_repo_only(context):
+    # the site's copy: not published yet (Pages still rebuilding)
+    context.page.route(
+        "**/assets/audio/lc-*.mp3",
+        lambda route, *a: route.fulfill(status=404, body=b""),
+    )
+    # the repo's copy: committed a minute ago (registered last → wins)
+    context.page.route(
+        "**/api.github.com/repos/acme/demo/contents/docs/assets/audio/lc-*.mp3",
+        lambda route, *a: route.fulfill(status=200, content_type="application/json",
+                                        body='{"sha":"in-repo"}'),
+    )
+
+
+@given("ElevenLabs calls are counted")
+def step_count_eleven(context):
+    context.eleven_calls = []
+
+    def fulfill(route, *a):
+        context.eleven_calls.append(route.request.url)
+        route.fulfill(status=200, content_type="audio/mpeg", body=b"\xff\xe3\x18\xc4" + bytes(20))
+
+    context.page.route("**/api.elevenlabs.io/**", fulfill)
+
+
+@then("ElevenLabs was called {n:d} times")
+def step_eleven_called(context, n):
+    assert len(context.eleven_calls) == n, "ElevenLabs was called %d time(s): %r" % (
+        len(context.eleven_calls), context.eleven_calls)
+
+
+@then('the guide says "{text}"')
+def step_guide_says(context, text):
+    expect(context.page.locator(".lc-guide-hello", has_text=text).first).to_be_visible(timeout=10_000)
+
+
+@when("I open the guide's menu")
+def step_open_guide_menu(context):
+    context.page.click("#guide_seed")
+    context.page.wait_for_timeout(800)   # the ownership answer is async
+
+
+@then('the guide\'s menu has no "{label}"')
+def step_menu_has_no(context, label):
+    assert context.page.get_by_text(label, exact=True).count() == 0, "%r is in the menu" % label

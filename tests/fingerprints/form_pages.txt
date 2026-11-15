@@ -1,0 +1,17 @@
+# pages with cards (.form) — the Form island's no-regression set (2026-11-15)
+/components/form
+/components/dataset
+/components/persona
+/components/pitch
+/components/retrospective
+/components/crew
+/components/code
+/components/demo
+/components/text
+/components/avatar
+/components/examples/reactive
+/components/examples/adopt_wanda
+/components/examples/stories_api
+/components/examples/avatar
+/tutorial101
+/courses/python/elevator_pitch

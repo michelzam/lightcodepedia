@@ -64,6 +64,7 @@ Keys become the left-column labels (auto-prettified: `weight_kg` → **Weight Kg
 | `editable="true"` | Make primitive fields editable — see below |
 | `locked="a, b"` | With `master=` and `editable`: these fields show, read-only — the givens of a card |
 | `fields="headline, as_a, value: int"` | With `master=`: the card's fields in this order, first; a listed field the row does not hold yet shows empty, ready to type — `: int` (or `float`) makes it take a number. The rest follow |
+| (a class) | With `master=` on a grid whose source is a class: the class is the card's shape — its order, every attribute, `enum=` as a pick list; see [🏛️ A card on a class](#a-card-on-a-class--the-class-is-its-shape) |
 | `compute="photo = '…' + str(pic)"` | ƒ fields the form derives from the row it shows — `col = expr; col2 = expr2`, the grid's spelling; the row it reads is never changed |
 
 **Q:** You put two forms on a page and only one shows up. What did you forget?
@@ -218,6 +219,61 @@ Combine `editable="true"` AND `master="<id>"`: edits in the form flow back to th
 {: .form master="edit_md_dogs" editable="true" #edit_form_bound }
 
 Click a dog, change a field in the form — the grid cell updates in place. If the grid is also `editable="true"`, double-clicking a grid cell repaints the form too.
+
+## 🏛️ A card on a class — the class is its shape
+
+When the grid shows a **class** (`source="<Class>"`), its card follows the
+class: the attributes in the order the class declares them, **every** one of
+them — empty until typed, even when the row does not hold it yet — and an
+attribute with `enum=` is a **pick list**. The list's own columns come after,
+in the file's order. No `fields=` needed: the class says it once.
+
+```csv
+what,price
+Logo design,80
+Flyer text,25
+```
+{: .dataset #offers }
+
+```python
+class Offer(Object, source="offers"):
+    what = Attr(str)
+    side = Attr(str, enum=["offer", "request"])
+    unit = Attr(str, enum=["dollars", "minutes", "energy", "knowledge"])
+    taken_by = Attr(str)
+```
+{: .model }
+
+[the offers](#)
+{: .datagrid source="Offer" #offer_grid }
+
+[the offer](#)
+{: .form master="offer_grid" #offer_card }
+
+The file holds `what` and `price` only; the card shows *what · side · unit ·
+taken by* as the class declares them, then *price*. Pick a side: the row takes it.
+
+```gherkin
+Feature: A card on a class follows its class
+  Scenario: The class's order, every attribute, an enum as a pick list
+    Given the card on the first offer
+    :::python
+    self.page.offer_grid.select(1)
+    self.card: Form = self.page.offer_card
+    :::
+    When I pick its side
+    :::python
+    self.card.side = "request"
+    :::
+    Then the card holds every attribute, and the side I picked
+    :::python
+    d = self.card.data
+    assert d.what == "Logo design", d.what
+    assert d.side == "request", d.side
+    assert d.taken_by == "", d.taken_by
+    :::
+```
+{: .feature #class_card_proof tags="form" visible="true" status="pending" }
 
 ## 📷 Photo fields — a URL becomes the picture
 

@@ -135,6 +135,7 @@ Feature: The authored guide owns its page — the generic one yields
     And a voice key is in this browser
     And every line's audio is already in the repo
     And the voice manifest is watched
+    And the viewer can push to "acme/demo"
     And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
       """
       # One
@@ -178,6 +179,7 @@ Feature: The authored guide owns its page — the generic one yields
     And a voice key is in this browser
     And every line's audio is already in the repo
     And the voice manifest is watched
+    And the viewer can push to "acme/demo"
     And the GitHub contents API serves "courses/demo/mod/index.md" with the document:
       """
       # The module
@@ -206,3 +208,126 @@ Feature: The authored guide owns its page — the generic one yields
     And I record the guide's voices
     Then the recordings filed under "courses-demo-mod-02_two" are of "The lesson guide speaks."
     And no recording is of "The module tour speaks."
+
+  Scenario: A Shift-click asks for a new voice id, even after the page has voiced
+    Michel, 2026-11-15, Safari, a new ElevenLabs voice: once the page had voiced, its guide
+    held the old id for the visit, and a Shift-click generated with it — "doesn't ask for a
+    new id!!!". Shift always asks now, with the old id there to paste over.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And every line's audio is already in the repo
+    And the voice manifest is watched
+    And the viewer can push to "acme/demo"
+    And the voice prompt answers "new-voice-id"
+    And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
+      """
+      # One
+
+      ```yaml
+      script:
+        - say: "My new voice speaks."
+      ```
+      {: .avatar #guide dock="true" }
+
+      [🎙️ Generate voices](#)
+      {: .avatar_voices target="guide" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/01_one.md"
+    And I wait for the page to be interactive
+    And I click the voices button "🎙️ Generate voices"
+    And the studio has committed 1 voice manifest
+    And I click "🎙️ Generate voices" with Shift held
+    And the studio has committed 2 voice manifests
+    Then the voice prompt offered "bdd-voice-id" to replace
+    And the last manifest voices "My new voice speaks." with "new-voice-id"
+    And this browser remembers the voice "new-voice-id"
+
+  Scenario: Doc's menu changes the voice — a phone has no Shift
+    Michel works from his iPhone: no Shift key, so no way to replace the stored voice id.
+    🎙️ Change voice in Doc's menu asks for it; 🎙️ Voices then uses it.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And every line's audio is already in the repo
+    And the voice manifest is watched
+    And the viewer can push to "acme/demo"
+    And the voice prompt answers "phone-voice-id"
+    And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
+      """
+      # One
+
+      ```yaml
+      script:
+        - say: "My phone voice speaks."
+      ```
+      {: .avatar #guide dock="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/01_one.md"
+    And I wait for the page to be interactive
+    And I change the guide's voice from its menu
+    And I record the guide's voices
+    And the studio has committed 1 voice manifest
+    Then the voice prompt offered "bdd-voice-id" to replace
+    And the last manifest voices "My phone voice speaks." with "phone-voice-id"
+    And this browser remembers the voice "phone-voice-id"
+
+  Scenario: A learner's editor key shows no voice verbs — they are the owner's
+    Michel, 2026-11-15: 🎙️ Change voice "should only be displayed when I'm connected as a repo
+    owner". A learner holds an editor key for their own bench; the material's repo is not theirs.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And the viewer cannot push to "acme/demo"
+    And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
+      """
+      # One
+
+      ```yaml
+      script:
+        - say: "Only the owner voices me."
+      ```
+      {: .avatar #guide dock="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/01_one.md"
+    And I wait for the page to be interactive
+    And I open the guide's menu
+    Then the guide's menu has no "🎙️ Voices"
+    And the guide's menu has no "🎙️ Change voice"
+
+  Scenario: A clip already in the repo is never made twice while the site publishes it
+    Michel, 2026-11-15: "3 generated, no matter how many times". The site serves a new clip only
+    after Pages rebuilds, and each click's commits cancelled the build before — so every click
+    paid ElevenLabs again. The repo is asked too: there, the clip waits for the site.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And a voice key is in this browser
+    And the voice manifest is watched
+    And the viewer can push to "acme/demo"
+    And every line's audio is in the repo but not yet on the site
+    And ElevenLabs calls are counted
+    And the GitHub contents API serves "courses/demo/mod/01_one.md" with the document:
+      """
+      # One
+
+      ```yaml
+      script:
+        - say: "I was made a minute ago."
+      ```
+      {: .avatar #guide dock="true" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/01_one.md"
+    And I wait for the page to be interactive
+    And I record the guide's voices
+    And the studio has committed 1 voice manifest
+    Then ElevenLabs was called 0 times
+    And the guide says "already in the repo"
+    And the last manifest voices "I was made a minute ago." with "bdd-voice-id"

@@ -1932,71 +1932,7 @@ class _Attrs(object):
         return self._d.get(name)
 
 
-@component(icon="☷",
-           attrs=[{"n": "title", "t": "str", "data": True, "d": ""},
-                  {"n": "format", "t": "str", "data": True, "d": "yaml"},
-                  {"n": "editable", "t": "bool", "data": True, "d": False},
-                  {"n": "compute", "t": "str", "data": True, "attr": "compute"}, {"n": "persist", "t": "str", "data": True, "attr": "persist"}, {"n": "sliders", "t": "bool", "data": True, "attr": "sliders"}, {"n": "options", "t": "str", "data": True, "attr": "options"}, {"n": "min", "t": "float", "data": True, "attr": "min"}, {"n": "max", "t": "float", "data": True, "attr": "max"}, {"n": "step", "t": "float", "data": True, "attr": "step"}],
-           assoc=[{"n": "master", "target": "Datagrid"}, {"n": "source", "target": "Dataset"}],
-           methods=["submit", "set"])
-class Form(Block):
-    def __setattr__(self, name, value):
-        """`page.ask.name = "Ada"` types the field, like a person would.
-
-        Reading was already pythonistic (`.data.name`); writing needed
-        `.set("name", …)`, and Michel wrote the natural line in a scenario
-        (2026-09-01) — it set a dead attribute on the wrapper and the form
-        never moved. A name that IS one of this form's fields now goes
-        through the same edit path a keystroke takes; anything else stays a
-        plain attribute, so the wrapper's own internals are untouched.
-        """
-        if not name.startswith("_"):
-            try:
-                if name in self.data._d:
-                    self.set(name, value)
-                    return
-            except Exception:
-                pass
-        object.__setattr__(self, name, value)
-
-    @property
-    def master(self):
-        gid = self._attr("data-bound") or ""
-        el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
-        return _wrap(el)
-
-    @property
-    def data(self):
-        """Live field values as attributes: self.page.<form>.data.<field>.
-        The form republishes its object to data-lc-value on every edit."""
-        import json
-        raw = self._attr("data-lc-value") or "{}"
-        try:
-            d = json.loads(raw)
-        except Exception:
-            d = {}
-        return _Attrs(d)
-
-    def set(self, field, value):
-        """Type one field, the way a person does.
-
-        A SCENARIO HAS TO BE ABLE TO ACT. Every When in this course read
-        "when the page has settled", which changes nothing, so Given/When/Then
-        collapsed into three ways of saying Then (Michel, 2026-08-06). This
-        goes through the grid's own edit path — setDataValue, then
-        onCellValueChanged, the model, data-lc-value and the lc-model-changed
-        bus — so every cell watching this form recomputes exactly as it would
-        for a human keystroke. Returns True when the field was found.
-        """
-        fn = getattr(js.window, "lcFormSet", None)
-        if fn is None:
-            return False
-        # self.id, not self._id — a Form is an element wrapper (Object keeps
-        # _el); only Dataset and its kin carry a bare _id string
-        return bool(fn(self.id, field, value))
-
-    def submit(self):
-        return self._tap("button[type=submit], .lc-form-submit")
+{% include form.py %}
 
 
 @component(icon="🎞️", attrs=[{"n": "current", "t": "int"}],
@@ -3692,6 +3628,9 @@ def _lc_model_spec_push(cls, subs=True):
                        "ref": f.t if f.ref else None, "was": getattr(f, "was", None),
                        "req": bool(getattr(f, "required", False)),
                        "col": getattr(f, "col", None),
+                       # its place in the class as written — the card's order
+                       # (a list's own columns carry none: the file placed them)
+                       "ord": None if getattr(f, "src", False) else getattr(f, "_ord", None),
                        # a plain default travels (a door gives it to a new row);
                        # a function (datetime.now) runs on the server page only
                        "d": f.d if isinstance(f.d, (str, int, float, bool)) and not f.is_state else None}
