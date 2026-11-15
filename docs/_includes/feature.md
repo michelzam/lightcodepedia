@@ -641,6 +641,16 @@ Registers with window.lcScanElement so the editor preview also renders cards.
      help: name what happened and say whose problem it is. */
   function engineErrText(raw) {
     var e = String(raw || "").trim();
+    /* NOTHING THERE IS NOT THE ENGINE'S FAULT (Michel, 2026-11-15, Module 09
+       page 1: "say there: missing … component"). A step that reads .row_count
+       of a list the page does not have yet gets None — the step before it
+       already said what is missing; the page is not broken, it is unfinished.
+       Say that, in the learner's words, never "the page's bug". */
+    var none = /'NoneType' object has no attribute '([\w]+)'/.exec(e);
+    if (none) {
+      return "\ud83e\udde9 Missing \u2014 this step reads " + none[1] + " of a component that is not on the "
+           + "page yet. The step above says which one.";
+    }
     if (/AttributeError|NameError|has no attribute/.test(e)) {
       return "\u2699\ufe0f Not you — this page's own check asks for something the engine "
            + "does not have, so it cannot run. That is the page's bug, not yours. "

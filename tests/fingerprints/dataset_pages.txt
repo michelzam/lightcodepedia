@@ -1,0 +1,22 @@
+# pages with datasets — the Dataset island's no-regression set (2026-11-15); live APIs left out
+/components/agent
+/components/block
+/components/chart
+/components/crew
+/components/datagrid
+/components/dataset
+/components/embed_page
+/components/examples/adopt_wanda
+/components/examples/record
+/components/examples/stories_api
+/components/feature
+/components/form
+/components/mdpad
+/components/query
+/components/record
+/components/xray
+/courses/build_ai/app_shelter
+/nodes
+/paris/
+/run_samples/teams
+/tutorial101

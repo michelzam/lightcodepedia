@@ -579,6 +579,7 @@ Feature: A default can be a function
 - A **relative** link (`[dogs](../module_00/dogs.yaml)`) names a file beside the page: the reader's own bench copy when they saved one, the page's repository copy otherwise — a pile declared by its file, no rows retyped.
 - `source="id"` wires a view to the dataset; multiple views can share one dataset.
 - `class X(Object, source="id")` makes the dataset a class: a grid on `X` dresses the same rows (see above).
+- A class over a **learner's file** — `{: .dataset #id save="their/file.yaml" }`, read from their bench — puts a **💾** in its grid's corner: the objects' rows go back to that file (their fields, never the engine's marks), and the card's picks with them.
 - Click any **column header** to sort. Sorting persists through pagination.
 - Add a **`url` column** to make rows clickable links.
 

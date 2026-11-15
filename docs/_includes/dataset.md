@@ -2007,6 +2007,15 @@ Auto-included by docs/_layouts/default.html.
 
       /* a list kept in a database: 💾 Save sends what changed, ↻ reads it again */
       var dbSrc = model ? model.src : bindId;
+      /* A CLASS OVER A LEARNER'S FILE (Michel, 2026-11-15, Module 09: the
+         backlog as a class, its card picking from the class's lists): the
+         class's list is a .dataset save="…", read from the learner's bench —
+         and the grid offered ＋ and ⋯ but no 💾, so a pick never reached the
+         file. The same 💾 the plain grid wears, writing the objects' rows
+         (their fields, not the engine's marks) back to that file. */
+      var fileEl = !(window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db) && model && model.src
+        ? document.getElementById(model.src) : null;
+      var filePath = fileEl && window.lcBench ? (fileEl.getAttribute("save") || "") : "";
       var dbR = window.lcRemote && window.lcRemote[dbSrc] && window.lcRemote[dbSrc].db ? window.lcRemote[dbSrc] : null;
       var dbCh = dbR && window.lcDatasetChanges ? window.lcDatasetChanges(dbSrc) : null;
       /* 🧹 lives in the structure panel now (Michel, 2026-10-18) */
@@ -2035,6 +2044,7 @@ Auto-included by docs/_layouts/default.html.
             + (st === "dirty" || st === "error" ? "" : " disabled") + " title='" + esc(stTip) + "' aria-label='" + esc(stTip) + "'>"
             + "<span>" + { ok: "✓", dirty: "●", saving: "⟳", error: "⚠" }[st] + "</span></button>" : "")
         + (!dbR && roRemote ? "<button class='lc-dg-cbtn lc-dg-refresh lc-dg-roreload' type='button' title='read it again — the list lives elsewhere' aria-label='read the list again'>↻</button>" : "")
+        + (filePath ? "<button class='lc-dg-cbtn lc-dg-filesave' type='button' title='" + esc("keep these rows in your own space (" + filePath + ")") + "' aria-label='💾 save'>💾</button>" : "")
         + (model ? "<button class='lc-dg-cbtn lc-dg-new' type='button' title='a new " + esc(bindId) + "' aria-label='a new " + esc(bindId) + "'>＋</button>" : "");
       if (reorderOk && colOrder) corner = "<button class='lc-dg-cbtn lc-dg-colreset' type='button' title='the columns in their first order' aria-label='the columns in their first order'>↺</button>" + corner;
       el.classList.toggle("lc-dg-cornered", !!corner);
@@ -2319,6 +2329,28 @@ Auto-included by docs/_layouts/default.html.
         /* ➕ New: the class itself, or — when the page declares subclasses —
            a pick of the class and each one; the new row gets selected
            (Michel, 2026-10-16) */
+        var fsb = el.querySelector(".lc-dg-filesave");
+        if (fsb) fsb.addEventListener("click", function (e) {
+          e.stopPropagation();
+          var rows = (window.lcDatasets[bindId] || []).map(function (r) {
+            var o = {};
+            Object.keys(r).forEach(function (k) { if (k !== "obj" && k !== "⚠️" && k.charAt(0) !== "_" && r[k] !== "" && r[k] != null) o[k] = r[k]; });
+            return o;
+          });
+          var text;
+          try { text = /\.json$/i.test(filePath) ? JSON.stringify(rows, null, 2) + "\n" : window.jsyaml.dump(rows); }
+          catch (e1) { window.lcxToast && window.lcxToast("YAML writer not loaded yet — try again in a moment", false); return; }
+          fsb.disabled = true;
+          window.lcBench.write(filePath, text, "✍️ " + (lcId || bindId), fileEl._lcBenchSha || null, fileEl)
+            .then(function (sha) {
+              fileEl._lcBenchSha = sha || fileEl._lcBenchSha;
+              fileEl.setAttribute("data-lc-mine", "1");
+              try { document.dispatchEvent(new CustomEvent("lc-saved", { detail: { id: lcId } })); } catch (e2) {}
+              window.lcxToast && window.lcxToast("Saved to your space ✓", true);
+            })
+            .catch(function (e3) { window.lcxToast && window.lcxToast("Save failed: " + (e3.message || e3), false); })
+            .then(function () { fsb.disabled = false; });
+        });
         var nb = el.querySelector(".lc-dg-new");
         var make = function (kind) {
           pendingNew = {};

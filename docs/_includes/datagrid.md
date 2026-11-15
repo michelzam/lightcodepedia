@@ -368,6 +368,7 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         animateRows: true,
         rowSelection: "single",
         onSelectionChanged: function(event) {
+          if (wrapper._lcHoldSel) return;   /* new rows arriving: adopt() re-selects, then announces */
           var rows = event.api.getSelectedRows();
           window.lcMasterDetail.publish(gridId, rows[0] || null);
         }
@@ -436,8 +437,24 @@ Auto-included by docs/_layouts/default.html (before dataset.md so the
         var adoptReady = false;
         var adopt = function (rows) {
           if (!Array.isArray(rows) || rows === data) return;
+          /* THE PICKED ROW STAYS PICKED (Michel, 2026-11-15, Module 09): a grid
+             on a CLASS takes new rows each time a card edits an object — AG
+             dropped the selection, told the card "nothing", and the card said
+             "(no data)" under the learner's pick. The row is found again by
+             its object (obj), else by its place, selected, and announced. */
+          var was = (api.getSelectedNodes() || [])[0];
+          var keyOf = function (n) { return n && n.data ? (n.data.obj != null ? "o:" + n.data.obj : "i:" + n.rowIndex) : null; };
+          var wasKey = keyOf(was);
+          wrapper._lcHoldSel = !!wasKey;
           data = rows;
           api.setGridOption("rowData", rows);
+          if (wasKey) {
+            var again = null;
+            api.forEachNode(function (n) { if (!again && keyOf(n) === wasKey) again = n; });
+            if (again) again.setSelected(true);
+            wrapper._lcHoldSel = false;
+            window.lcMasterDetail.publish(gridId, again ? again.data : null);
+          }
           recompute();
           /* ROWS A BUTTON BROUGHT ARE NOT SAVED ROWS (Michel, 2026-11-12: the
              shipped backlog was empty — 📥 Import and ✍️ Apply had filled the
