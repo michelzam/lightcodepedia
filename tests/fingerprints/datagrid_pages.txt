@@ -1,0 +1,22 @@
+# pages with datagrids — the first island's no-regression set (2026-11-14)
+/components/agent
+/components/block
+/components/chart
+/components/crew
+/components/database
+/components/datagrid
+/components/dataset
+/components/deploys
+/components/embed_page
+/components/examples/adopt_wanda
+/components/examples/air_traffic_api
+/components/examples/chart_datagrid
+/components/examples/news_api
+/components/examples/spreadsheet
+/components/examples/stories_api
+/components/examples/weather_api
+/components/form
+/components/mdpad
+/components/query
+/components/text
+/components/xray

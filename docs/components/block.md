@@ -145,7 +145,8 @@ Feature: A fenced block becomes a bordered card
 
 Any part can take `layout=` on its decoration line: `below` is where a
 part goes anyway (never written), `beside` draws it **next to the block
-above**, `behind` puts it **behind** the block above, as a tab.
+above**, `behind` puts it **behind** the block above, as a tab, and `wide`
+gives it **the page's full width**.
 
 ### ↔️ `layout="beside"` — in the same row
 
@@ -249,7 +250,9 @@ Nemo,0
 ````
 
 In a pad, **⌃⌥→** puts the block under the caret beside the one above,
-**⌃⌥↑** behind it, **⌃⌥←** back below. A pad's own `layout=` says where its
+**⌃⌥↑** behind it, **⌃⌥←** back below. **⌥⇧L** cycles them all — below, beside,
+behind, wide, float — one key that a Mac's window manager leaves alone;
+**⌃⌥↓** makes it wide. A pad's own `layout=` says where its
 source stands against its preview: `beside` (the default), `below`,
 `behind` — see the [text pad](text).
 
@@ -286,6 +289,111 @@ Feature: layout="behind" stacks a part behind the one above, as tabs
     :::
 ```
 {: .feature #behind_proof tags="ui" status="passing" }
+
+### ↕️ `layout="wide"` — the page's full width
+
+`wide` lets a part leave the text column and take **the page's width**:
+the window less a little margin, at most 1600 pixels. Prose keeps its
+comfortable column; a pad, a grid of many columns, a wide chart breathe.
+On a phone, or inside a narrow frame, nothing changes. A pad keeps its
+source beside its preview, both now readable.
+
+```csv
+name,breed,age,weight_kg,top_speed_kmh,colour,adopted,shelter,arrived,vaccinated
+Lucky,Beagle,3,12,40,tan,yes,North,2026-01-12,yes
+Wanda,Poodle,5,8,32,white,no,South,2026-03-02,yes
+Rex,Boxer,2,30,48,brown,no,North,2026-05-21,no
+```
+{: .dataset #wide_pets }
+
+[all their facts](#)
+{: .datagrid source="wide_pets" #wide_grid layout="wide" }
+
+````markdown
+[all their facts](#)
+{: .datagrid source="wide_pets" layout="wide" }
+````
+
+```gherkin
+Feature: layout="wide" gives a part the page's full width
+  As an author with a pad or a grid of many columns
+  I want one word to let it leave the text column
+  So that it breathes, while the prose keeps its width
+
+  Scenario: The wide grid is wider than the text column
+    Given the wide grid above and the page's text column
+    :::python
+    self.box = Object._all("[data-lc-wide]")[0]
+    self.col = Object._all("main.markdown-body")[0]
+    :::
+    Then on a wide window it is wider than the column, and never wider than the window
+    :::python
+    w = float(self.box._el.getBoundingClientRect().width)
+    col = float(self.col._el.clientWidth)
+    win = float(js.window.innerWidth)
+    if win > col + 64:
+        assert w > col, "the wide part is not wider than the column: %s ≤ %s" % (w, col)
+    assert w <= win, "the wide part overflows the window: %s > %s" % (w, win)
+    assert self.box._el.querySelector("[data-lc-id='wide_grid']") is not None, "the grid is not inside its wide wrap"
+    :::
+```
+{: .feature #wide_proof tags="ui" status="passing" }
+
+### 📌 `layout="float"` — a floating panel, resizable
+
+`float` puts a part in a **panel of its own**: drag it by its bar, resize
+it from its corner, **✕** (or Esc) docks it back in the page, **↗** floats it
+again. It starts floating only where the margin has room — never over prose
+until you move it — and remembers its place, size and choice on this device.
+Floating, it is a little transparent, solid again under the pointer. On a
+phone it is a sheet at the bottom. Good for a chart that watches a grid, a
+pad you code in while reading, an agent's chat.
+
+```csv
+day,walks
+Mon,3
+Tue,5
+Wed,2
+```
+{: .dataset #float_walks }
+
+[walks this week](#)
+{: .chart source="float_walks" type="bar" x="day" y="walks" #float_chart layout="float" }
+
+````markdown
+[walks this week](#)
+{: .chart source="float_walks" type="bar" x="day" y="walks" layout="float" }
+````
+
+```gherkin
+Feature: layout="float" makes a part a floating, resizable panel
+  As a reader with a long page and one part to keep in sight
+  I want one word to float it, and one tap to dock it back
+  So that it follows me, and never hides the prose unless I move it there
+
+  Scenario: The chart sits in a panel with a bar; ↗ floats it, ✕ docks it
+    Given the floating chart above
+    :::python
+    self.box = Object._all("[data-lc-float]")[0]
+    self.go = self.box._el.querySelector(".lc-float-go")
+    :::
+    When it is floated, then docked
+    :::python
+    if "lc-floating" in str(self.box._el.className):
+        self.go.click()
+    self.go.click()
+    self.floated = str(js.window.getComputedStyle(self.box._el).position)
+    self.go.click()
+    self.docked = str(js.window.getComputedStyle(self.box._el).position)
+    :::
+    Then it floated as a fixed panel, and came back in the page
+    :::python
+    assert self.box._el.querySelector("[data-lc-id='float_chart']") is not None, "the chart is not in its panel"
+    assert self.floated == "fixed", "floated, it is " + self.floated
+    assert self.docked != "fixed", "✕ did not dock it"
+    :::
+```
+{: .feature #float_proof tags="ui" status="passing" }
 
 ## Example — weighted columns
 ```

@@ -260,6 +260,10 @@ class Attr:
         # when the object is born (➕ New, Walk(...)), never when a row is read
         # back, the result coerced like any typed-in value (Michel, 2026-10-19:
         # standard Python, construction only, the attribute's type decides).
+        # a default WRITTEN by the author, as opposed to the empty one of the
+        # type: a component's setting keeps reading None when absent unless
+        # its island wrote one — Attr(int, 400) (2026-11-14, the islands)
+        self._d_given = default is not None
         if default is None and not self.ref:
             default = {"str": "", "int": 0, "float": 0.0, "bool": False}.get(self.t)
         self.d = default
@@ -292,6 +296,13 @@ class Attr:
             self.ro = True
         self.is_state = False
         self.n = None
+        self._get = None
+
+    def getter(self, fn):
+        """@source.getter — the field's own reading, as property.getter does:
+        a component's link that needs more than its page attribute."""
+        self._get = fn
+        return self
 
     def _default(self):
         """The value a newborn gets: the default itself, or what the default
@@ -670,6 +681,65 @@ def _lc_did_at(part, verb):
     return int(d.at(str(pid), verb) or 0)
 
 
+def _lc_is_block(cls):
+    """A DOM wrapper: Block is among its ancestors (by name — Block is
+    declared after this decorator)."""
+    c = cls
+    while isinstance(c, type):
+        if c.__name__ == "Block":
+            return True          # Block itself too: the kore island, every part's settings
+        c = c.__bases__[0] if c.__bases__ else None
+    return False
+
+
+def _lc_island(cls, icon, attrs, assoc, methods):
+    """A LIVING ISLAND (2026-11-14): a component declares its settings as Attr
+    fields, its icon first in its docstring. On a DOM wrapper an Attr field is
+    exactly what attrs=[{data: True}] made — a read-only property of the page
+    attribute column= (or the field's name), None when absent unless a
+    default is written; a typed reference is a link (assoc), read by its
+    @x.getter when it has one. The extractor (tools/component_model.py) reads
+    the same lines, with their trailing comments as help."""
+    own = []
+    for n in dir(cls):
+        if n.startswith("_"):
+            continue
+        try:
+            v = getattr(cls, n)
+        except Exception:
+            continue
+        if isinstance(v, Attr):
+            own.append((v._ord, n, v))
+    if not own:
+        return icon, attrs, assoc, methods   # not an island: untouched
+    own.sort(key=lambda x: x[0])
+    attrs, assoc = list(attrs), list(assoc)
+    for _, n, v in own:
+        if v.ref:
+            assoc.append({"n": n, "target": v.t})
+            if v._get is not None:
+                setattr(cls, n, property(v._get))
+            else:
+                delattr(cls, n)
+            continue
+        a = {"n": n, "t": v.t, "data": True, "attr": v.col or n}
+        if v._d_given:
+            a["d"] = v.d
+        attrs.append(a)
+        setattr(cls, n, property(v._get) if v._get is not None
+                else _prop(a["attr"], v.t, a.get("d"), False))
+    if not icon:
+        doc = (getattr(cls, "__doc__", None) or "").strip()
+        head = doc.split(" ", 1)[0] if doc else ""
+        if head and not (head[0].isalpha() or head[0].isdigit()):   # MicroPython has no isalnum
+            icon = head
+    if not methods:
+        base = cls.__bases__[0]
+        methods = sorted(n for n in dir(cls) if not n.startswith("_") and not hasattr(base, n)
+                         and callable(getattr(cls, n, None)) and not isinstance(getattr(cls, n, None), type))
+    return icon, attrs, assoc, methods
+
+
 def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     """Class decorator: generate data-* knob properties and register the spec.
 
@@ -678,6 +748,9 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
     resolved here into each method's spec (pre / post).
     """
     def deco(cls):
+        nonlocal icon, attrs, assoc, methods
+        if _lc_is_block(cls):
+            icon, attrs, assoc, methods = _lc_island(cls, icon, attrs, assoc, methods)
         fields, statef = _lc_harvest(cls)   # declarative Attr/State fields (may be none)
         for a in attrs:
             if a.get("data"):
@@ -1156,6 +1229,11 @@ class Object:
            assoc=[{"n": "page", "target": "Page"}],
            methods=["click", "has_class", "confetti"])
 class Block(Object):
+    """🧩 A part of the page — every component is one, and takes these settings."""
+    layout     = Attr(str, enum=["below", "beside", "behind", "wide", "float"])  # where it stands: below, beside or behind the block above, the page's width, or a floating panel
+    beside     = Attr(bool)                    # the first spelling of layout="beside"
+    shown_when = Attr(str, column="visible")   # an expression that shows or hides it — = to_call.count
+
     def __bool__(self):
         return self._el is not None
 
@@ -1385,143 +1463,7 @@ class Bar(Object):
             self._el.setAttribute("fill", v or "#0066cc")
 
 
-@component(icon="▦",
-           attrs=[{"n": "row_count", "t": "int"},
-                  {"n": "headers", "t": "str", "list": True},
-                  {"n": "rows", "t": "ref", "list": True},
-                  {"n": "title", "t": "str", "data": True, "attr": "title"}, {"n": "height", "t": "int", "data": True, "attr": "height", "d": 400}, {"n": "format", "t": "str", "data": True, "attr": "format", "d": 'yaml'}, {"n": "editable", "t": "bool", "data": True, "attr": "editable"}, {"n": "filter", "t": "str", "data": True, "attr": "filter"}, {"n": "save", "t": "str", "data": True, "attr": "save"}, {"n": "empty", "t": "str", "data": True, "attr": "empty"}, {"n": "hints", "t": "str", "data": True, "attr": "hints"}, {"n": "sort", "t": "str", "data": True, "attr": "sort"}, {"n": "columns", "t": "str", "data": True, "attr": "columns"}, {"n": "dates", "t": "str", "data": True, "attr": "dates"}, {"n": "autocomplete", "t": "bool", "data": True, "attr": "autocomplete"}],
-           assoc=[{"n": "source", "target": "Dataset"}, {"n": "master", "target": "Datagrid"}],
-           methods=["header", "select", "next"])
-class Datagrid(Block):
-    # THE SELECTED ROW, READ AND WRITTEN (Michel, 2026-10-09, Module 05:
-    # "currentline.met = today's weekday, and select the next line — KISS").
-    # `grid.row.met = weekday()` writes into the DATASET the grid shows
-    # (through its query, to the base row), so the query re-runs, the grid
-    # repaints and every count recounts; `grid.next()` selects the row after
-    # the one just written — or the one that slid into its place when the
-    # write took it out of the query's answer.
-    @property
-    def row(self):
-        return _Row(self)
-
-    @property
-    def saved(self):
-        """How many times the learner pressed 💾 Save on this grid (this device)."""
-        return _lc_did(self, "save")
-
-    def next(self):
-        # True when it moved, False on the last row — so a loop can stop by
-        # itself: `while grid.next() and grid.row.met: pass` (Michel,
-        # 2026-10-13, Module 05's first loop: skip the families already met)
-        door = getattr(self._el, "_lcRow", None) if self._el is not None else None
-        if door is None:
-            raise AssertionError("#" + str(self.id) + " has no rows to walk yet")
-        moved = door.next()
-        return moved is not None and bool(moved)
-
-    @property
-    def source(self):
-        b = self._attr("data-bind") or ""
-        # bind="Student" names a CLASS: the source is the model block that
-        # declared it — the x-ray pipes grid → model (Michel, 2026-08-24)
-        for mid in _LC_DECL:
-            if b in _LC_DECL[mid]:
-                el = js.window.document.querySelector(
-                    ".lc-model[data-lc-id='" + mid + "']")
-                if el is not None:
-                    return Model(el)
-        return Dataset(b)
-
-    def _api(self):
-        # AG-backed grids register their api under their id — the honest
-        # source inside a synchronous step run, where the DOM's rows only
-        # repaint after the run ends.
-        md = getattr(js.window, "lcMasterDetail", None)
-        if md is None:
-            return None
-        try:
-            return getattr(md._apis, self.id, None)
-        except Exception:
-            return None
-
-    def _waiting_for(self):
-        # the query this grid is bound to, if it is still waiting for one of
-        # its own sources — see query.md: it publishes nothing until then
-        b = self._attr("data-bind") or ""
-        if not b:
-            return ""
-        q = js.window.document.querySelector(".lc-query[data-lc-id='" + b + "']")
-        return (q.getAttribute("data-waiting") or "") if q is not None else ""
-
-    @property
-    def row_count(self):
-        # a grid whose query is still waiting has NO count yet: 0 would pass
-        # a proof early, and a half-computed join failed one for the wrong
-        # reason ("12 dog(s) still invisible", Michel 2026-09-16). Name the
-        # wait, so the reader runs again once the page has finished loading.
-        w = self._waiting_for()
-        if w:
-            raise AssertionError((self._attr("data-lc-id") or "this grid")
-                                 + " is still waiting for " + w
-                                 + " - the page has not finished loading; run again")
-        # three renderers back a datagrid: the AG api (code-block grids —
-        # its row model updates synchronously, the painted rows do not),
-        # the custom HTML table (source-bound grids), and painted AG rows
-        # as the last resort.
-        api = self._api()
-        if api is not None:
-            try:
-                return int(api.getDisplayedRowCount())
-            except Exception:
-                pass
-        n = len(self._qq("tbody tr"))
-        if n:
-            return n
-        ag = self._qq(".ag-center-cols-container .ag-row")
-        return len(ag) if ag else len(self._qq(".ag-row"))
-
-    @property
-    def headers(self):
-        ths = [th.text.rstrip(" ↑↓") for th in self._qq("th")]
-        if ths:
-            return ths
-        return [h.text for h in self._qq(".ag-header-cell-text")]
-
-    @property
-    def rows(self):
-        cols = self.headers
-        out = []
-        for tr in self._qq("tbody tr"):
-            cells = tr._qq("td")
-            out.append({cols[i]: cells[i].text if i < len(cells) else ""
-                        for i in range(len(cols))})
-        return out
-
-    def header(self, name):
-        for th in self._qq("th"):
-            if th.text.rstrip(" ↑↓") == name:
-                return th
-        return Block(None)
-
-    def select(self, n=1):
-        """Select row n (1-based) — what a reader's click does: master-bound
-        forms and detail grids receive the row, inside the same step."""
-        api = self._api()
-        if api is not None:
-            node = api.getDisplayedRowAtIndex(n - 1)
-            if node is not None:
-                node.setSelected(True, True)
-                # AG batches its selection event to a later tick — after a
-                # synchronous step run has already ended. Publish the row
-                # now; the batched event re-publishes the same row, harmless.
-                md = getattr(js.window, "lcMasterDetail", None)
-                if md is not None:
-                    md.publish(self.id, node.data)
-                return self
-        rows = self._qq("tbody tr") or self._qq(".ag-row")
-        if rows and 1 <= n <= len(rows):
-            rows[n - 1]._el.click()
-        return self
+{% include datagrid.py %}
 
 
 @component(icon="📈",

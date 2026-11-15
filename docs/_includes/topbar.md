@@ -254,6 +254,40 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .markdown-body { max-width: 980px; margin: 0 auto; padding: 1em 1.2rem 2em; }
+/* layout="wide": a part breaks out of the text column to the page's width —
+   the window less 1rem a side, at most 1600px; margins, never a transform
+   (a transform would hold the pad's fixed completion list) */
+/* layout="float": docked, the part as it is, a small ↗ on a thin line above
+   it (no frame, no title — the part has its own); floating, a translucent
+   panel with a grip strip, dragged by it, resized from its corner; a bottom
+   sheet on a phone */
+.lc-float { margin: 0.2em 0 0.6em; }
+.lc-float-bar { display: flex; align-items: center; justify-content: flex-end; gap: 0.4em; min-height: 1.2em;
+  font-size: 0.85em; color: #57606a; user-select: none; }
+.lc-float-grip { display: none; flex: 1; letter-spacing: 1px; color: #8c959f; }
+.lc-float-go { border: 0; background: none; cursor: pointer; font-size: 1em; line-height: 1; padding: 0.1em 0.35em; border-radius: 6px; color: #57606a; }
+.lc-float-go:hover { background: #eaeef2; }
+.lc-float.lc-floating { position: fixed; z-index: 2147482000; margin: 0; display: flex; flex-direction: column;
+  resize: both; overflow: hidden; min-width: 220px; min-height: 120px; max-width: calc(100vw - 8px); max-height: calc(100vh - 8px);
+  border: 1px solid #d0d7de; border-radius: 10px;
+  background: rgba(255, 255, 255, 0.82); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22); opacity: 0.9; transition: opacity 0.15s; }
+.lc-float.lc-floating:hover, .lc-float.lc-floating:focus-within { opacity: 1; }
+/* while dragging: no text selection anywhere, no blur, no fade — smooth */
+html.lc-float-dragging, html.lc-float-dragging * { user-select: none !important; -webkit-user-select: none !important; cursor: move !important; }
+.lc-float.lc-floating.lc-dragging { backdrop-filter: none; -webkit-backdrop-filter: none; transition: none;
+  opacity: 1; background: rgba(255, 255, 255, 0.95); will-change: left, top; }
+.lc-float.lc-floating .lc-float-bar { touch-action: none; }
+.lc-float.lc-floating .lc-float-bar { cursor: move; padding: 0.15em 0.5em; border-bottom: 1px solid #eaeef2; }
+.lc-float.lc-floating .lc-float-grip { display: block; }
+.lc-float.lc-floating .lc-float-body { flex: 1; overflow: auto; padding: 0.3em 0.5em; }
+@media (max-width: 700px) {
+  .lc-float.lc-floating { left: 0 !important; right: 0; top: auto !important; bottom: 0; width: auto !important;
+    height: 45vh !important; resize: none; border-radius: 12px 12px 0 0; }
+  .lc-float.lc-floating .lc-float-bar { cursor: default; }
+}
+.lc-wide { margin-left: calc((100% - min(100vw - 2rem, 1600px)) / 2);
+           margin-right: calc((100% - min(100vw - 2rem, 1600px)) / 2); }
 .markdown-body a { color: var(--lc-link, #0066cc); }
 .markdown-body a:visited { color: #1756a9; }
 .markdown-body code, .markdown-body pre { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace; }

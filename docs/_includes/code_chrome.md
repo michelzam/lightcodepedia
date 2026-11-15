@@ -464,9 +464,144 @@
       });
     });
   }
+  function _floatWrap(el) {
+    var box = document.createElement("div");
+    box.className = "lc-float";
+    box.setAttribute("data-lc-float", "1");
+    var nm = _tabName(el);
+    var bar = document.createElement("div");
+    bar.className = "lc-float-bar";
+    /* no title of its own: the part shows its own (Michel, 2026-11-15: "a
+       double frame … with double title") — the bar is a grip and a button */
+    var ttl = document.createElement("span");
+    ttl.className = "lc-float-grip"; ttl.textContent = "⠿"; ttl.setAttribute("aria-hidden", "true");
+    box.setAttribute("aria-label", nm.text);
+    var go = document.createElement("button");
+    go.type = "button"; go.className = "lc-float-go";
+    bar.appendChild(ttl); bar.appendChild(go);
+    var body = document.createElement("div");
+    body.className = "lc-float-body";
+    el.parentNode.insertBefore(box, el);
+    box.appendChild(bar); box.appendChild(body); body.appendChild(el);
+    var inPad = !!box.closest(".lc-mdpad, .lc-mdpad-out");
+    var key = "lc_float:" + location.pathname + location.hash.split("&")[0] + "#" + (el.id || el.getAttribute("data-lc-id") || nm.text);
+    var st = null; try { st = JSON.parse(localStorage.getItem(key) || "null"); } catch (e) {}
+    function keep() {
+      var r = box.getBoundingClientRect();
+      var v = { floating: box.classList.contains("lc-floating"), x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height) };
+      try { localStorage.setItem(key, JSON.stringify(v)); } catch (e) {}
+    }
+    function margin() {
+      var main = document.querySelector("main.markdown-body");
+      return main ? Math.max(0, window.innerWidth - main.getBoundingClientRect().right) : 0;
+    }
+    function set(floating) {
+      box.classList.toggle("lc-floating", floating);
+      go.textContent = floating ? "✕" : "↗";
+      go.title = floating ? "Dock it back in the page (Esc)" : "Float it — drag by this bar, resize from the corner";
+      go.setAttribute("aria-label", go.title);
+      box.setAttribute("role", floating ? "dialog" : "group");
+      if (floating) {
+        box.setAttribute("aria-modal", "false");
+        var w = st && st.w || Math.min(420, Math.max(300, margin() - 32));
+        var h = st && st.h || Math.min(Math.round(window.innerHeight * 0.6), 520);
+        var x = st && st.floating ? st.x : window.innerWidth - w - 16;
+        var y = st && st.floating ? st.y : 84;
+        box.style.width = w + "px"; box.style.height = h + "px";
+        box.style.left = Math.max(0, Math.min(x, window.innerWidth - 120)) + "px";
+        box.style.top = Math.max(0, Math.min(y, window.innerHeight - 40)) + "px";
+      } else {
+        box.removeAttribute("aria-modal");
+        box.style.width = box.style.height = box.style.left = box.style.top = "";
+      }
+      try { window.dispatchEvent(new Event("resize")); } catch (e) {}   /* a chart, a grid measure again */
+    }
+    go.addEventListener("click", function () { set(!box.classList.contains("lc-floating")); keep(); });
+    box.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && box.classList.contains("lc-floating")) { set(false); keep(); go.focus(); }
+    });
+    /* drag by the bar, kept inside the window */
+    /* THE DRAG, SMOOTH (Michel, 2026-11-15: "strange flickering during
+       dragging"): the press is cancelled, so the page's text is never
+       selected under the pointer; the blur is off while it moves; one move
+       per frame. */
+    bar.addEventListener("pointerdown", function (e) {
+      if (!box.classList.contains("lc-floating") || e.target === go) return;
+      e.preventDefault();
+      /* the cancelled press no longer moves focus: let go of ↗'s, or the
+         panel would stay solid as if still used */
+      if (document.activeElement && box.contains(document.activeElement)) document.activeElement.blur();
+      var r = box.getBoundingClientRect(), dx = e.clientX - r.left, dy = e.clientY - r.top;
+      var nx = r.left, ny = r.top, queued = false;
+      try { bar.setPointerCapture(e.pointerId); } catch (x) {}
+      document.documentElement.classList.add("lc-float-dragging");
+      box.classList.add("lc-dragging");
+      function paint() {
+        queued = false;
+        box.style.left = nx + "px";
+        box.style.top = ny + "px";
+      }
+      function mv(ev) {
+        nx = Math.max(0, Math.min(ev.clientX - dx, window.innerWidth - 120));
+        ny = Math.max(0, Math.min(ev.clientY - dy, window.innerHeight - 40));
+        if (!queued) { queued = true; requestAnimationFrame(paint); }
+      }
+      function up() {
+        bar.removeEventListener("pointermove", mv); bar.removeEventListener("pointerup", up);
+        bar.removeEventListener("pointercancel", up);
+        document.documentElement.classList.remove("lc-float-dragging");
+        box.classList.remove("lc-dragging");
+        paint(); keep();
+      }
+      bar.addEventListener("pointermove", mv); bar.addEventListener("pointerup", up);
+      bar.addEventListener("pointercancel", up);
+    });
+    if (window.ResizeObserver) {
+      var t = null;
+      new ResizeObserver(function () {
+        if (!box.classList.contains("lc-floating")) return;
+        clearTimeout(t); t = setTimeout(function () { keep(); try { window.dispatchEvent(new Event("resize")); } catch (e) {} }, 250);
+      }).observe(box);
+    }
+    set(false);   /* docked until it knows where it stands */
+    setTimeout(function () {   /* a pad's preview may be built off the page: ask once it is in */
+      /* in a pad's preview it floats too (Michel, 2026-11-15: "only the static
+         one is floatable, not the one I configured myself in the mdpad"), but
+         always starts docked: the preview is redrawn as one types */
+      inPad = !!box.closest(".lc-mdpad, .lc-mdpad-out");
+      if (inPad) { box.classList.add("lc-float-inpad"); set(!!(st && st.floating)); return; }
+      set(st ? !!st.floating : margin() >= 320 && window.innerWidth > 700);
+    }, 0);
+  }
   function _foldBeside(root) {
     root.querySelectorAll("[beside], [layout]").forEach(function (el) {
       if (el.dataset.lcBeside) return;
+      /* layout="wide" — THE PAGE'S FULL WIDTH (Michel, 2026-11-14: "use the
+         whole width of the page, for instance for the mdpad"). The part is
+         wrapped before any upgrader runs, so the wrap outlives the element
+         the upgrader replaces; prose keeps its column. A pad's own layout=
+         panes stay side by side. */
+      if (String(el.getAttribute("layout") || "").trim().toLowerCase() === "wide") {
+        el.dataset.lcBeside = "1";
+        var wide = document.createElement("div");
+        wide.className = "lc-wide";
+        wide.setAttribute("data-lc-wide", "1");
+        el.parentNode.insertBefore(wide, el);
+        wide.appendChild(el);
+        return;
+      }
+      /* layout="float" — A FLOATING, RESIZABLE PANEL (Michel, 2026-11-14:
+         "a floating layout, maybe resizable … with some transparency").
+         Margin-first: it starts floating only where the margin has room,
+         else docked in place with ↗ in its bar — never over prose until
+         moved. Dragged by its bar, resized from its corner, ✕ or Esc docks
+         it; place, size and choice kept per page and device. Inside a pad's
+         preview it stays docked: the preview is a small page. */
+      if (String(el.getAttribute("layout") || "").trim().toLowerCase() === "float") {
+        el.dataset.lcBeside = "1";
+        _floatWrap(el);
+        return;
+      }
       var how = _layoutOf(el);
       if (!how) return;
       el.dataset.lcBeside = "1";

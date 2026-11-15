@@ -2198,16 +2198,18 @@ Auto-included by docs/_layouts/default.html.
       var k = -1;
       for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) { k = n; break; }
       var none = function () { window.lcxToast && window.lcxToast("Nothing above to stand " + how, false); return true; };
+      /* wide and float need no block above: they are about the page, not a neighbour */
+      var needsAbove = how === "beside" || how === "behind";
       if (k < 0) {
         if (!how) return true;
-        if (around.first) return none();
+        if (around.first && needsAbove) return none();
         var endAt = st[bs[i].end] + L[bs[i].end].length, c0 = ta.selectionStart;
         editSpan(endAt, endAt, '\n{: layout="' + how + '" }', c0);
         return true;
       }
       var d = L[k], nd = d.replace(/\s+beside=("[^"]*"|\S+)/, "");
       if (how) {
-        if (around.first) return none();
+        if (around.first && needsAbove) return none();
         nd = /\blayout=/.test(nd) ? nd.replace(/\blayout=("[^"]*"|\S+)/, 'layout="' + how + '"') : nd.replace(/\s*\}\s*$/, ' layout="' + how + '" }');
       } else nd = nd.replace(/\s+layout=("[^"]*"|\S+)/, "");
       if (nd === d) return true;
@@ -2220,8 +2222,39 @@ Auto-included by docs/_layouts/default.html.
       editSpan(st[k], st[k] + d.length, nd, caret + delta);
       return true;
     }
+    /* the layout the caret's block wears now: its decoration's layout=, the
+       old beside="true", else below ("") */
+    function layoutNow() {
+      var v = ta.value, L = v.split("\n");
+      var line = v.slice(0, ta.selectionStart).split("\n").length - 1;
+      var around = blocksAround(v, line), bs = around.bs, i = around.i; if (i < 0) return null;
+      var cur = "";
+      for (var n = bs[i].end; n >= bs[i].start; n--) if (/^\s*\{:.*\}\s*$/.test(L[n])) {
+        var m = L[n].match(/\blayout="?([\w-]+)/);
+        cur = m ? m[1].toLowerCase() : (/\bbeside=("?true"?)/.test(L[n]) ? "beside" : "");
+        break;
+      }
+      return { cur: cur, first: !!around.first };
+    }
+    /* ⌥⇧L — ONE KEY THAT CYCLES (Michel, 2026-11-14: "ctrl-alt doesn't work
+       as expected … it's scrolling the page" — on a Mac a window manager
+       takes ⌃⌥ + arrows before the page sees them). Read by the physical key
+       (e.code), so any keyboard layout, and no ¬ typed. The toast says what
+       was set. */
+    var LAYOUTS = ["", "beside", "behind", "wide", "float"];
+    function layoutSay(how) { window.lcxToast && window.lcxToast("layout: " + (how || "below"), true); }
     ta.addEventListener("keydown", function (e) {
       if (e.key === "F2") { e.preventDefault(); renameOpen(); return; }
+      if (e.altKey && e.shiftKey && !e.ctrlKey && !e.metaKey && e.code === "KeyL") {
+        e.preventDefault();
+        var now = layoutNow(); if (now === null) return;
+        var at = LAYOUTS.indexOf(now.cur), next = LAYOUTS[(at + 1) % LAYOUTS.length];
+        /* beside and behind need a block above: the first block skips them */
+        while (now.first && (next === "beside" || next === "behind")) next = LAYOUTS[(LAYOUTS.indexOf(next) + 1) % LAYOUTS.length];
+        layoutBlock(next);
+        layoutSay(next);
+        return;
+      }
       if (!e.altKey || e.metaKey || e.shiftKey) return;
       /* ⌥↑ ⌥↓ move; ⌃⌥→ beside, ⌃⌥↑ behind, ⌃⌥← below — ⌥⇧ stays the
          system's word selection (Michel, 2026-10-12: "they interfere with selecting words") */
@@ -2230,6 +2263,7 @@ Auto-included by docs/_layouts/default.html.
       else if (e.ctrlKey && e.key === "ArrowRight") layoutBlock("beside");
       else if (e.ctrlKey && e.key === "ArrowUp") layoutBlock("behind");
       else if (e.ctrlKey && e.key === "ArrowLeft") layoutBlock("");
+      else if (e.ctrlKey && e.key === "ArrowDown") { layoutBlock("wide"); layoutSay("wide"); }
       else return;
       e.preventDefault();      /* a block at the edge stays put, the caret too */
     });
@@ -2307,14 +2341,25 @@ Auto-included by docs/_layouts/default.html.
     }
     function knobsOf(model, cls) {
       var m = modelOf(model, cls), out = [];
+      /* every setting it reads by its page name (an island's column=, e.g.
+         page_size → rows), with its help — and those it inherits: the kore
+         island's layout, beside, visible on Block — the nearest declaration
+         winning */
+      var seen = {};
+      var chain = [];
+      for (var c = m; c && chain.indexOf(c) < 0; c = model[(c.bases || [])[0]]) chain.push(c);
+      if (m) chain.forEach(function (mm) {
+        (mm.attrs || []).forEach(function (a) {
+          var n = a.attr || a.n;
+          if (a.data && !seen[n]) { seen[n] = 1; out.push({ n: n, t: a.t, d: a.d, h: a.hint || "" }); }
+        });
+      });
       if (m) {
-        (m.attrs || []).forEach(function (a) { if (a.data) out.push({ n: a.n, t: a.t, d: a.d }); });
         (m.assoc || []).forEach(function (a) {
           if (NOT_IAL[String(a.target || "").toLowerCase()]) return;          /* a chart's bars are not a knob */
-          out.push({ n: cls === "query" && a.n === "source" ? "bind" : a.n, t: "ref" });
+          out.push({ n: cls === "query" && a.n === "source" ? "bind" : a.n, t: "ref", h: a.hint || "" });
         });
       }
-      out.push({ n: "beside", t: "bool" });
       return out;
     }
     /* the pad's ids, with the class that declares each */
@@ -2440,7 +2485,7 @@ Auto-included by docs/_layouts/default.html.
         else if (cx.kind === "knob") {
           var have = {}; (cx.line.match(/([\w-]+)=/g) || []).forEach(function (k) { have[k.slice(0, -1)] = 1; });
           knobsOf(model, cx.cls).forEach(function (k) {
-            if (!have[k.n] && starts(k.n)) out.push({ icon: "🎛️", label: k.n, detail: k.t === "ref" ? "an id" : (k.d != null && k.d !== "" ? "default " + k.d : k.t || ""), insert: k.n + '=""', back: 1, reopen: true });
+            if (!have[k.n] && starts(k.n)) out.push({ icon: "🎛️", label: k.n, detail: k.h || (k.t === "ref" ? "an id" : (k.d != null && k.d !== "" ? "default " + k.d : k.t || "")), insert: k.n + '=""', back: 1, reopen: true });
           });
         } else if (cx.kind === "value") {
           var vals = [], kb = cx.knob;

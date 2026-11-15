@@ -224,6 +224,10 @@ Auto-included by docs/_layouts/default.html.
       let h = '<div class="t">' + (sp.icon ? sp.icon + " " : "") + esc(name) + "</div>";
       L.attrs.forEach(a => {
         const has = Object.prototype.hasOwnProperty.call(vals, a.n);
+        /* an ISLAND's page setting (it carries its help) shows when the block
+           was GIVEN it: x-ray is the live block, the island's full list is
+           completion's and help()'s (2026-11-14); other components unchanged */
+        if (a.data && a.hint !== undefined && !(has && vals[a.n] !== "" && vals[a.n] != null && vals[a.n] !== "None")) return;
         h += rrow(attrIcon(a), esc(disp(a.n)) + (has ? " = " + valHtml(a, vals[a.n]) : ""));
       });
       (bad || []).forEach(lk => {

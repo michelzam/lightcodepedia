@@ -17,13 +17,13 @@ Feature: The pad types like a text field, painted
     (database, server, diagram) have theirs.
 
     When I type "\n[the shelter](supabase://shelter)\n{: .database " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .database " offers "beside, live, unlisted"
+    Then completion in the "playground" pad after "{: .database " offers "beside, layout, live, unlisted, visible"
     When I type "\n{: .mdpad " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, folded, layout, numbers, piano, replay, rows, save"
+    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, folded, layout, numbers, piano, replay, rows, save, visible"
     When I type "\n{: .datagrid " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, columns, dates, editable, empty, filter, format, height, hints, master, save, sort, source, title"
+    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, bind, columns, compute, dates, detail-of, editable, empty, filter, format, height, hints, layout, locked, master, reorder, rows, save, sort, source, title, visible"
     When I type "\n{: .server " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .server " offers "beside, exports, model, pages"
+    Then completion in the "playground" pad after "{: .server " offers "beside, exports, layout, model, pages, visible"
 
   Scenario: Ctrl+Space after a dot offers every component, video among them
     Michel, 2026-10-29: "in mdpad, the code completion, I noticed, 'video' is
@@ -416,6 +416,45 @@ Feature: The pad types like a text field, painted
     And the "wires" pad shows "The dog" behind "The dogs", as a tab
     When I press "Control+Alt+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
+
+  Scenario: ⌥⇧L cycles the block's layout — below, beside, behind, wide, float — and ⌃⌥↓ makes it wide
+    Michel, 2026-11-14: "ctrl-alt doesn't work as expected in that editor: it's scrolling the
+    page" (a Mac's window manager takes ⌃⌥ + arrows) — "go keys": one key that cycles.
+
+    Given the GitHub contents API serves "courses/demo/module_05/cycle.md" with the document:
+      """
+      # Cycle
+
+      `````markdown
+      ```
+      name,campus
+      Lucky,Milwaukee
+      ```
+      {: .dataset #dogs }
+
+      [The dogs](#)
+      {: .datagrid #dog_grid source="dogs" }
+
+      [The dog](#)
+      {: .form master="dog_grid" }
+      `````
+      {: .mdpad #cycle decorations="true" rows="16" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_05/cycle.md"
+    And I wait for the page to be interactive
+    And I put the caret in "dog_grid" of 'master="dog_grid"' in the "cycle" pad
+    And I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="beside" }'
+    When I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="behind" }'
+    When I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="wide" }'
+    When I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="float" }'
+    When I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" }'
+    When I press "Control+Alt+ArrowDown" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="wide" }'
 
   Scenario: Inside an accordion, ⌃⌥↑ puts the form behind the grid of its section — not the accordion behind the block above
     Michel, 2026-10-24: "when I'm in the accordion, on the form and I use the
