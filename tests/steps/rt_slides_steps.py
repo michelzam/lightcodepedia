@@ -41,11 +41,19 @@ def step_marked_shim(context):
     )
 
 
+def _site_repo():
+    import os
+    return os.environ.get("GITHUB_REPOSITORY") or os.environ.get("PAGES_REPO_NWO") or "michelzam/lightcodelab"
+
+
 @given('the GitHub contents API serves "{path}" with the document')
 @given('the GitHub contents API serves "{path}" with the document:')
 @given('the GitHub contents API serves "{path}" with the document')   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings
 def step_stub_contents_doc(context, path):
-    body = context.text
+    # {site}: the repository this suite's site is built from — the lab here,
+    # pedia in pedia's run — so a scenario about "the site's own docs/" holds
+    # on both (ship.feature, red in pedia since 2026-11-01)
+    body = context.text.replace("{site}", _site_repo())
 
     def fulfill(route):
         route.fulfill(status=200, content_type="text/plain; charset=utf-8",

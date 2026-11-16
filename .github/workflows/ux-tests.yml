@@ -260,15 +260,19 @@ jobs:
         continue-on-error: true          # a mirror that fails must not fail the check
         run: |
           base=https://lightcodepedia.org/assets
-          for f in ux-summary.json ux-results.json; do
-            curl -fsS --max-time 30 "$base/$f" -o "/tmp/$f" \
-              && python -c "import json,sys; json.load(open('/tmp/$f'))" \
+          # ux-report.html too (Michel, 2026-11-16): the board said "854
+          # scenarios · 3 failed" from pedia's summary while the Gherkin report
+          # under it was the lab's own of Nov 12 — "584 passed, 1 failed". One
+          # run, one verdict: the report travels with its numbers.
+          for f in ux-summary.json ux-results.json ux-report.html; do
+            curl -fsS --max-time 60 "$base/$f" -o "/tmp/$f" \
+              && { case "$f" in *.json) python -c "import json,sys; json.load(open('/tmp/$f'))" ;; *) test -s "/tmp/$f" ;; esac; } \
               && mv "/tmp/$f" "docs/assets/$f" \
               || echo "::warning::could not mirror $f — keeping the local copy"
           done
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/assets/ux-summary.json docs/assets/ux-results.json
+          git add docs/assets/ux-summary.json docs/assets/ux-results.json docs/assets/ux-report.html
           if git diff --cached --quiet; then
             echo "Verdict unchanged."
           else

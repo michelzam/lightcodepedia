@@ -51,7 +51,9 @@ Feature: 🚀 Ship — the author-designed deployment component
     Michel, 2026-11-01: "with another browser I (zamm-student) don't have
     access to the client app" — the link read the copy through the runner's
     gh: road, and the lab repo is private; under docs/ the copy is a page of
-    the site itself, unlisted.
+    the site itself, unlisted. {site} is the repository the suite's site is built
+    from — the lab here, pedia in pedia's run, where this scenario was red because
+    it named the lab (2026-11-16).
 
     Given I am signed in with a course key
     And the GitHub contents API serves "courses/demo/assignment.md" with the document:
@@ -59,14 +61,14 @@ Feature: 🚀 Ship — the author-designed deployment component
       # Assignment
 
       [Ship it](#)
-      {: .ship app="spike_dogs" files="_ship_app.md" bay="michelzam/lightcodelab/docs/share/bays" }
+      {: .ship app="spike_dogs" files="_ship_app.md" bay="{site}/docs/share/bays" }
       """
     And the GitHub contents API serves "courses/demo/_ship_app.md" with the document:
       """
       # 🐕 Spike dogs
       """
     And the bench HEAD commit is "cafebabe12345678"
-    And the bay "michelzam/lightcodelab" accepts writes
+    And the bay "{site}" accepts writes
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
     And I wait for the page to be interactive
     And I press the ship button

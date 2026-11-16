@@ -29,7 +29,10 @@ def step_head_commit(context, sha):
 
 @given('the bay "{repo}" accepts writes')
 def step_bay_repo_accepts(context, repo):
-    step_bay_accepts(context, repo)
+    import os
+    # {site}: the repository this suite's site is built from (the lab here, pedia there)
+    site = os.environ.get("GITHUB_REPOSITORY") or os.environ.get("PAGES_REPO_NWO") or "michelzam/lightcodelab"
+    step_bay_accepts(context, repo.replace("{site}", site))
 
 
 @given("the bay accepts writes")

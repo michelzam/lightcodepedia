@@ -1769,48 +1769,10 @@ class _Doctests:
         return "Doctests(%d/%d)" % (self.passed, self.total) if self.tested else "Doctests(not run)"
 
 
-@component(icon="🐍",
-           attrs=[{"n": "rows", "t": "int", "data": True, "d": 6},
-                  {"n": "folded", "t": "bool", "data": True, "d": False},
-                  {"n": "silent", "t": "bool", "data": True, "d": False},
-                  {"n": "init", "t": "long", "data": True, "d": ""},
-                  {"n": "bound", "t": "str", "data": True, "d": ""},
-                  {"n": "expected", "t": "str", "data": True, "d": ""},
-                  {"n": "mypy", "t": "str", "data": True, "d": "", "attr": "mypy"},
-                  {"n": "subtitles", "t": "str", "data": True, "d": "", "attr": "subtitles"},
-                  {"n": "output", "t": "str"},
-                  {"n": "played", "t": "int"},
-                  {"n": "last_note", "t": "str"},
-                  {"n": "doctests", "t": "str"}],
-           methods=["run", "test"])
-class Run(Block):
-    """A Python runner, by its id: self.page.coin.played, .last_note, .output,
-    .doctests.green — what the block itself records; no selector in a step."""
-    def run(self):
-        return self._tap(".lc-pyrun-run, .lc-run-btn, [data-lc-run]")
+{% include run.py %}
 
-    def test(self):
-        """Press 🧪 Test, as a person would; the tally lands on the block."""
-        return self._tap(".lc-pyrun-test")
 
-    @property
-    def output(self):
-        o = self._q(".lc-pyrun-out")
-        return str(o._el.textContent) if o and o._el is not None else ""
-
-    @property
-    def played(self):
-        """Notes play() queued since the page opened (song.md)."""
-        return int(self._attr("data-lc-played") or 0)
-
-    @property
-    def last_note(self):
-        return str(self._attr("data-lc-last-note") or "")
-
-    @property
-    def doctests(self):
-        return _Doctests(self._attr("data-lc-doctest"))
-
+{% include runner.py %}
 
 @component(icon="🔬",
            attrs=[{"n": "height", "t": "int", "data": True, "d": 400},
@@ -1820,27 +1782,7 @@ class Pytutor(Block):
     pass
 
 
-@component(icon="🖼️", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}],
-           methods=["load", "image"])
-class EmbedPage(Block):
-    def load(self, url):
-        """Point the embedded iframe at a new URL (e.g. from a button on_click)."""
-        if self._el is not None:
-            self._el.src = url
-
-    def image(self, url):
-        """Show a single image, auto-fitted (object-fit: contain) inside the frame.
-        A bare iframe pointed at an image shows the browser's raw image document,
-        which the page can't style — so we wrap it in a tiny centred srcdoc."""
-        if self._el is None:
-            return
-        doc = ("<!doctype html><meta charset=utf-8>"
-               "<style>html,body{margin:0;height:100%;background:#fff}"
-               "body{display:flex;align-items:center;justify-content:center}"
-               "img{max-width:100%;max-height:100%;object-fit:contain;display:block}"
-               "</style><img src='" + url + "'>")
-        self._el.srcdoc = doc
-
+{% include embed.py %}
 
 @component(icon="🪗", methods=["open", "close", "sections"])
 class Accordion(Block):
@@ -1907,95 +1849,9 @@ class Scene3d(Block):
         return self._method_btn("blow_bubble").click()
 
 
-@component(icon="🗣️",
-           attrs=[{"n": "size", "t": "int", "data": True, "attr": "size", "d": 180},
-                  {"n": "playing", "t": "bool"},
-                  {"n": "speech", "t": "str"},
-                  {"n": "dock", "t": "bool", "data": True, "attr": "dock"}, {"n": "autoplay", "t": "bool", "data": True, "attr": "autoplay"}, {"n": "story", "t": "str", "data": True, "attr": "story"}, {"n": "pick", "t": "str", "data": True, "attr": "pick"}, {"n": "src", "t": "str", "data": True, "attr": "src"}],
-           assoc=[{"n": "points", "target": "Block", "list": True}],
-           methods=["play", "stop", "video"],
-           states=["idle", "speaking"])
-class Avatar(Block):
-    _lc_keep = ("size",)
-    def _reg(self):
-        regs = getattr(js.window, "_lcAvatars", None)
-        aid = self.id
-        return getattr(regs, aid, None) if regs is not None and aid else None
+{% include avatar.py %}
 
-    @property
-    def playing(self):
-        av = self._reg()
-        return bool(av.playing) if av is not None else False
-
-    @property
-    def points(self):
-        """Every part its scripts walk to (at:) — the app it shows, the
-        check it runs: the x-ray draws one pipe each."""
-        av = self._reg()
-        if av is None:
-            return []
-        scripts = [getattr(av, "script", None), getattr(av, "_tourScript", None)]
-        st = getattr(av, "stories", None)
-        if st:
-            for k in js.window.Object.keys(st):
-                scripts.append(getattr(st, k, None))
-        out, seen = [], set()
-        for sc in scripts:
-            if not sc:
-                continue
-            for i in range(int(sc.length or 0)):
-                at = str(getattr(sc[i], "at", "") or "")
-                el = js.window.lcAvatarResolve(at) if at else None
-                w = _wrap(el) if el else None
-                if w is None or type(w) is Block or not w.id or w.id in seen:
-                    continue
-                seen.add(w.id)
-                out.append(w)
-        return out
-
-    @property
-    def speech(self):
-        b = self._el.querySelector(".lc-avatar-speech") if self._el is not None else None
-        return str(b.textContent or "").strip() if b is not None else ""
-
-    @property
-    def size(self):
-        c = self._el.querySelector(".lc-avatar-char") if self._el is not None else None
-        if c is None:
-            return 0
-        try:
-            return int(str(c.style.width).replace("px", "") or 0)
-        except Exception:
-            return 0
-
-    @transition(["idle"], "speaking")
-    def play(self):
-        if not self.playing:
-            self._tap(".lc-avatar-char")
-        return self
-
-    @transition(["speaking"], "idle")
-    def stop(self):
-        if self.playing:
-            self._tap(".lc-avatar-char")
-        return self
-
-    def video(self, url):
-        """Set a runtime video source (direct .mp4/.webm URL or a YouTube link)
-        for this avatar — e.g. from a button on_click, so the URL never lives in
-        the repo. A script line with `video: true` then plays this source with
-        its cues; YouTube links play through the embed, file URLs keep alpha."""
-        fn = getattr(js.window, "lcAvatarSetVideo", None)
-        if fn is not None and self.id:
-            fn(self.id, str(url or ""))
-        return self
-
-
-@component(icon="🧱")
-class Blocks(Block):
-    """Card-sections widget (.block / .blocks) — layout container."""
-    pass
-
+{% include blocks.py %}
 
 @component(icon="⌨️")
 class Repl(Block):
@@ -2053,39 +1909,7 @@ class ModelCheck(Block):
         return self._attr("data-checked") is not None and self.broken == 0
 
 
-@component(icon="▶️",
-           attrs=[{"n": "playing", "t": "bool"}, {"n": "label", "t": "str"}],
-           assoc=[{"n": "target", "target": "Avatar"}])
-class AvatarTrigger(Block):
-    @property
-    def playing(self):
-        return self.has_class("playing")
-
-    @property
-    def label(self):
-        return self.text
-
-    @property
-    def target(self):
-        gid = self._attr("data-avt-target") or ""
-        el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
-        return _wrap(el)
-
-
-def _lc_doc_data(obj):
-    """The problem-space documents register their data as a dataset under
-    their own id — hand back that JS object so a proof asserts on fields
-    (self.page.<id>.data.name), not markup."""
-    ds = getattr(js.window, "lcDatasets", None)
-    eid = obj._attr("data-lc-id") or ""
-    return getattr(ds, eid, None) if (ds and eid) else None
-
-
-def _lc_ref(obj, attr):
-    gid = obj._attr(attr) or ""
-    el = js.window.document.querySelector("[data-lc-id='" + gid + "']") if gid else None
-    return _wrap(el)
-
+{% include avatar_trigger.py %}
 
 @component(icon="👤",
            assoc=[{"n": "source", "target": "Form"}])
@@ -2419,7 +2243,7 @@ class Cell(Block):
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
-    ("lc-query", Query),
+    ("lc-query", Query), ("lc-runner", Runner),
     ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
     ("lc-button", Button), ("button", Button), ("lc-carousel", Carousel),
     ("lc-cards", Cards), ("lc-dropdown", Dropdown), ("lc-folder", Folder),

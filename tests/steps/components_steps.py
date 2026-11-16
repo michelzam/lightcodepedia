@@ -59,16 +59,28 @@ def step_pick_in_quiz(context, answer, quiz_id):
     context.page.wait_for_timeout(300)
 
 
+def _quiz_sel(context):
+    """the quiz option selector a step set, else every quiz's options. NOT
+    getattr(context, "_quiz_sel", …): behave's context raises KeyError, not
+    AttributeError, for a missing name starting with _ — the default never
+    applied and both keyboard scenarios crashed before checking (pedia's
+    full suite, red since 2026-11-14)"""
+    try:
+        return context._quiz_sel
+    except (AttributeError, KeyError):
+        return ".lc-quiz li"
+
+
 @then("that quiz answer is marked correct")
 def step_quiz_correct(context):
-    li = context.page.locator(getattr(context, "_quiz_sel", ".lc-quiz li"),
+    li = context.page.locator(_quiz_sel(context),
                               has_text=context._quiz_answer).first
     expect(li).to_have_class(re.compile(r"lc-quiz-correct"), timeout=5_000)
 
 
 @then("that quiz answer is marked wrong")
 def step_quiz_wrong(context):
-    li = context.page.locator(getattr(context, "_quiz_sel", ".lc-quiz li"),
+    li = context.page.locator(_quiz_sel(context),
                               has_text=context._quiz_answer).first
     expect(li).to_have_class(re.compile(r"lc-quiz-wrong"), timeout=5_000)
 
