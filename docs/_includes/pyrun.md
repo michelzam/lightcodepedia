@@ -421,7 +421,17 @@ Auto-included by docs/_layouts/default.html.
     "    for line in str(src).split('\\n'):",
     "        w = line.strip().split()",
     "        if len(w) > 1 and w[0] in ('import', 'from'):",
-    "            _lc_module(w[1].split('.')[0].rstrip(','))",
+    /* A RUNNER THAT CANNOT LOAD HERE IS SKIPPED, NOT FATAL (Michel, 2026-11-16,
+       Python Module 12: tools.py shown read only beside city.py, whose main
+       guard says `import tools`; tools.py needs inspect/importlib, which the
+       page's Python lacks, and the scan's failure broke `from city import`).
+       The scan is eager — it reads every import line, guarded or not — so a
+       module it cannot build is left out; an import that really runs still
+       raises its own error. */
+    "            try:",
+    "                _lc_module(w[1].split('.')[0].rstrip(','))",
+    "            except Exception:",
+    "                pass",
     "def _lc_module(name):",
     "    if name in _lc_sys.modules:",
     "        return _lc_sys.modules[name]",
