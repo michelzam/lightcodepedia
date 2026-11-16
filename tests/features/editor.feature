@@ -305,5 +305,5 @@ Feature: Page editor — ✨ AI edit dialog
       """
     And the editor preview shows the proof "real_proof"
     And I run the feature "real_proof"
-    Then the proof "real_proof" is green, or says why
+    Then the feature "real_proof" is green
     And the status went only to the page's own proof line
