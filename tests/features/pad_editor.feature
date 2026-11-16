@@ -19,7 +19,7 @@ Feature: The pad types like a text field, painted
     When I type "\n[the shelter](supabase://shelter)\n{: .database " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .database " offers "beside, layout, live, unlisted, visible"
     When I type "\n{: .mdpad " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, folded, layout, numbers, piano, replay, rows, save, visible"
+    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, doctest, folded, layout, mypy, numbers, piano, replay, rows, save, tools, visible"
     When I type "\n{: .datagrid " at the end of the "playground" pad
     Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, bind, columns, compute, dates, detail-of, editable, empty, filter, format, height, hints, layout, locked, master, reorder, rows, save, sort, source, title, visible"
     When I type "\n{: .server " at the end of the "playground" pad
