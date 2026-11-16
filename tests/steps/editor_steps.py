@@ -498,3 +498,17 @@ def step_tabs_on_screen(context):
     }""")
     assert got["tabsRight"] <= got["view"], "the tabs sit past the viewport: %r" % got
     assert got["prev"] < got["main"] and got["left"] >= 200, "the preview took the drawer: %r" % got
+
+
+@then("the status went only to the page's own proof line")
+def step_status_only_own_line(context):
+    """2026-11-16, Module 09 page 1: a run's status landed inside a button's
+    Python string — the Nth card matched the Nth '{: .feature' anywhere"""
+    val = context.page.evaluate("() => document.getElementById('ed-input').value")
+    assert '{: .feature #real_proof status="passing" }' in val, val
+    assert val.count('status="passing"') == 1, "the status went elsewhere too:\n" + val
+
+
+@when('the editor preview shows the proof "{fid}"')
+def step_preview_shows(context, fid):
+    expect(context.page.locator('#ed-preview [data-lc-id="%s"]' % fid).first).to_be_attached(timeout=20_000)

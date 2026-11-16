@@ -271,3 +271,39 @@ Feature: Page editor — ✨ AI edit dialog
     And I open the page editor
     And the preview holds a poster 1800 pixels wide
     Then the editor's tabs are on screen beside the preview
+
+  Scenario: A run's status goes back to the page's own proof line — never into code or a pad
+    Michel, 2026-11-16: page 1 of Module 09 broke after a save. Its Apply button's Python
+    builds a proof line in a string ("{: .feature #feature_01 …"); the editor matched the Nth
+    card to the Nth "{: .feature" anywhere in the text and wrote status="passing" into the
+    button's code. A line counts only at its start, outside a fenced block; a pad's proof is
+    the pad's.
+
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I open the page editor
+    And the editor content is:
+      """
+      # Two proofs, one a string
+
+      [Make one](#)
+      {: .button #maker }
+      ```python
+      block = "{: .feature #ghost visible=\"true\" }"
+      ```
+      {: .onclick }
+
+      ```gherkin
+      Feature: Real
+        Scenario: It holds
+          Then it holds
+          :::python
+          assert True
+          :::
+      ```
+      {: .feature #real_proof status="pending" }
+      """
+    And the editor preview shows the proof "real_proof"
+    And I run the feature "real_proof"
+    Then the proof "real_proof" is green, or says why
+    And the status went only to the page's own proof line

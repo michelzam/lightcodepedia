@@ -579,6 +579,7 @@ Feature: A default can be a function
 - A **relative** link (`[dogs](../module_00/dogs.yaml)`) names a file beside the page: the reader's own bench copy when they saved one, the page's repository copy otherwise — a pile declared by its file, no rows retyped.
 - `source="id"` wires a view to the dataset; multiple views can share one dataset.
 - `class X(Object, source="id")` makes the dataset a class: a grid on `X` dresses the same rows (see above).
+- **A reference to a page part** — `feature = Attr(Feature)` on a class: its card picks among the page's own proofs, by their titles, and the row keeps the proof's **id** (`feature_01`), saved and read back as written — a proof on another page stays named, never blanked. The same for any part: `Attr(Datagrid)`, `Attr(Mdpad)`.
 - A class over a **learner's file** — `{: .dataset #id save="their/file.yaml" }`, read from their bench — puts a **💾** in its grid's corner: the objects' rows go back to that file (their fields, never the engine's marks), and the card's picks with them.
 - Click any **column header** to sort. Sorting persists through pagination.
 - Add a **`url` column** to make rows clickable links.

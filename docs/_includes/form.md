@@ -824,12 +824,22 @@ Auto-included by docs/_layouts/default.html.
             if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
             /* a reference picks among its class's objects, by their names */
             if (f.ref) {
-              var rr = (window.lcDatasets || {})[f.ref] || [], lab = window.lcRefLabel ? window.lcRefLabel(f.ref) : "obj";
+              /* a reference to a PAGE PART (Attr(Feature)): the page's own parts
+                 of that kind, by their titles, kept by their ids (Michel,
+                 2026-11-16: the backlog's feature picks a proof) */
+              var rr = f.part
+                ? Array.prototype.map.call(document.querySelectorAll(".lc-" + String(f.ref).toLowerCase() + "[data-lc-id]"), function (p) {
+                    var t = p.getAttribute("data-title") || "", id = p.getAttribute("data-lc-id");
+                    return { obj: id, title: t && t !== id ? t + " · " + id : id };
+                  })
+                : (window.lcDatasets || {})[f.ref] || [];
+              var lab = f.part ? "title" : (window.lcRefLabel ? window.lcRefLabel(f.ref) : "obj");
               var nm = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
               refs[k] = {};
               rr.forEach(function (r) { refs[k][nm(r)] = String(r.obj); });
               var cur = rr.filter(function (r) { return String(r.obj) === String(row[k]); })[0];
-              if (k in row) row[k] = cur ? nm(cur) : "";
+              /* a part on another page keeps its id, shown as it is */
+              if (k in row) row[k] = cur ? nm(cur) : (f.part ? String(row[k] == null ? "" : row[k]) : "");
               if (!f.ro) { picks[k] = [""].concat(Object.keys(refs[k])); refNames[k] = Object.keys(refs[k]); }
             }
           });

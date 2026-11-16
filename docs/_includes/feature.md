@@ -491,19 +491,34 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        among its container's cards = the Nth {: .feature } in the source. */
     var host = card.closest && card.closest("#ed-preview, #ed-feat-preview");
     var inp = document.getElementById("ed-input");
-    if (host && inp && status) {
-      var allCards = host.querySelectorAll(".lc-feature");
-      var idx = Array.prototype.indexOf.call(allCards, card);
+    /* ONLY THE PAGE'S OWN PROOF LINES (2026-11-16, Module 09 page 1): the Nth
+       card was matched to the Nth "{: .feature" ANYWHERE in the text — one
+       inside a button's Python string, one inside a pad's example — and the
+       status landed in the button's code, which broke. A proof in a pad is
+       the pad's, never the page's; a line counts only at its start, outside
+       a fenced block. */
+    if (host && inp && status && !(card.closest && card.closest(".lc-mdpad"))) {
+      var allCards = Array.prototype.filter.call(host.querySelectorAll(".lc-feature"), function (c) { return !c.closest(".lc-mdpad"); });
+      var idx = allCards.indexOf(card);
       if (idx >= 0) {
-        var count = -1;
-        var newSrc = inp.value.replace(/(\{:\s*\.feature\b)([^}]*)(\})/g, function(m, open, attrs, close) {
-          count++;
-          if (count !== idx) return m;
-          attrs = /\bstatus="[^"]*"/.test(attrs)
-            ? attrs.replace(/\bstatus="[^"]*"/, 'status="' + status + '"')
-            : attrs.trimRight() + ' status="' + status + '"';
-          return open + attrs + close;
-        });
+        var count = -1, fence = null;
+        var newSrc = inp.value.split("\n").map(function (line) {
+          var f = /^\s*(`{3,}|~{3,})/.exec(line);
+          if (f) {
+            if (!fence) fence = f[1];
+            else if (f[1].charAt(0) === fence.charAt(0) && f[1].length >= fence.length && /^\s*(`{3,}|~{3,})\s*$/.test(line)) fence = null;
+            return line;
+          }
+          if (fence) return line;
+          return line.replace(/^(\{:\s*\.feature\b)([^}]*)(\})/, function (m, open, attrs, close) {
+            count++;
+            if (count !== idx) return m;
+            attrs = /\bstatus="[^"]*"/.test(attrs)
+              ? attrs.replace(/\bstatus="[^"]*"/, 'status="' + status + '"')
+              : attrs.trimRight() + ' status="' + status + '"';
+            return open + attrs + close;
+          });
+        }).join("\n");
         if (newSrc !== inp.value) {
           inp.value = newSrc;
           var ev = document.createEvent("Event");

@@ -327,6 +327,13 @@ class Attr:
         return v
 
     def _coerce0(self, v):
+        if self.ref and _lc_part_type(self.t):
+            # A PAGE PART, kept by its id (Michel, 2026-11-16: the backlog's
+            # feature picks a .feature card): a wrapper gives its id, a name
+            # is kept as written — the part may live on another page
+            if v is None or v == "":
+                return None
+            return str(getattr(v, "id", v) if not isinstance(v, str) else v)
         if self.ref:
             # accept an instance, a bound global name, or None ("" from the widget)
             if v is None or v == "":
@@ -384,6 +391,8 @@ class Attr:
             d["req"] = True
         if self.ref:
             d["ref"] = self.t
+            if _lc_part_type(self.t):
+                d["part"] = True
         if self.min is not None:
             d["min"] = self.min
         if self.max is not None:
@@ -476,6 +485,22 @@ def _lc_name_of(inst):
         if g[k] is inst and not k.startswith("_"):
             return k
     return ""
+
+
+def _lc_part_type(t):
+    """Is t a page part's type (a component: Feature, Datagrid…) rather than
+    an author's class? A reference to a part keeps the part's id."""
+    c = globals().get(t) if isinstance(t, str) else t
+    return isinstance(c, type) and _lc_is_block(c)
+
+
+def _lc_ref_label(f, v):
+    """What a reference shows and saves: a part's id, an object's name."""
+    if v is None:
+        return ""
+    if _lc_part_type(f.t):
+        return str(v)
+    return _lc_name_of(v)
 
 
 def _lc_field_prop(f):
@@ -2693,7 +2718,7 @@ def _lc_inspect_schema(obj):
         if f.ref:
             # value = the referenced instance's name; options = every live,
             # type-compatible instance (subclasses included — polymorphism)
-            d["v"] = _lc_name_of(v) if v is not None else ""
+            d["v"] = _lc_ref_label(f, v)
             d["options"] = [_lc_name_of(o) for o in _LC_OBJS
                             if o is not obj and _lc_isa(o, f.t) and _lc_name_of(o)]
         else:
@@ -2789,7 +2814,7 @@ def _lc_rows_of(cls):
                 fields = getattr(type(o), "_lc_fields", None) or fields   # with its own fields too
             for f in fields:
                 v = o._v.get(f.n)
-                row[f.n] = (_lc_name_of(v) or "?") if f.ref and v is not None else _lc_cell(f, v)
+                row[f.n] = (_lc_ref_label(f, v) or "?") if f.ref and v is not None else _lc_cell(f, v)
             for n in _lc_props(type(o)):
                 if n not in row:
                     row[n] = _lc_prop_value(o, n)
@@ -2838,7 +2863,7 @@ def _lc_publish_class(cls):
                                 val = (getattr(o, "_lc_raw", None) or {}).get(f.n)
                             setattr(o._js, f.n, "" if val is None else val)
                             continue
-                        setattr(o._js, f.n, (_lc_name_of(v) or "") if f.ref and v is not None else _lc_cell(f, v))
+                        setattr(o._js, f.n, _lc_ref_label(f, v) if f.ref and v is not None else _lc_cell(f, v))
                     if db:
                         # which subclass this row is; the base class writes none — but a
                         # name no class answers to stays as read, for the author's 🧹
@@ -2903,6 +2928,7 @@ def _lc_model_spec_push(cls, subs=True):
         fields[f.n] = {"t": f.t, "enum": f.enum, "ro": f.ro or dbid, "state": f.is_state,
                        "src": bool(getattr(f, "src", False)), "hidden": dbid or bool(getattr(f, "hidden", False)),
                        "ref": f.t if f.ref else None, "was": getattr(f, "was", None),
+                       "part": bool(f.ref and _lc_part_type(f.t)),
                        "req": bool(getattr(f, "required", False)),
                        "col": getattr(f, "col", None),
                        # its place in the class as written — the card's order
