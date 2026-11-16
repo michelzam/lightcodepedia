@@ -28,7 +28,9 @@ FEATURES = os.path.join(ROOT, "tests", "features")
 STEPS = os.path.join(ROOT, "tests", "steps")
 
 # @given("...") / @when('...') / @then("..."), the phrase as behave sees it
-DECOR = re.compile(r"^@(?:given|when|then)\(\s*(['\"])(.+?)\1\s*\)", re.M)
+# …and @step(…), which matches any keyword: module08's "the proof … is green,
+# or says why" slipped past this check into a published feature (2026-11-16)
+DECOR = re.compile(r"^@(?:given|when|then|step)\(\s*(['\"])(.+?)\1\s*\)", re.M)
 # a step line in a feature file, minus its keyword
 STEP_LINE = re.compile(r"^\s*(?:Given|When|Then|And|But)\s+(.*?)\s*$", re.M)
 # {placeholders} become a wildcard so parametrised steps still match
