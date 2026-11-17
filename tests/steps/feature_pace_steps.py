@@ -26,6 +26,8 @@ def step_paced(context, ms):
     assert steps >= 2, "a one-step card cannot show a pace"
     bar = card.locator(".lc-feature-progress i")
     expect(bar).to_be_attached()
+    colour = lambda: bar.evaluate("i => getComputedStyle(i).backgroundColor")
+    assert colour() == "rgb(245, 158, 11)", "the bar is not orange while the checks arrive: " + colour()
     width = bar.evaluate("i => i.style.width")
     assert width != "100%", "the bar was already full at the first tick: " + width
     assert card.get_attribute("data-status") != "passing", "the verdict landed before the checks"
@@ -33,6 +35,20 @@ def step_paced(context, ms):
     took = (time.monotonic() - t0) * 1000
     assert took >= (steps - 1) * ms * 0.7, "the checks landed too fast for a pace of %d ms: %.0f ms for %d steps" % (ms, took, steps)
     expect(bar).to_have_attribute("style", "width: 100%;")
+    context.page.wait_for_timeout(400)
+    assert colour() == "rgb(34, 197, 94)", "the bar is not green on a passing card: " + colour()
+
+
+@then('the bar of the card "{fid}" is {verdict}, like its left edge')
+def step_bar_verdict(context, fid, verdict):
+    want = {"red": "rgb(239, 68, 68)", "green": "rgb(34, 197, 94)"}[verdict]
+    card = context.page.locator('.lc-feature[data-lc-id="%s"]' % fid).first
+    bar = card.locator(".lc-feature-progress i")
+    expect(bar).to_be_attached(timeout=10_000)
+    context.page.wait_for_timeout(400)
+    got = bar.evaluate("i => getComputedStyle(i).backgroundColor")
+    edge = card.evaluate("c => getComputedStyle(c).borderLeftColor")
+    assert got == want and edge == want, "bar %s, left edge %s, expected %s" % (got, edge, want)
 
 
 @then("its verdict lands at once, without a bar")

@@ -2,7 +2,9 @@ Feature: The proof's reveal has a pace — checks land one at a time
   Michel, 2026-09-23: "artificially slow the display so learners see the
   green progression bar and the confetti… suspense, effort, expectation".
   The code runs as fast as it runs; the card shows its steps one at a time,
-  300 ms apart by default, a thin bar filling with them. pace="0" is
+  300 ms apart by default, a thin bar filling with them — orange while
+  they arrive, then green or red like the card's left edge (Michel,
+  2026-11-17: the bar was green on a failing card). pace="0" is
   natural speed; an author may go slower.
 
   Scenario: By default the checks arrive one at a time, a bar filling with them

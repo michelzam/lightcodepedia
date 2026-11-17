@@ -598,3 +598,15 @@ def step_slide_top(context):
     }""")
     assert got["top"] is not None, "no active slide"
     assert got["y"] == 0 and got["top"] >= 0, "the slide starts above the screen: %r" % got
+
+
+@when('the deck shows the slide holding "{elid}"')
+def step_slide_holding(context, elid):
+    ok = context.page.evaluate("""(id) => {
+      const el = document.querySelector('[data-lc-id="' + id + '"]') || document.getElementById(id);
+      const S = window.lcSlides;
+      if (!el || !S || !S.slideOf) return false;
+      S.goto(S.slideOf(el), true); return true;
+    }""", elid)
+    assert ok, "no slide holds %s" % elid
+    context.page.wait_for_timeout(400)

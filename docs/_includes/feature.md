@@ -78,7 +78,12 @@ Registers with window.lcScanElement so the editor preview also renders cards.
 .lc-feature { border: 1px solid #e5e7eb; border-left: 4px solid #9ca3af; border-radius: 0 8px 8px 0; margin: 1.2em 0; background: #fff; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
 .lc-feature-passing { border-left-color: #22c55e; }
 .lc-feature-progress { height: 4px; background: #e5e7eb; border-radius: 2px; overflow: hidden; margin: 0 0 6px; }
-.lc-feature-progress i { display: block; height: 100%; background: #22c55e; transition: width 0.25s ease; }
+/* THE BAR SAYS WHAT THE CARD SAYS (Michel, 2026-11-17: "the horizontal
+   progression bar is green, even if it fails. it should be orange during
+   progression, then red or green as the left bar when done") */
+.lc-feature-progress i { display: block; height: 100%; background: #f59e0b; transition: width 0.25s ease, background 0.2s ease; }
+.lc-feature-progress[data-verdict="passing"] i { background: #22c55e; }
+.lc-feature-progress[data-verdict="failing"] i { background: #ef4444; }
 .lc-feature-failing  { border-left-color: #ef4444; }
 .lc-feature-pending  { border-left-color: #f59e0b; }
 /* wanted: a request from the problem space — steps written, none implemented
@@ -692,7 +697,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (body) body.appendChild(footer);
 
       paintSaved(card, allPass);
-      if (bar) bar.firstChild.style.width = "100%";
+      if (bar) { bar.firstChild.style.width = "100%"; bar.setAttribute("data-verdict", allPass ? "passing" : "failing"); }
       setCardStatus(card, allPass ? "passing" : "failing");
       if (runBtn) { runBtn.disabled = false; runBtn.textContent = "▶ Run"; }
       };
