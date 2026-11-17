@@ -53,3 +53,13 @@ Feature: Slides FAB and presentation mode
     When I tap the slides FAB button
     And I click the High contrast option in the popup
     Then the page uses the default theme
+
+  # Michel, 2026-11-17: "we can try present mode but the top is truncated".
+  # Present entered from a scrolled page kept the window's scroll: the footer
+  # under the deck let the page stay scrolled, and the slide's title was cut.
+  Scenario: Present entered from a scrolled page shows the slide from its top
+    When I navigate to "/tutorial101"
+    And I wait for the page to be interactive
+    And I scroll the page down by 700 pixels
+    And the page enters "present" mode
+    Then the active slide is not cut off at the top

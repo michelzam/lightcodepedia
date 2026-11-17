@@ -621,6 +621,11 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (!hasDeck()) return;
       if (body.classList.contains('lc-reel-active')) exitReel();   // mutually exclusive
       body.classList.add('lc-slides-active');
+      /* THE SLIDE STARTS AT ITS TOP (Michel, 2026-11-17: "the top is
+         truncated"): the footer under the deck leaves the page a little
+         taller than the screen, so a page entered scrolled stayed scrolled
+         and the slide's title was cut. */
+      try { window.scrollTo(0, 0); } catch (e) {}
       showSlide();
       syncFab(true);
       syncUrl(true);

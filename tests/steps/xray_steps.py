@@ -575,3 +575,26 @@ def step_shift_hover_cell(context):
     cell = context.page.locator(".lc-cell").first
     cell.wait_for(state="visible", timeout=25_000)
     _shift_alt_hover(context.page, cell)
+
+
+@when("I scroll the page down by {px:d} pixels")
+def step_scroll_down(context, px):
+    context.page.evaluate("(px) => window.scrollTo(0, px)", px)
+    context.page.wait_for_timeout(300)
+
+
+@when('the page enters "{mode}" mode')
+def step_enter_mode(context, mode):
+    context.page.wait_for_function("() => !!window.lcMode", timeout=15_000)
+    context.page.evaluate("(m) => window.lcMode.set(m)", mode)
+    context.page.wait_for_timeout(600)
+
+
+@then("the active slide is not cut off at the top")
+def step_slide_top(context):
+    got = context.page.evaluate("""() => {
+      const s = document.querySelector('.lc-slide[data-active="true"]');
+      return { y: window.scrollY, top: s ? s.getBoundingClientRect().top : null };
+    }""")
+    assert got["top"] is not None, "no active slide"
+    assert got["y"] == 0 and got["top"] >= 0, "the slide starts above the screen: %r" % got
