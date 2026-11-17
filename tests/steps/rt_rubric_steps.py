@@ -32,6 +32,15 @@ def step_error_blames_engine(context):
     assert "attribute" in text, text
 
 
+@then('the step error says "{what}"')
+def step_error_says(context, what):
+    err = context.page.locator(".lc-feature-step-err").first
+    expect(err).to_be_visible(timeout=15_000)
+    text = err.inner_text()
+    assert what in text, text
+    assert "Not you" not in text and "page's bug" not in text, text
+
+
 @when("I retype the pad with")
 @when("I retype the pad with:")
 @when("I retype the pad with")   # behave 1.2.6 (pedia) strips a docstring step's colon; both spellings

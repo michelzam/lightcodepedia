@@ -142,3 +142,29 @@ Feature: The résumé rubric — acceptance criteria grade what the learner type
     And I run the page's embedded features
     Then the embedded feature ends red
     And the step error blames the engine, not the learner
+
+  Scenario: A part the page does not have yet is missing, not the engine's bug
+    Michel, 2026-11-17 (Module 09, page 2): "it should not address the engine but say if
+    something is missing". A step that asks the page for a part by its name, before the
+    learner built it, says what is missing — never "Not you … the page's bug".
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/module_01/missing.md" with the document:
+      """
+      # Missing page
+
+      ```gherkin
+      Feature: A list not built yet
+        Scenario: The step asks for my_list
+          When I display my list
+          :::python
+          self.list = self.page.my_list
+          :::
+      ```
+      {: .feature #gone visible="true" status="pending" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/missing.md"
+    And I wait for the page to be interactive
+    And I run the page's embedded features
+    Then the embedded feature ends red
+    And the step error says "Missing — nothing named my_list on the page yet"

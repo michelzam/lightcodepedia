@@ -882,6 +882,13 @@ Auto-included by docs/_layouts/default.html.
                 "_lc_set(" + JSON.stringify(cls) + "," + JSON.stringify(String(objName)) + "," + JSON.stringify(k) + "," + JSON.stringify(v) + ")"); return; }
               if (shown !== row && k) row[k] = v;
               window.lcMasterDetail.refreshGrid(bound);
+              /* THE LIST FOLLOWS THE FORM (Michel, 2026-11-17, Module 09: "if I
+                 type batman for the taken by in the form, the grid line is not
+                 updated"). A list on a dataset is the dataset's light table, not
+                 an AG grid: refreshGrid had nothing to repaint. The row is the
+                 dataset's own; say the dataset moved, as a grid's edit does, and
+                 every view on it repaints. */
+              if (cls && window.lcSetDataset && (window.lcDatasets || {})[cls]) window.lcSetDataset(cls, window.lcDatasets[cls]);
             }
           });
           setFormTitle(wrapper, title || inferFormTitle(shown) || "Form");

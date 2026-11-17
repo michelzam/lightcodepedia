@@ -671,6 +671,13 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       return "\ud83e\udde9 Missing \u2014 this step reads " + none[1] + " of a component that is not on the "
            + "page yet. The step above says which one.";
     }
+    /* …and a component asked BY NAME that the page does not hold (Michel,
+       2026-11-17, Module 09 page 2: "it should not address the engine but say
+       if something is missing") — self.page.my_list before the list is there */
+    var gone = /no component or #id='([\w-]+)' on this page/.exec(e);
+    if (gone) {
+      return "🧩 Missing — nothing named " + gone[1] + " on the page yet.";
+    }
     if (/AttributeError|NameError|has no attribute/.test(e)) {
       return "\u2699\ufe0f Not you — this page's own check asks for something the engine "
            + "does not have, so it cannot run. That is the page's bug, not yours. "

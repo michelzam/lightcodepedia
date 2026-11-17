@@ -368,6 +368,19 @@ def test_module_08s_check_names_its_quiz_and_the_title_its_neighbours_wear():
     assert spec.get("quiz_id") == 2160533, spec.get("quiz_id")
 
 
+
+def test_an_attendance_tick_is_true_false_and_passes_the_linter():
+    """2026-11-17: the module gate refused 🗓️ Attendance 12 — "only 2 options, a coin-flip".
+    Attendance is presence, not knowledge: kind="true_false" is Canvas's true/false question,
+    and the linter lets it through; two plain options still read as a coin-flip."""
+    spec = cq.parse_md("# 🗓️ Attendance 12\n{: .canvas_quiz attempts=\"1\" }\n\n### Question\n\nReady?\n\n"
+                       "- [x] True\n- [ ] False\n\n{: .quiz kind=\"true_false\" }\n")
+    assert spec["questions"][0]["type"] == "true_false", spec["questions"][0]
+    assert cq.to_canvas_question(spec["questions"][0], 1)["question"]["question_type"] == "true_false_question"
+    assert not cq.tells(spec), cq.tells(spec)
+    plain = cq.parse_md("# x\n\n### Q\n\nReady?\n\n- [x] True\n- [ ] False\n\n{: .quiz }\n")
+    assert any("coin-flip" in t for t in cq.tells(plain)), cq.tells(plain)
+
 if __name__ == "__main__":
     fails = 0
     for name, fn in sorted(globals().items()):

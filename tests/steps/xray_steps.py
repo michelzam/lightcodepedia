@@ -635,3 +635,17 @@ def step_page_mode(context, mode):
 def step_card_says(context, fid, text, bad):
     got = context.page.locator('.lc-feature[data-lc-id="%s"]' % fid).first.inner_text()
     assert text in got and bad not in got, "the card says:\n%s" % got[:600]
+
+
+@then('a QR code carries "{text}"')
+def step_qr_carries(context, text):
+    context.page.wait_for_selector(".lc-qr", state="attached", timeout=20_000)
+    got = context.page.evaluate("() => Array.from(document.querySelectorAll('.lc-qr')).map(q => q.getAttribute('data-lc-text'))")
+    assert text in got, "no QR code carries %r: %r" % (text, got)
+
+
+@then('a link "{label}" opens "{href}"')
+def step_link_opens(context, label, href):
+    got = context.page.evaluate("""(label) => Array.from(document.querySelectorAll('.markdown-body a'))
+        .filter(a => a.textContent.indexOf(label) >= 0).map(a => a.getAttribute('href'))""", label)
+    assert href in got, "no link %r opens %r: %r" % (label, href, got)
