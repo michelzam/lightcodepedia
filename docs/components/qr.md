@@ -94,6 +94,7 @@ https://example.com
 | `size="N"` | `180` | Width and height in pixels |
 | `here="true"` | — | Encode the page you are on instead of the fence's first line; the fence then holds only the caption |
 | `ship="app"` | — | Encode that app's latest ship (your bay, or `bay=`); waits before the first ship, the fence holds only the caption |
+| `align="center"` | left | The square sits in the middle of its column — a closing slide, a poster |
 
 **Larger code for easier scanning:**
 
@@ -108,6 +109,37 @@ https://lightcodepedia.org
 https://lightcodepedia.org
 ```
 {: .qr size="120" }
+
+**In the middle, for a closing slide:**
+
+```
+https://lightcodepedia.org
+Scan to keep this page
+```
+{: .qr align="center" size="140" }
+
+```gherkin
+Feature: A QR code can sit in the middle
+  As an author closing a talk
+  I want the square centered under my poster
+  So that the room scans it without hunting for it
+
+  Scenario: align="center" puts the square in the middle of its column
+    Given the centered square above
+    :::python
+    self.qr: Object = [q for q in Object._all(".lc-qr") if "keep this page" in q.text][0]
+    box = self.qr._el.getBoundingClientRect()
+    col = self.qr._el.parentElement.getBoundingClientRect()
+    self.left = box.left - col.left
+    self.right = col.right - box.right
+    :::
+    Then it has as much room on its left as on its right
+    :::python
+    assert abs(self.left - self.right) <= 2, f"left {self.left}, right {self.right}"
+    assert self.left > 20, "the square is not centered, it fills or hugs the edge"
+    :::
+```
+{: .feature #qr_centered tags="media" status="passing" }
 
 ## 💡 What can go inside
 
