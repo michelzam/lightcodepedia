@@ -212,6 +212,14 @@ Feature: The pad types like a text field, painted
     When I double-click the "playground" pad's grip
     Then the "playground" pad is back to its own height
 
+  Scenario: A drag whose release is lost ends at the next move with no button held
+    Michel, 2026-11-17 (Safari in Canvas, Module 09 page 4): "when I hover over the lower
+    handle … it resizes by itself and I can't click there … I can't save … there is no SHIP
+    button". The release had been lost; every later move went on resizing.
+
+    When the "playground" pad's grip is dragged 80px down and its release is lost
+    Then the "playground" pad stops resizing, and is no longer held
+
   Scenario: The caret on an id lights every wire that names it
     Michel, 2026-10-11: "highlight all occurrences of an id when the cursor is
     there (prefixed by # or inside quotes or even inside a sql from/join

@@ -752,3 +752,32 @@ def step_preview_box_names(context, pad_id, names):
             return
         context.page.wait_for_timeout(250)
     raise AssertionError("the preview's boxes are named %r, expected %r" % (got, want))
+
+
+@when('the "{pad_id}" pad\'s grip is dragged {dy:d}px down and its release is lost')
+def step_drag_grip_lost(context, pad_id, dy):
+    """the button comes up where the page never hears it (a frame, Safari in Canvas)"""
+    grip = context.page.locator("[data-lc-id='%s'] .lc-mdpad-grip" % pad_id)
+    grip.scroll_into_view_if_needed()
+    box = grip.bounding_box()
+    x, y = box["x"] + box["width"] / 2, box["y"] + box["height"] / 2
+    m = context.page.mouse
+    m.move(x, y); m.down(); m.move(x, y + dy)
+    context.page.wait_for_timeout(100)
+    context.pad_h_lost = _pad_heights(context, pad_id)["pad"]
+    # the pointer moves on with no button held, and no pointerup was ever delivered
+    context.page.evaluate("""([id, y]) => {
+      const g = document.querySelector("[data-lc-id='" + id + "'] .lc-mdpad-grip");
+      for (const dy of [60, 160, 260])
+        g.dispatchEvent(new PointerEvent("pointermove", { bubbles: true, clientY: y + dy, buttons: 0, pointerId: 1 }));
+    }""", [pad_id, y + dy])
+    context.page.wait_for_timeout(100)
+
+
+@then('the "{pad_id}" pad stops resizing, and is no longer held')
+def step_pad_stopped(context, pad_id):
+    h = _pad_heights(context, pad_id)["pad"]
+    assert abs(h - context.pad_h_lost) <= 2, "the pad kept resizing: %d → %d" % (context.pad_h_lost, h)
+    held = context.page.evaluate("(id) => document.querySelector(\"[data-lc-id='\" + id + \"']\").hasAttribute('data-lc-resizing')", pad_id)
+    assert not held, "the grip still holds the pad"
+    context.page.mouse.up()

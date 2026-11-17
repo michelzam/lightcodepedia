@@ -730,7 +730,14 @@ Auto-included by docs/_layouts/default.html.
           if (p) { p.style.height = ""; p.style.minHeight = "0"; }
         });
       }
+      /* A DRAG ENDS WHEN THE BUTTON IS UP, HEARD OR NOT (Michel, 2026-11-17,
+         Safari in Canvas, Module 09 page 4: "when I hover over the lower
+         handle … it resizes by itself and I can't click there … can't save"):
+         the release was lost — inside a frame, over a window the pad shows —
+         and every later move went on resizing. A move with no button held,
+         or a lost capture, ends the drag too. */
       function move(e) {
+        if (e.buttons === 0) { up(); return; }
         wrap.style.height = Math.max(160, Math.round(h0 + e.clientY - y0)) + "px";
         if (keysEl) paintSoon();
       }
@@ -739,10 +746,12 @@ Auto-included by docs/_layouts/default.html.
         grip.removeEventListener("pointermove", move);
         grip.removeEventListener("pointerup", up);
         grip.removeEventListener("pointercancel", up);
+        grip.removeEventListener("lostpointercapture", up);
       }
       grip.addEventListener("pointermove", move);
       grip.addEventListener("pointerup", up);
       grip.addEventListener("pointercancel", up);
+      grip.addEventListener("lostpointercapture", up);
     });
     grip.addEventListener("dblclick", function () { wrap.style.height = ""; if (keysEl) paintSoon(); });
 
@@ -772,6 +781,7 @@ Auto-included by docs/_layouts/default.html.
       split.setPointerCapture(ev.pointerId);
       wrap.setAttribute("data-lc-splitting", "1");
       function move(e) {
+        if (e.buttons === 0) { up(); return; }   /* the release was lost: the drag is over (as the grip, 2026-11-17) */
         var w = Math.max(W * 0.15, Math.min(W * 0.85, w0 + e.clientX - x0));
         out.style.boxSizing = "border-box";              /* the width dragged is the width seen */
         out.style.flex = "0 0 " + Math.round(w) + "px";
@@ -783,10 +793,12 @@ Auto-included by docs/_layouts/default.html.
         split.removeEventListener("pointermove", move);
         split.removeEventListener("pointerup", up);
         split.removeEventListener("pointercancel", up);
+        split.removeEventListener("lostpointercapture", up);
       }
       split.addEventListener("pointermove", move);
       split.addEventListener("pointerup", up);
       split.addEventListener("pointercancel", up);
+      split.addEventListener("lostpointercapture", up);
     });
     split.addEventListener("dblclick", function () { out.style.flex = ""; out.style.boxSizing = ""; placeSplit(); if (keysEl) paintSoon(); });
     if (window.ResizeObserver) new ResizeObserver(placeSplit).observe(wrap);
