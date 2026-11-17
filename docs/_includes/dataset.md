@@ -632,6 +632,20 @@ Auto-included by docs/_layouts/default.html.
     return n || "obj";
   }
   window.lcRefLabel = refLabel;
+  /* A REFERENCE TO A PAGE PART (Attr(Feature)): the page's own parts of that
+     kind, by their titles, kept by their ids — ONE list for the grid and the
+     form (Michel, 2026-11-17, Module 09 page 1: "cannot pick a feature in the
+     grid. But I have 2 in the form. And when I pick the good one, the grid
+     shows nothing"). A check that grades the learner's work (grades=) is the
+     lesson's, not a part of the learner's: it is never offered. */
+  window.lcPartRefs = function (ref) {
+    return Array.prototype.filter.call(document.querySelectorAll(".lc-" + String(ref).toLowerCase() + "[data-lc-id]"),
+      function (p) { return !p.hasAttribute("data-grades"); })
+      .map(function (p) {
+        var t = p.getAttribute("data-title") || "", id = p.getAttribute("data-lc-id");
+        return { obj: id, title: t && t !== id ? t + " · " + id : id };
+      });
+  };
   var _dbYml = {};
   function ghText(repo, path) {
     var pat = ""; try { pat = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
@@ -1926,10 +1940,11 @@ Auto-included by docs/_layouts/default.html.
            cell names the referenced object by its first text attribute and
            picks among the referenced class's objects */
         if (f && f.ref) {
-          var rr = (window.lcDatasets || {})[f.ref] || [], lab = refLabel(f.ref);
+          var rr = f.part ? window.lcPartRefs(f.ref) : (window.lcDatasets || {})[f.ref] || [], lab = f.part ? "title" : refLabel(f.ref);
           var nameOf = function (r) { return r ? String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj) : ""; };
           var curR = rr.filter(function (r) { return String(r.obj) === String(v); })[0];
-          var shown = curR ? nameOf(curR) : "";   /* plain, like any other cell; the icon is the column's */
+          /* a part on another page keeps its id, shown as it is */
+          var shown = curR ? nameOf(curR) : (f.part && v != null ? String(v) : "");   /* plain, like any other cell; the icon is the column's */
           if (f.ro || editSaid === "false") return "<td>" + esc(shown) + "</td>";
           /* a rich pick, like AG Grid's (Michel, 2026-10-17: "the picklist is
              a bit narrow"): the value and its icon, a ▾, a roomy list */
@@ -2207,7 +2222,8 @@ Auto-included by docs/_layouts/default.html.
             var row = sorted[parseInt(cell.getAttribute("data-row"), 10)];
             if (!row) return;
             var ref = cell.getAttribute("data-ref"), col = cell.getAttribute("data-col");
-            var rr = (window.lcDatasets || {})[ref] || [], lab = refLabel(ref);
+            var fp = model && model.fields[col] && model.fields[col].part;
+            var rr = fp ? window.lcPartRefs(ref) : (window.lcDatasets || {})[ref] || [], lab = fp ? "title" : refLabel(ref);
             var nameOf = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
             /* the row a dog is picked for is the selection first (Michel,
                2026-10-18: "that row should be selected first before the

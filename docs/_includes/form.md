@@ -821,18 +821,19 @@ Auto-included by docs/_layouts/default.html.
             if (f.req) required.push(k);
             /* a read-only datetime shows as the grid does: Oct 18 13:15 */
             if (f.t === "datetime" && f.ro && k in row && window.lcTimeShort) row[k] = window.lcTimeShort(row[k]);
-            if (f.enum && !f.ro && !f.state) picks[k] = f.enum.map(String);
+            /* nothing picked yet reads blank, as in the grid — not the type's
+               zero, a value the list does not hold (Michel, 2026-11-17: the
+               effort showed "0" before Bill's estimate was picked) */
+            if (f.enum && !f.ro && !f.state) {
+              picks[k] = [""].concat(f.enum.map(String));
+              if (k in row && f.enum.map(String).indexOf(String(row[k])) < 0) row[k] = "";
+            }
             /* a reference picks among its class's objects, by their names */
             if (f.ref) {
               /* a reference to a PAGE PART (Attr(Feature)): the page's own parts
                  of that kind, by their titles, kept by their ids (Michel,
                  2026-11-16: the backlog's feature picks a proof) */
-              var rr = f.part
-                ? Array.prototype.map.call(document.querySelectorAll(".lc-" + String(f.ref).toLowerCase() + "[data-lc-id]"), function (p) {
-                    var t = p.getAttribute("data-title") || "", id = p.getAttribute("data-lc-id");
-                    return { obj: id, title: t && t !== id ? t + " · " + id : id };
-                  })
-                : (window.lcDatasets || {})[f.ref] || [];
+              var rr = f.part ? window.lcPartRefs(f.ref) : (window.lcDatasets || {})[f.ref] || [];
               var lab = f.part ? "title" : (window.lcRefLabel ? window.lcRefLabel(f.ref) : "obj");
               var nm = function (r) { return String(r[lab] != null && r[lab] !== "" ? r[lab] : r.obj); };
               refs[k] = {};
