@@ -629,3 +629,9 @@ def step_page_mode(context, mode):
             return
         context.page.wait_for_timeout(250)
     assert got == mode, "the page is in %r mode, expected %r" % (got, mode)
+
+
+@then('the card "{fid}" says "{text}" and no "{bad}"')
+def step_card_says(context, fid, text, bad):
+    got = context.page.locator('.lc-feature[data-lc-id="%s"]' % fid).first.inner_text()
+    assert text in got and bad not in got, "the card says:\n%s" % got[:600]

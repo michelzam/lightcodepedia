@@ -2935,7 +2935,21 @@ Auto-included by docs/_layouts/default.html.
         : document.querySelector(".lc-feature[data-grades='" + id + "'], .lc-feature[grades='" + id + "']");
       if (!card) { hold("✋ No check on this page grades the pad — I stop here."); return; }
       var want = String(st.check).toLowerCase();
-      return new Promise(function (r) { setTimeout(r, 400); })     /* the preview re-renders first */
+      /* THE CHECK WAITS FOR A SETTLED PAGE (2026-11-17, the For-M pitch): a
+         check that ran while a cell was still in error printed that passing
+         error as its reason. Wait while a cell is in error, four seconds at
+         most — a cell that stays in error still gets its run. */
+      var settled = function () {
+        return new Promise(function (r) {
+          var t0 = Date.now();
+          (function look() {
+            if (!document.querySelector(".lc-cell.lc-cell-err") || Date.now() - t0 > 4000) return r();
+            setTimeout(look, 150);
+          })();
+        });
+      };
+      return new Promise(function (r) { setTimeout(r, 800); })     /* the preview re-renders, then its cells are told */
+        .then(settled)
         .then(function () { return window.lcRunFeature(card); })
         .then(function (res) {
           var at = -1;
@@ -2994,7 +3008,14 @@ Auto-included by docs/_layouts/default.html.
       return true;
     };
     wrap._lcApply = function (t) {
-      ta.value = t; lastVal = t; render(); publish(true); paintPiano();
+      /* TELL THE CELLS WHEN THE PARTS ARE BACK, NOT BEFORE (2026-11-17, the
+         For-M pitch): announcing at once made every cell recompute while the
+         preview was still being rebuilt — a cell reading a form found none
+         ("⚠ can't convert _Empty to int") and kept that error until something
+         else moved. Same beat as a learner's own typing: 400 ms after. */
+      ta.value = t; lastVal = t; render(); publish(false); paintPiano();
+      clearTimeout(_pubT);
+      _pubT = setTimeout(function () { publish(true); }, 400);
       if (typeof refreshBench === "function") refreshBench();
       blocks = blocksOf(ta.value);
     };
