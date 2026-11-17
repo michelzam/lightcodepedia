@@ -200,6 +200,13 @@ body.lc-xray-deco [visible^="="]:not(.lc-vis-show)::before { content: "🚪 shut
          with no project chosen yet read "'_Empty' object isn't callable" in
          red on module 08's page 2, in Canvas (Michel, 2026-11-05) */
       "    def __call__(self, *_a, **_k): return self\n" +
+      /* …and WALKED, it has nothing in it (Michel, 2026-11-17, the For-M
+         pitch: a dataset renamed in a pad, and the list read "memory
+         allocation failed, allocating 1048576 bytes"). With __getitem__
+         answering every index and no __iter__, a loop over a name the page
+         does not have — sorted(requests.rows), a join — never ended. */
+      "    def __iter__(self): return iter(())\n" +
+      "    def __len__(self): return 0\n" +
       "    def __str__(self): return ''\n" +
       "    def __repr__(self): return ''\n" +
       "    def __eq__(self, _o): return _o == '' or _o is None or _o is self\n" +

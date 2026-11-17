@@ -907,3 +907,30 @@ Feature: The pad types like a text field, painted
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/cellpad.md"
     And I wait for the page to be interactive
     Then the pad "cellpad" source still reads "{= dogs.count }", and its preview "We have 2 dogs"
+
+  Scenario: A cell that walks the rows of a name the page does not have reads empty, not a memory error
+    Michel, 2026-11-17, the For-M pitch: he renamed the dataset in the pad;
+    the list then read "memory allocation failed, allocating 1048576 bytes".
+    A name the page does not have is an empty thing by design; walked by a
+    loop, it never ended.
+
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/cellwalk.md" with the document:
+      """
+      # A cell that walks rows
+
+      ```csv
+      name
+      Rex
+      Biscuit
+      ```
+      {: .dataset #dogs }
+
+      ````markdown
+      Dogs: {= ", ".join(r["name"] for r in sorted(dogs.rows, key=lambda r: r["name"])) }. Cats: [{= ", ".join(r["name"] for r in sorted(cats.rows, key=lambda r: r["name"])) }].
+      ````
+      {: .mdpad #cellwalk decorations="true" rows="4" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/cellwalk.md"
+    And I wait for the page to be interactive
+    Then the pad "cellwalk" source still reads "cats.rows", and its preview "Dogs: Biscuit, Rex. Cats: []."
