@@ -10,6 +10,9 @@ Auto-included by docs/_layouts/default.html.
 <style>
 .lc-qr { display: inline-block; text-align: center; margin: 1em 0; padding: 1em 1.2em; background: #fff; border: 1px solid #ddd; border-radius: 8px; }
 .lc-qr canvas, .lc-qr img { display: block; }
+/* align="center" (Michel, 2026-11-17: a closing slide, "the QR code below,
+   centered"): the square sits in the middle of its column */
+.lc-qr[data-align="center"] { display: table; margin-left: auto; margin-right: auto; }
 .lc-qr-label { font-size: 0.85em; color: #555; margin-top: 0.6em; }
 </style>
 
@@ -58,6 +61,7 @@ Auto-included by docs/_layouts/default.html.
     /* what was encoded, in the open: the drawing is a canvas nobody can read
        back, so the address lives on the element for a check (and for x-ray) */
     wrap.setAttribute("data-lc-text", text);
+    if ((el.getAttribute("align") || "") === "center") wrap.setAttribute("data-align", "center");
     var qrDiv = document.createElement("div");
     wrap.appendChild(qrDiv);
     if (label) {
