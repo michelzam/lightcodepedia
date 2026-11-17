@@ -509,3 +509,11 @@ Feature: Avatar — speaking overlay instructor
     And I wait for the page to be interactive
     Then every stop of the guide's tour exists on the page, and every verb is known
     And a ▶ button on top offers Doc's tour
+
+  # Michel, 2026-11-17, a screenshot of the pitch: "Doc's bubbles when they are
+  # bigger (more text) and Doc is on top of the page: they get truncated."
+  Scenario: A long line spoken at the top of the screen keeps its whole bubble on screen
+    When I navigate to "/components/examples/avatar"
+    And I wait for the page to be interactive
+    And the guide "prof_avatar" stands at the top of the screen and says a long line
+    Then the whole bubble is on screen, under the character

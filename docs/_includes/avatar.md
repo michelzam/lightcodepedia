@@ -217,6 +217,10 @@ Auto-included by docs/_layouts/default.html.
   border-top-color: #fff;
 }
 .lc-avatar-speech.visible { opacity: 1; }
+/* NO ROOM ABOVE → THE BUBBLE GOES UNDER (Michel, 2026-11-17: "Doc's bubbles
+   when they are bigger and Doc is on top of the page: they get truncated") */
+.lc-avatar-speech.below { bottom: auto; top: 105%; }
+.lc-avatar-speech.below::after { top: auto; bottom: 100%; border-top-color: transparent; border-bottom-color: #fff; }
 /* ── guide seed: the docked companion (dock="true") ──── */
 /* when a page docks its guide, the SEED is the idle presence — the full
    character appears only while performing (and melts away after) */
@@ -780,6 +784,18 @@ Auto-included by docs/_layouts/default.html.
   }
   window.lcAvatarResolve = resolveRef;
 
+  /* the bubble sits above the character; when the line is long and the
+     character stands near the top of the screen there is no room, so it
+     goes under. Looked at while a line is showing, so it follows the walk. */
+  function keepBubbleOnScreen(bubble) {
+    setInterval(function () {
+      var pose = bubble.parentNode;
+      if (!pose || !bubble.classList.contains("visible")) return;
+      var p = pose.getBoundingClientRect();
+      bubble.classList.toggle("below", p.top - bubble.offsetHeight - p.height * 0.05 - 8 < 4);
+    }, 200);
+  }
+
   /* park the character beside the element it describes; eyes follow it */
   function anchorTo(av, sel) {
     var t = (sel && sel.nodeType === 1) ? sel : resolveRef(sel);
@@ -1017,6 +1033,7 @@ Auto-included by docs/_layouts/default.html.
       var bubble = document.createElement("div");
       bubble.className = "lc-avatar-speech";
       pose.appendChild(bubble);
+      keepBubbleOnScreen(bubble);
 
       /* the paused remote — CSS shows it only in the paused state */
       var ctl = document.createElement("div");
@@ -2562,7 +2579,7 @@ Auto-included by docs/_layouts/default.html.
     var pose = document.createElement('div'); pose.className = 'lc-avatar-pose'; host.appendChild(pose);
     var char = document.createElement('div'); char.className = 'lc-avatar-char';
     char.style.width = '115px'; char.style.height = '115px'; pose.appendChild(char);
-    var bubble = document.createElement('div'); bubble.className = 'lc-avatar-speech'; pose.appendChild(bubble);
+    var bubble = document.createElement('div'); bubble.className = 'lc-avatar-speech'; pose.appendChild(bubble); keepBubbleOnScreen(bubble);
     document.body.appendChild(host);
     var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {
       host: host, bubble: bubble, char: char,
@@ -2869,6 +2886,7 @@ Auto-included by docs/_layouts/default.html.
     var bubble = document.createElement("div");
     bubble.className = "lc-avatar-speech";
     pose.appendChild(bubble);
+    keepBubbleOnScreen(bubble);
     document.body.appendChild(host);
 
     var av = (window._lcAvatars = window._lcAvatars || {})[elId] = {

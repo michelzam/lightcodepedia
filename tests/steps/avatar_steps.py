@@ -592,3 +592,29 @@ def step_pick_story(context, title):
     item = context.page.locator(".lc-guide-menu.open *", has_text=title).last
     item.click()
     context.page.wait_for_timeout(800)
+
+
+@when('the guide "{avatar_id}" stands at the top of the screen and says a long line')
+def step_long_line_at_top(context, avatar_id):
+    context.page.wait_for_function("(id) => !!(window._lcAvatars && window._lcAvatars[id])", arg=avatar_id, timeout=20_000)
+    context.page.evaluate("""(id) => {
+      const av = window._lcAvatars[id];
+      av.host.style.display = 'block'; av.host.style.opacity = '1';
+      av.host.style.bottom = 'auto'; av.host.style.top = '6px'; av.host.style.left = '40vw';
+      av.bubble.textContent = 'We ask no gold of you. We ask your hand. You know who teaches workers in this land: ' +
+        'the trainers, colleges, the workforce crews. Bring us to them. That is all we ask of you.';
+      av.bubble.classList.add('visible');
+    }""", avatar_id)
+    context.page.wait_for_timeout(900)
+    context.lc_bubble_of = avatar_id
+
+
+@then("the whole bubble is on screen, under the character")
+def step_bubble_on_screen(context):
+    got = context.page.evaluate("""(id) => {
+      const av = window._lcAvatars[id];
+      const b = av.bubble.getBoundingClientRect(), c = av.char.getBoundingClientRect();
+      return { top: b.top, bottom: b.bottom, charBottom: c.bottom, h: window.innerHeight };
+    }""", context.lc_bubble_of)
+    assert got["top"] >= 0, "the bubble is cut at the top of the screen: %r" % got
+    assert got["top"] >= got["charBottom"] - 2 and got["bottom"] <= got["h"], "the bubble did not move under the character: %r" % got
