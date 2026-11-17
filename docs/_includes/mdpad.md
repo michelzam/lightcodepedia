@@ -559,6 +559,29 @@ Auto-included by docs/_layouts/default.html.
       body.className = "lc-mdpad-appbody";
       out.appendChild(head);
       out.appendChild(body);
+      /* THE FILE IS READ FROM ITS OWN FOLDER (Michel, 2026-11-17, Module 09
+         page 4: the shell from module 08 showed "Unnamed … nothing saved
+         yet" in the pad, and the same shell, shipped, showed the persona).
+         A pad saving ../module_08/app.md previews that file the way it sees
+         itself: zim.yaml, welcome.md, map.md beside IT, not beside the
+         lesson. The preview is the file's render root, as a runner of that
+         file is — the one mark every relative reader already follows. */
+      if (!/^(here:|\/)/.test(benchPath) && benchPath.indexOf("/") >= 0) {
+        var pageRoot = wrap.closest && wrap.closest(".lc-run[data-lc-src-path]") || document.querySelector(".lc-run[data-lc-src-path]");
+        var pagePath = pageRoot ? pageRoot.dataset.lcSrcPath || "" : "";
+        if (pagePath.indexOf("/") >= 0) {
+          var parts = [];
+          (pagePath.replace(/\/[^\/]*$/, "") + "/" + benchPath).split("/").forEach(function (p) {
+            if (!p || p === ".") return;
+            if (p === "..") parts.pop(); else parts.push(p);
+          });
+          body.classList.add("lc-run");
+          body.dataset.lcSrcPath = parts.join("/");
+          body.dataset.lcSrcRepo = pageRoot.dataset.lcSrcRepo || "";
+          if (pageRoot.dataset.lcSrc) body.dataset.lcSrc = pageRoot.dataset.lcSrc.replace(pagePath, parts.join("/"));
+          if (pageRoot.dataset.lcReadonly) body.dataset.lcReadonly = pageRoot.dataset.lcReadonly;
+        }
+      }
     }
     /* the stripe every saved block wears — see lcBenchFrame in widgets.md */
     var frame = null;
