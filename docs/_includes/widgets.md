@@ -631,7 +631,13 @@ window.lcGlueIAL = window.lcGlueIAL || function (md) {
   });
   ["present", "reel", "read"].forEach(function (m) {
     window.lcVerbs.register(m, function () {
-      if (window.lcMode) { window.lcMode.set(m); return true; } return false;
+      /* A VERB NAMES WHERE TO BE, IT IS NOT A SWITCH (Michel, 2026-11-17: a
+         pitch shared as …?slides=0 — "would Doc keep the slide mode or switch
+         it off when it starts?" It switched it off: set() on the mode the
+         page is already in flips back to read.) */
+      if (!window.lcMode) return false;
+      if (window.lcMode.current && window.lcMode.current() === m) return true;
+      window.lcMode.set(m); return true;
     });
   });
   /* xray is a mode too, but as a verb it is a pointing gesture, not a

@@ -610,3 +610,22 @@ def step_slide_holding(context, elid):
     }""", elid)
     assert ok, "no slide holds %s" % elid
     context.page.wait_for_timeout(400)
+
+
+@when('a guide\'s verb "{verb}" is called')
+def step_guide_verb(context, verb):
+    context.page.wait_for_function("() => !!(window.lcVerbs && window.lcMode)", timeout=15_000)
+    ok = context.page.evaluate("(v) => window.lcVerbs.act(v, null, null, {})", verb)
+    assert ok, "the verb %s was refused" % verb
+    context.page.wait_for_timeout(500)
+
+
+@then('the page is in "{mode}" mode')
+def step_page_mode(context, mode):
+    context.page.wait_for_function("() => !!window.lcMode", timeout=15_000)
+    for _ in range(20):
+        got = context.page.evaluate("() => window.lcMode.current()")
+        if got == mode:
+            return
+        context.page.wait_for_timeout(250)
+    assert got == mode, "the page is in %r mode, expected %r" % (got, mode)

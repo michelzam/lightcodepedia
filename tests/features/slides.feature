@@ -63,3 +63,15 @@ Feature: Slides FAB and presentation mode
     And I scroll the page down by 700 pixels
     And the page enters "present" mode
     Then the active slide is not cut off at the top
+
+  # Michel, 2026-11-17: "If the page is already shared in present mode
+  # (…?slides=0), would Doc keep the slide mode or switch it off when it
+  # starts?" It switched it off: the guide's verb toggled.
+  Scenario: A guide's "present" on a page already in Present keeps it in Present
+    When I navigate to "/tutorial101?slides=0"
+    And I wait for the page to be interactive
+    Then the page is in "present" mode
+    When a guide's verb "present" is called
+    Then the page is in "present" mode
+    When a guide's verb "read" is called
+    Then the page is in "read" mode
