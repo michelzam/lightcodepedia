@@ -1266,6 +1266,7 @@ class Block(Object):
     layout     = Attr(str, enum=["below", "beside", "behind", "wide", "float"])  # where it stands: below, beside or behind the block above, the page's width, or a floating panel
     beside     = Attr(bool)                    # the first spelling of layout="beside"
     shown_when = Attr(str, column="visible")   # an expression that shows or hides it — = to_call.count
+    style      = Attr(str)                     # CSS on the block — kramdown's own attribute, applied by the page, read by no component
 
     def __bool__(self):
         return self._el is not None

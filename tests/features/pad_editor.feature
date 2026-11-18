@@ -17,13 +17,13 @@ Feature: The pad types like a text field, painted
     (database, server, diagram) have theirs.
 
     When I type "\n[the shelter](supabase://shelter)\n{: .database " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .database " offers "beside, layout, live, unlisted, visible"
+    Then completion in the "playground" pad after "{: .database " offers "beside, layout, live, style, unlisted, visible"
     When I type "\n{: .mdpad " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, doctest, folded, layout, mypy, numbers, piano, replay, rows, save, tools, visible"
+    Then completion in the "playground" pad after "{: .mdpad " offers "beside, comment, decorations, demo, doctest, folded, layout, mypy, numbers, piano, replay, rows, save, style, tools, visible"
     When I type "\n{: .datagrid " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, bind, columns, compute, dates, detail-of, editable, empty, filter, format, height, hints, layout, locked, master, reorder, rows, save, sort, source, title, visible"
+    Then completion in the "playground" pad after "{: .datagrid " offers "autocomplete, beside, bind, columns, compute, dates, detail-of, editable, empty, filter, format, height, hints, layout, locked, master, reorder, rows, save, sort, source, style, title, visible"
     When I type "\n{: .server " at the end of the "playground" pad
-    Then completion in the "playground" pad after "{: .server " offers "beside, exports, layout, model, pages, visible"
+    Then completion in the "playground" pad after "{: .server " offers "beside, exports, layout, model, pages, style, visible"
 
   Scenario: Ctrl+Space after a dot offers every component, video among them
     Michel, 2026-10-29: "in mdpad, the code completion, I noticed, 'video' is
