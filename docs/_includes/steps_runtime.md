@@ -1673,6 +1673,18 @@ class _Doctests:
 
 {% include runner.py %}
 
+
+{% include import_.py %}
+
+
+{% include prerequisite.py %}
+
+
+{% include sitemap.py %}
+
+
+{% include ship.py %}
+
 @component(icon="🔬",
            attrs=[{"n": "height", "t": "int", "data": True, "d": 400},
                   {"n": "master", "t": "str", "data": True, "d": "",
@@ -2086,7 +2098,7 @@ class Cell(Block):
 # ════════════════════════ resolver ══════════════════════════════════════════
 
 _WRAP = [
-    ("lc-query", Query), ("lc-runner", Runner),
+    ("lc-query", Query), ("lc-runner", Runner), ("lc-ship", Ship),
     ("lc-datagrid", Datagrid), ("lc-chart", Chart), ("lc-feature", Feature),
     ("lc-button", Button), ("button", Button), ("lc-carousel", Carousel),
     ("lc-cards", Cards), ("lc-dropdown", Dropdown), ("lc-folder", Folder),

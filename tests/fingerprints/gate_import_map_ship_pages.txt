@@ -1,0 +1,6 @@
+# Prerequisite, Import, Sitemap, Ship — the islands' no-regression set (2026-11-18)
+/components/
+/components/prerequisite
+/components/runner
+/components/ship
+/components/sitemap
