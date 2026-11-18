@@ -1,0 +1,23 @@
+# Persona, Pitch, ImpactMap, Chart, Code — the islands' no-regression set (2026-11-18)
+/components/block
+/components/chart
+/components/code
+/components/crew
+/components/database
+/components/dataset
+/components/examples/adopt_wanda
+/components/examples/chart_datagrid
+/components/examples/weather_api
+/components/feature
+/components/impact_map
+/components/mdpad
+/components/persona
+/components/pitch
+/components/query
+/components/runner
+/components/scrollable
+/components/ship
+/courses/build_ai/app_shelter
+/nodes
+/tutorial101
+/tutorial102

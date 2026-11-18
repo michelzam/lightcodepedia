@@ -1340,83 +1340,7 @@ class Bar(Object):
 {% include datagrid.py %}
 
 
-@component(icon="📈",
-           attrs=[{"n": "type", "t": "str", "data": True, "d": "bar"},
-                  {"n": "x", "t": "str", "data": True, "d": ""},
-                  {"n": "y", "t": "str", "data": True, "d": ""},
-                  {"n": "bar_count", "t": "int"},
-                  {"n": "point_count", "t": "int"},
-                  {"n": "title", "t": "str"},
-                  {"n": "height", "t": "int", "data": True, "attr": "height", "d": 300}, {"n": "bars", "t": "str", "data": True, "attr": "bars"}, {"n": "series", "t": "str", "data": True, "attr": "series"}, {"n": "empty", "t": "str", "data": True, "attr": "empty"}],
-           assoc=[{"n": "source", "target": "Dataset"},
-                  {"n": "master", "target": "Datagrid"},
-                  {"n": "bind", "target": "Datagrid"},
-                  {"n": "bars", "target": "Bar", "list": True}],
-           methods=["beads", "chips", "tone"])
-class Chart(Block):
-    @property
-    def bars(self):
-        return [Bar(r._el) for r in self._qq("rect")]
-
-    @property
-    def source(self):
-        return Dataset(self._attr("data-bind") or "")
-
-    @property
-    def master(self):
-        gid = self._attr("data-bound-to") or ""
-        el = js.window.document.querySelector("[data-lc-id='" + gid + "']")
-        return Datagrid(el)
-
-    @property
-    def bar_count(self):
-        """Rects when the chart drew SVG (a bound chart), otherwise the count
-        the inline canvas recorded. A chart that is visibly drawing bars must
-        never report zero — that turns a page's own proof into a liar."""
-        rects = len(self._qq("rect"))
-        if rects:
-            return rects
-        try:
-            return int(self._attr("data-lc-bars") or 0)
-        except Exception:
-            return 0
-
-    @property
-    def point_count(self):
-        return len(self._qq("circle"))
-
-    # THE MAP, READ IN PYTHON (Michel, 2026-11-10: "use more the pythonistic
-    # interface offered in Object than js expressions"): the title over the map,
-    # its columns, and per column the beads, the chips and the point's tone.
-    @property
-    def title(self):
-        t = self._q(".lc-chart-title")
-        return (t.text if t is not None else "").strip()
-
-    @property
-    def xs(self):
-        """the x values drawn, in order — the pages of a journey"""
-        out = []
-        for c in self._qq("svg circle[pointer-events][data-x]"):
-            x = c._attr("data-x")
-            if x not in out:
-                out.append(x)
-        return out
-
-    def beads(self, x):
-        """the beats drawn before the point of x, in time order: ✗ ✓ ?"""
-        return [c._attr("data-bead") for c in self._qq("svg circle[data-bead]") if c._attr("data-x") == x]
-
-    def chips(self, x):
-        """the chips under x, in order (a chip's own words, not its hover title)"""
-        return [str(t._el.childNodes.item(0).textContent or "").strip() for t in self._qq("svg text[data-band='bottom']") if t._attr("data-x") == x]
-
-    def tone(self, x):
-        """the colour of x's point"""
-        for c in self._qq("svg circle[data-tone][data-x]"):
-            if c._attr("data-x") == x:
-                return c._attr("data-tone")
-        return ""
+{% include chart.py %}
 
 
 {% include feature.py %}
@@ -1692,32 +1616,7 @@ class Scrollable(Block):
     pass
 
 
-@component(icon="📄",
-           attrs=[{"n": "path", "t": "str", "data": True, "d": ""},
-                  {"n": "src", "t": "str", "data": True, "d": ""},
-                  {"n": "lang", "t": "str", "data": True, "d": "text"},
-                  {"n": "title", "t": "str", "data": True, "d": ""},
-                  {"n": "repo", "t": "str", "data": True, "d": ""},
-                  {"n": "branch", "t": "str", "data": True, "d": "main"},
-                  {"n": "bound", "t": "str", "data": True, "d": ""},
-                  {"n": "placeholder", "t": "str", "data": True, "d": ""}])
-class Code(Block):
-    @property
-    def text(self):
-        """The card's lines."""
-        v = self._attr("data-lc-value")
-        if not v:
-            return ""
-        return str(js.JSON.parse(v).text or "")
-
-    @text.setter
-    def text(self, v):
-        """Write the card's lines — an event's way to show code (an agent's
-        on_response: code.text = agent.response.example). The card repaints;
-        its ⬇ Add, if bound, offers the new lines."""
-        f = getattr(self._el, "_lcSetText", None) if self._el is not None else None
-        if f is not None:
-            f(str(v))
+{% include code.py %}
 
 
 {% include agent.py %}
@@ -1911,17 +1810,7 @@ class ModelCheck(Block):
 
 {% include avatar_trigger.py %}
 
-@component(icon="👤",
-           assoc=[{"n": "source", "target": "Form"}])
-class Persona(Block):
-    """Empathy-map card (.persona) — who the product serves."""
-    @property
-    def data(self):
-        return _lc_doc_data(self)
-
-    @property
-    def source(self):
-        return _lc_ref(self, "data-bind")
+{% include persona.py %}
 
 
 @component(icon="🔁",
@@ -1937,56 +1826,10 @@ class Retrospective(Block):
         return _lc_ref(self, "data-bind")
 
 
-@component(icon="✨",
-           assoc=[{"n": "source", "target": "Form"},
-                  {"n": "persona", "target": "Persona"}])
-class Pitch(Block):
-    """Assembled two-sentence pitch (.pitch) — why the product exists."""
-    @property
-    def data(self):
-        return _lc_doc_data(self)
-
-    @property
-    def source(self):
-        return _lc_ref(self, "data-bind")
-
-    @property
-    def persona(self):
-        return _lc_ref(self, "data-persona")
-
-    @property
-    def drifting(self):
-        """True while the who/need stopped echoing the persona this pitch
-        reads — the soft warning a proof can assert on."""
-        w = self._el.querySelector(".lc-pitch-warn") if self._el is not None else None
-        return bool(w is not None and w.hasAttribute("hidden") is False)
+{% include pitch.py %}
 
 
-@component(icon="🎯",
-           assoc=[{"n": "pitch", "target": "Pitch"}])
-class ImpactMap(Block):
-    """Impact map (.impact_map) — goal → who → how → what."""
-    @property
-    def data(self):
-        """The map as rendered: goal, who, and impacts — each leaf's how,
-        what, and the value/effort it may carry (with their reasons)."""
-        return _lc_doc_data(self)
-
-    @property
-    def pitch(self):
-        return _lc_ref(self, "data-pitch")
-
-    @property
-    def features(self):
-        """The features its leaves name, in map order — the link from the
-        problem space to the solution. A leaf whose card is missing wraps
-        None, so .exists says so."""
-        out = []
-        for o in self._qq(".lc-imap-what a[data-feature]"):
-            fid = str(o._el.getAttribute("data-feature") or "")
-            el = js.window.document.querySelector(".lc-feature[data-lc-id='" + fid + "']")
-            out.append(Feature(el))
-        return out
+{% include impact_map.py %}
 
 
 @component(icon="🎏", attrs=[{"n": "count", "t": "int"}],
