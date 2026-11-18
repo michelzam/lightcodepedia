@@ -624,6 +624,40 @@ Feature: Folder shelf — read posture and X-ray workbench
     And the course score reads "modules 00–01 — 0 of 2 pages done · 0%"
     And the page shows 1 module recap
 
+  Scenario: A link with since keeps the modules from that one on, and counts only them
+    Michel, 2026-11-18: module 09's intro shows "the progression since module 8 … since the
+    project started". The framing link says where the range starts (?since=N), and an
+    earlier module is neither drawn nor counted.
+
+    Given I have a clean browser page
+    And a marked shim is preinstalled
+    And a builder key is connected
+    And the module "courses/demo/module_01" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags     |
+      | 01_first.md  | 📝 The Volunteer   | 3       | 1      | markdown |
+      | 02_second.md | 🔥 North Burns     | 3       | 4      | agent    |
+    And the module "courses/demo/module_02" holds pages with quizzes and proofs:
+      | file         | title              | quizzes | proofs | tags     |
+      | 01_later.md  | 🐕 The Long Walk   | 2       | 1      | python   |
+    And the GitHub contents API serves "courses/demo/_progress.md" with the document:
+      """
+      # Where you are
+
+      [the course](#)
+      {: .folder view="score" #course_score }
+
+      [Module 01](module_01)
+      {: .folder view="recap" }
+
+      [Module 02](module_02)
+      {: .folder view="recap" }
+      """
+    When I navigate to "/run.html?since=2&upto=2#src=gh:acme/demo/courses/demo/_progress.md"
+    And I wait for the page to be interactive
+    Then the recap head reads "0 of 1 pages done"
+    And the course score reads "module 02 — 0 of 1 pages done · 0%"
+    And the page shows 1 module recap
+
   Scenario: The teacher's shelf reads a vault the author key cannot
     An author key is owner-scoped; the vault is the org's. The runner
     already retries a page with the cockpit's org key, so the page rendered
