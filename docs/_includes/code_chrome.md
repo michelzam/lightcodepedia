@@ -602,6 +602,20 @@
         _floatWrap(el);
         return;
       }
+      /* layout="center" — CENTRED IN THE COLUMN (Michel, 2026-11-18: "put the
+         two Doc buttons in a beside= row, then centre that row with a layout
+         value" — the pitch deck centred them with style="margin-left:calc(…)").
+         Wrapped before any upgrader, like wide; a beside row that starts with
+         a centred part is a centred row of parts at their own width. */
+      if (String(el.getAttribute("layout") || "").trim().toLowerCase() === "center") {
+        el.dataset.lcBeside = "1";
+        var mid = document.createElement("div");
+        mid.className = "lc-center";
+        mid.setAttribute("data-lc-center", "1");
+        el.parentNode.insertBefore(mid, el);
+        mid.appendChild(el);
+        return;
+      }
       var how = _layoutOf(el);
       if (!how) return;
       el.dataset.lcBeside = "1";
@@ -620,6 +634,10 @@
         }
         between.forEach(function (n) { row.appendChild(n); });
         row.appendChild(el);
+        if (row.firstElementChild && row.firstElementChild.classList.contains("lc-center")) {
+          row.classList.add("lc-blocks-center");   /* a centred row: each part its own width */
+          return;
+        }
         var faces = Array.prototype.filter.call(row.children, function (n) { return !_faceless(n); }).length;
         row.style.gridTemplateColumns = "repeat(" + faces + ", 1fr)";
         return;

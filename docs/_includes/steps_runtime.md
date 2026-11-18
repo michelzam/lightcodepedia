@@ -1263,7 +1263,7 @@ class Object:
            methods=["click", "has_class", "confetti"])
 class Block(Object):
     """🧩 A part of the page — every component is one, and takes these settings."""
-    layout     = Attr(str, enum=["below", "beside", "behind", "wide", "float"])  # where it stands: below, beside or behind the block above, the page's width, or a floating panel
+    layout     = Attr(str, enum=["below", "beside", "behind", "wide", "float", "center"])  # where it stands: below, beside or behind the block above, the page's width, a floating panel, or centred — a beside row it starts is centred too
     beside     = Attr(bool)                    # the first spelling of layout="beside"
     shown_when = Attr(str, column="visible")   # an expression that shows or hides it — = to_call.count
     style      = Attr(str)                     # CSS on the block — kramdown's own attribute, applied by the page, read by no component

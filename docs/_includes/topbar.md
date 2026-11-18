@@ -254,6 +254,11 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .markdown-body { max-width: 980px; margin: 0 auto; padding: 1em 1.2rem 2em; }
+/* layout="center": the part centred in the column; a beside row it starts, centred, each part its own width */
+.lc-center { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.6em; margin: 0.4em 0; }
+.lc-blocks.lc-blocks-center { display: flex !important; justify-content: center; flex-wrap: wrap; gap: 0.6em; }
+.lc-blocks.lc-blocks-center > .lc-center { display: contents; }
+.lc-center > p, .lc-blocks-center > p { margin: 0; }
 /* layout="wide": a part breaks out of the text column to the page's width —
    the window less 1rem a side, at most 1600px; margins, never a transform
    (a transform would hold the pad's fixed completion list) */

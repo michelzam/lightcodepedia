@@ -2276,7 +2276,7 @@ Auto-included by docs/_layouts/default.html.
        takes ⌃⌥ + arrows before the page sees them). Read by the physical key
        (e.code), so any keyboard layout, and no ¬ typed. The toast says what
        was set. */
-    var LAYOUTS = ["", "beside", "behind", "wide", "float"];
+    var LAYOUTS = ["", "beside", "behind", "wide", "float", "center"];
     function layoutSay(how) { window.lcxToast && window.lcxToast("layout: " + (how || "below"), true); }
     ta.addEventListener("keydown", function (e) {
       if (e.key === "F2") { e.preventDefault(); renameOpen(); return; }

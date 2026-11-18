@@ -425,7 +425,7 @@ Feature: The pad types like a text field, painted
     When I press "Control+Alt+ArrowLeft" in the "wires" pad
     Then the "wires" pad holds '{: .form master="dog_grid" }'
 
-  Scenario: ⌥⇧L cycles the block's layout — below, beside, behind, wide, float — and ⌃⌥↓ makes it wide
+  Scenario: ⌥⇧L cycles the block's layout — below, beside, behind, wide, float, center — and ⌃⌥↓ makes it wide
     Michel, 2026-11-14: "ctrl-alt doesn't work as expected in that editor: it's scrolling the
     page" (a Mac's window manager takes ⌃⌥ + arrows) — "go keys": one key that cycles.
 
@@ -459,6 +459,8 @@ Feature: The pad types like a text field, painted
     Then the "cycle" pad holds '{: .form master="dog_grid" layout="wide" }'
     When I press "Alt+Shift+KeyL" in the "cycle" pad
     Then the "cycle" pad holds '{: .form master="dog_grid" layout="float" }'
+    When I press "Alt+Shift+KeyL" in the "cycle" pad
+    Then the "cycle" pad holds '{: .form master="dog_grid" layout="center" }'
     When I press "Alt+Shift+KeyL" in the "cycle" pad
     Then the "cycle" pad holds '{: .form master="dog_grid" }'
     When I press "Control+Alt+ArrowDown" in the "cycle" pad
