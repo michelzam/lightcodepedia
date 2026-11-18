@@ -649,3 +649,30 @@ def step_link_opens(context, label, href):
     got = context.page.evaluate("""(label) => Array.from(document.querySelectorAll('.markdown-body a'))
         .filter(a => a.textContent.indexOf(label) >= 0).map(a => a.getAttribute('href'))""", label)
     assert href in got, "no link %r opens %r: %r" % (label, href, got)
+
+
+@then('the page shows "{text}" {n:d} times')
+def step_page_shows_n(context, text, n):
+    got = context.page.evaluate("""(t) => Array.from(document.querySelectorAll('.markdown-body h1, .markdown-body p'))
+        .filter(e => e.textContent.indexOf(t) >= 0).length""", text)
+    assert got == n, "%r is on the page %d times, expected %d" % (text, got, n)
+
+
+@then('the picture "{elid}" has loaded')
+def step_picture_loaded(context, elid):
+    ok = context.page.evaluate("(id) => { const i = document.getElementById(id); return !!(i && i.complete && i.naturalWidth > 0); }", elid)
+    assert ok, "the picture %s did not load" % elid
+
+
+@then('the last slide is "{title}", with the way back to the first slide')
+def step_last_slide(context, title):
+    got = context.page.evaluate("""() => { const s = Array.from(document.querySelectorAll('.lc-slide')); const l = s[s.length - 1];
+      const h = l && l.querySelector('h1, h2'); return { title: h ? h.textContent : '', back: !!(l && l.querySelector('#restart')), team: !!(l && l.querySelector('#team')) }; }""")
+    assert title in got["title"] and got["back"] and got["team"], "the last slide: %r" % got
+
+
+@then('the slide "{elid}" where the slam ends offers "{label}"')
+def step_slide_offers(context, elid, label):
+    got = context.page.evaluate("""([id, label]) => { const h = document.getElementById(id); const s = h && h.closest('.lc-slide');
+      return s ? Array.from(s.querySelectorAll('a')).filter(a => a.textContent.indexOf(label) >= 0).map(a => a.getAttribute('href')) : null; }""", [elid, label])
+    assert got and "?slides=0" in got, "the slide of %s offers no %r back to the first slide: %r" % (elid, label, got)

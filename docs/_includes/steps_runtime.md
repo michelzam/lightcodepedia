@@ -1379,11 +1379,7 @@ class Carousel(Block):
         return self.goto((self.current - 1) % len(items)) if items else self
 
 
-@component(icon="🃏",
-           attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
-                  {"n": "gap", "t": "int", "data": True, "d": 18}])
-class Cards(Block):
-    pass
+{% include cards.py %}
 
 
 @component(icon="🔽", attrs=[{"n": "label", "t": "str", "data": True, "d": "Menu"}],
@@ -1522,24 +1518,7 @@ class KnowledgeNode(Object):
         return self
 
 
-@component(icon="📑", attrs=[{"n": "active", "t": "int"}], methods=["select"])
-class Tabs(Block):
-    @property
-    def active(self):
-        if self._el is None:
-            return 0
-        tabs = self._el.querySelectorAll(".lc-tab-btn")
-        for i in range(int(tabs.length)):
-            if tabs.item(i).classList.contains("active"):
-                return i
-        return 0
-
-    def select(self, n):
-        if self._el is not None:
-            tabs = self._el.querySelectorAll(".lc-tab-btn")
-            if tabs is not None and int(tabs.length) > n:
-                tabs.item(n).click()
-        return self
+{% include tabs.py %}
 
 
 class _Row(object):
@@ -1639,9 +1618,7 @@ class Recorder(Block):
         return self._tap(".lc-rec-stop, [data-lc-stop]")
 
 
-@component(icon="🔳", attrs=[{"n": "size", "t": "int", "data": True, "d": 180}])
-class Qr(Block):
-    pass
+{% include qr.py %}
 
 
 @component(icon="🔤")
@@ -1696,24 +1673,7 @@ class Pytutor(Block):
 
 {% include embed.py %}
 
-@component(icon="🪗", methods=["open", "close", "sections"])
-class Accordion(Block):
-    def sections(self):
-        return [s.text for s in self._qq("summary, .lc-acc-head")]
-
-    def open(self, n=0):
-        if self._el is not None:
-            ds = self._el.querySelectorAll("details")
-            if ds is not None and int(ds.length) > n:
-                ds.item(n).open = True
-        return self
-
-    def close(self, n=0):
-        if self._el is not None:
-            ds = self._el.querySelectorAll("details")
-            if ds is not None and int(ds.length) > n:
-                ds.item(n).open = False
-        return self
+{% include accordion.py %}
 
 
 @component(icon="🧊",
@@ -1771,10 +1731,7 @@ class Repl(Block):
     pass
 
 
-@component(icon="🎬", attrs=[{"n": "height", "t": "int", "data": True, "d": 400}])
-class Video(Block):
-    """Embedded video iframe (.video)."""
-    pass
+{% include video.py %}
 
 
 @component(icon="📊",
@@ -2003,16 +1960,7 @@ class Diagram(Block):
     pass
 
 
-@component(icon="🏛️",
-           attrs=[{"n": "classes", "t": "str"}],
-           assoc=[{"n": "source", "target": "Database"}])
-class Model(Block):
-    """The page's declarations (.model) — classes and singletons, invisible
-    on the page like a dataset: structure, not ink. Widgets point at it
-    with source=, the x-ray docks it (Michel, 2026-08-24)."""
-    @property
-    def classes(self):
-        return " ".join(_LC_DECL.get(self.id) or [])
+{% include model.py %}
 
 
 @component(icon="🧬",
