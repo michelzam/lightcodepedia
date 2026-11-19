@@ -1236,7 +1236,12 @@
   "guide": {
    "f7456fee56801e52": "lc-2d78c9682728378e.mp3",
    "ab914b907ecfd9ad": "lc-6725b5a496a66ab6.mp3",
-   "5eff2e958f5a9778": "lc-3747b2b768d41c11.mp3"
+   "5eff2e958f5a9778": "lc-3747b2b768d41c11.mp3",
+   "f445d313f8b8eb2c": "lc-9f5bfdf0242aefac.mp3",
+   "b0b8a966e98b7702": "lc-1cc9960c4821f4ee.mp3",
+   "363f3349b4e5a4da": "lc-a846625effcefc78.mp3",
+   "15d1588de53ca25b": "lc-cd49adea62b80d92.mp3",
+   "8b8eb1307c232b22": "lc-0dee772f0f328f30.mp3"
   }
  },
  "courses-micro_build_ai-module_09-01_feature": {
@@ -1248,13 +1253,21 @@
    "8dfa0f24069bf0be": "lc-52c515d02e2c24a5.mp3",
    "23e4717c17d03b2d": "lc-7750e88324bc6df6.mp3",
    "1eef51b246004ee5": "lc-166f1b88bf1045c0.mp3",
-   "bf9ab5bf2f0f9524": "lc-debb951ba50afa26.mp3"
+   "bf9ab5bf2f0f9524": "lc-debb951ba50afa26.mp3",
+   "3491a7ba868c4bd0": "lc-76dc209f643f9034.mp3",
+   "f6cb59d66242a57c": "lc-953b6c4bc0f2df33.mp3",
+   "3a5de861caf9bf88": "lc-6d21639530ddeb41.mp3",
+   "0db6a9f14a59f0c5": "lc-7ad912ccc24d6f0d.mp3"
   }
  },
  "courses-micro_build_ai-module_09-02_list": {
   "guide": {
    "616bf63e8e94fcc1": "lc-fc7c73762df38f5d.mp3",
-   "c13fce4a0def8943": "lc-603a8dd39d557614.mp3"
+   "c13fce4a0def8943": "lc-603a8dd39d557614.mp3",
+   "8608401d0263a0eb": "lc-1bfa14aca18c0e01.mp3",
+   "97143eb16e4ac8a4": "lc-b0cab9843aae9a7a.mp3",
+   "3b84714ca02a9863": "lc-d70db4165187a2ec.mp3",
+   "e8b9c507d1c7dc8d": "lc-19e394a0785eaf1e.mp3"
   }
  },
  "lab-build_ai_adopt": {
@@ -1392,6 +1405,16 @@
    "a252784aa8dffff7": "lc-4d2d1001e779cb85.mp3",
    "b9a8709b60c5f920": "lc-1f134ed0392f80f6.mp3",
    "5547e1484a89913d": "lc-d290249bbfdc5a8c.mp3"
+  }
+ },
+ "courses-micro_build_ai-module_09-03_run": {
+  "guide": {
+   "6bd8bd26f30bb7fd": "lc-59c9592208208251.mp3",
+   "76c84d0e4a98342b": "lc-45cacb49f1f98bbe.mp3",
+   "7c18bb571d4cdf5c": "lc-18f5723e7e727296.mp3",
+   "5ef4cd6a7f4ca3e7": "lc-b9c774f5cf82ed91.mp3",
+   "56e2a4ab8a90ea68": "lc-defc99d26c665afd.mp3",
+   "8f9e2d2757ad0ab7": "lc-ecca3189462a7b86.mp3"
   }
  }
 }
