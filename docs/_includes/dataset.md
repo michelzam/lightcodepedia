@@ -2244,6 +2244,18 @@ Auto-included by docs/_layouts/default.html.
         el.querySelectorAll("select.lc-dg-pick").forEach(function (sel) {
           sel.addEventListener("change", function () {
             var row = sorted[parseInt(sel.getAttribute("data-row"), 10)];
+            /* A PICK IN A ROW SELECTS ITS ROW (Michel, 2026-11-19, Module 09
+               page 4: "if I change the effort of a feature in the grid -> the
+               form is not refreshed") — as the reference menu does
+               (2026-10-18); the repaint after the write tells the form */
+            if (row) {
+              var tr = sel.closest("tr");
+              el.querySelectorAll("tbody tr").forEach(function (x) { x.classList.remove("lc-dg-selected"); });
+              if (tr) tr.classList.add("lc-dg-selected");
+              var nk = row.obj != null ? "o:" + row.obj : "i:" + sel.getAttribute("data-row");
+              if (nk !== selKey && lcId && window.lcMasterDetail) { selKey = nk; lastPubJson = JSON.stringify(row); window.lcMasterDetail.publish(lcId, row); }
+              selKey = nk;
+            }
             if (row) window.lcModelOp(bindId, { t: "set", obj: String(row.obj), col: sel.getAttribute("data-col"), val: sel.value },
               "_lc_set(" + JSON.stringify(bindId) + "," + JSON.stringify(String(row.obj)) + "," + JSON.stringify(sel.getAttribute("data-col")) + "," + JSON.stringify(sel.value) + ")");
           });
@@ -2655,6 +2667,7 @@ Auto-included by docs/_layouts/default.html.
             trs.forEach(function (x) { x.classList.remove("lc-dg-selected"); });
             tr.classList.add("lc-dg-selected");
             selKey = keyOf(slice[i]) || "i:" + i;
+            lastPubJson = slice[i] ? JSON.stringify(slice[i]) : null;
             if (lcId) window.lcMasterDetail.publish(lcId, slice[i] || null);
           });
         });
@@ -2785,7 +2798,10 @@ Auto-included by docs/_layouts/default.html.
                  Only when the row CHANGED — a follower that republishes the
                  class on every selection (classroom 4's inspector) would
                  otherwise chase this repaint forever (2026-10-16). */
-              if (model && lcId && window.lcMasterDetail) {
+              /* …and on a PLAIN list too (Michel, 2026-11-19, Module 09 page 3:
+                 "the button would add my name in the grid, but this won't be
+                 displayed in the form unless I navigate up and down") */
+              if (lcId && window.lcMasterDetail) {
                 var pj = JSON.stringify(r);
                 if (pj !== lastPubJson) { lastPubJson = pj; window.lcMasterDetail.publish(lcId, r); }
               }
@@ -2799,7 +2815,7 @@ Auto-included by docs/_layouts/default.html.
                 stillThere = true;
                 selKey = keyOf(slice[si]) || "i:" + si;
                 trs[si].classList.add("lc-dg-selected");
-                if (model && lcId && window.lcMasterDetail) {
+                if (lcId && window.lcMasterDetail) {
                   var pj2 = JSON.stringify(slice[si]);
                   if (pj2 !== lastPubJson) { lastPubJson = pj2; window.lcMasterDetail.publish(lcId, slice[si]); }
                 }
