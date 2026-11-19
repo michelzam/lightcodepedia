@@ -182,7 +182,11 @@ Auto-included by docs/_layouts/default.html.
       }
     }
     var centerLat = markers.length ? markers.reduce(function(s,m){ return s+m.lat; }, 0)/markers.length : parseFloat(el.getAttribute("lat") || "48.86");
-    var centerLon = markers.length ? markers.reduce(function(s,m){ return s+m.lon; }, 0)/markers.length : parseFloat(el.getAttribute("lon") || "2.35");
+    /* lng=, as the component page and its quiz teach it (Michel, 2026-11-18,
+       the Map island: the reader knew only lon=, so a map at lng="-0.13"
+       opened over Paris); lon= stays the other spelling, as the markers have it */
+    var centerLon = markers.length ? markers.reduce(function(s,m){ return s+m.lon; }, 0)/markers.length : parseFloat(el.getAttribute("lng") || el.getAttribute("lon") || "2.35");
+    wrap.setAttribute("data-lc-center", centerLat + "," + centerLon);   /* where it opens — a check reads it */
     // engine="leaflet" renders with Leaflet + OSM tiles instead of the default
     // MapLibre/OpenFreeMap — same marker + bind contract, simpler point display.
     if ((el.getAttribute("engine") || "").toLowerCase() === "leaflet") {

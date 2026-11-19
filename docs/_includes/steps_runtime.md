@@ -1349,34 +1349,7 @@ class Bar(Object):
 
 {% include button.py %}
 
-@component(icon="🎠", attrs=[{"n": "delay", "t": "int", "data": True, "d": 4000},
-                            {"n": "current", "t": "int"}],
-           methods=["next", "prev", "goto"])
-class Carousel(Block):
-    @property
-    def current(self):
-        items = self._qq(".lc-carousel-item")
-        for i in range(len(items)):
-            if items[i]._el.classList.contains("active"):
-                return i
-        return 0
-
-    def _dots(self):
-        return self._el.querySelectorAll(".lc-carousel-dots span") if self._el else None
-
-    def goto(self, n):
-        d = self._dots()
-        if d is not None and int(d.length) > n:
-            d.item(n).click()
-        return self
-
-    def next(self):
-        items = self._qq(".lc-carousel-item")
-        return self.goto((self.current + 1) % len(items)) if items else self
-
-    def prev(self):
-        items = self._qq(".lc-carousel-item")
-        return self.goto((self.current - 1) % len(items)) if items else self
+{% include carousel.py %}
 
 
 {% include cards.py %}
@@ -1409,33 +1382,10 @@ class Dropdown(Block):
 {% include folder.py %}
 
 
-@component(icon="▤",
-           attrs=[{"n": "cols", "t": "str", "data": True, "d": "auto"},
-                  {"n": "gap", "t": "int", "data": True, "d": 18},
-                  {"n": "headings", "t": "str", "data": True, "d": "show"}])
-class Grid(Block):
-    pass
+{% include grid.py %}
 
 
-@component(icon="🗺️",
-           attrs=[{"n": "lat", "t": "float", "data": True, "d": 48.86},
-                  {"n": "lng", "t": "float", "data": True, "d": 2.35},
-                  {"n": "zoom", "t": "int", "data": True, "d": 12},
-                  {"n": "height", "t": "int", "data": True, "d": 350},
-                  {"n": "tiles", "t": "str", "data": True, "attr": "tiles", "d": 'positron'}, {"n": "bindicon", "t": "str", "data": True, "attr": "bindicon"}, {"n": "bearing", "t": "float", "data": True, "attr": "bearing"}, {"n": "pitch", "t": "float", "data": True, "attr": "pitch"}, {"n": "fit", "t": "bool", "data": True, "attr": "fit"}, {"n": "radius", "t": "float", "data": True, "attr": "radius"}],
-           assoc=[{"n": "source", "target": "Dataset"}, {"n": "bind", "target": "Datagrid"}],
-           methods=["pan_to", "set_zoom"])
-class Map(Block):
-    def pan_to(self, lat, lng):
-        if self._el is not None:
-            self._el.setAttribute("data-lat", str(lat))
-            self._el.setAttribute("data-lng", str(lng))
-        return self
-
-    def set_zoom(self, z):
-        if self._el is not None:
-            self._el.setAttribute("data-zoom", str(z))
-        return self
+{% include map.py %}
 
 
 @component(icon="🍔", methods=["items"])
@@ -1802,37 +1752,7 @@ class Retrospective(Block):
 {% include impact_map.py %}
 
 
-@component(icon="🎏", attrs=[{"n": "count", "t": "int"}],
-           assoc=[{"n": "map", "target": "ImpactMap"}])
-class EventFlow(Block):
-    """Event-storming sequence (.event_flow) — the page's story as
-    colored notes. One beat, under the user who gives it:
-    ui|data → command → [rule] → event."""
-    @property
-    def count(self):
-        return len(self._qq(".lc-ef-step"))
-
-    def kinds(self):
-        """The sequence of note kinds, in order — so a proof can assert
-        the grammar (a command before its event, a rule that governs a
-        command rather than issuing one)."""
-        return [str(o._el.getAttribute("data-kind") or "") for o in self._qq(".lc-ef-step")]
-
-    @property
-    def map(self):
-        """The impact map this story tells (map= knob) — each beat serves
-        an impact; the pipe says which map."""
-        mid = self._attr("data-map") or ""
-        el = js.window.document.querySelector("[data-lc-id='" + mid + "']")
-        return ImpactMap(el) if el is not None else None
-
-    def elements(self):
-        """The flow's cast — every ‘— ref’ tail, collected: #blocks, classes,
-        Class.commands, Class[states]. The meta level checks each one against
-        the page's own artifacts."""
-        return [{"kind": str(o._el.getAttribute("data-el-kind") or ""),
-                 "ref": str(o._el.getAttribute("data-el-ref") or "")}
-                for o in self._qq(".lc-ef-el")]
+{% include event_flow.py %}
 
 
 @component(icon="🗄️", attrs=[{"n": "unlisted", "t": "str", "data": True, "attr": "unlisted"}, {"n": "live", "t": "bool", "data": True, "attr": "live"}])
@@ -1953,45 +1873,13 @@ def _lc_agent_of(row):
     return a
 
 
-@component(icon="🗺", attrs=[{"n": "scope", "t": "str", "data": True, "attr": "scope"}, {"n": "states", "t": "bool", "data": True, "attr": "states", "d": True}])
-class Diagram(Block):
-    """The model, drawn (.diagram): scope= a class, a package or *; states=
-    off hides the state machines."""
-    pass
+{% include diagram.py %}
 
 
 {% include model.py %}
 
 
-@component(icon="🧬",
-           attrs=[{"n": "cards", "t": "int"}, {"n": "follows", "t": "str"}],
-           assoc=[{"n": "grid", "target": "Datagrid"},
-                  {"n": "source", "target": "Model"}],
-           methods=["bind"])
-class Inspector(Block):
-    """Model widget (.inspector) — live cards over the objects its fence
-    builds; follow= makes it a claimed grid's detail form. It POINTS at the
-    model block as its source — the declarations stay the SSOT, the widget
-    only shows them, and the x-ray pipes the flow."""
-    @property
-    def cards(self):
-        return len(self._qq("[data-card]"))
-
-    @property
-    def follows(self):
-        return str(self._attr("data-bound-to") or "")
-
-    @property
-    def grid(self):
-        gid = self._attr("data-bound-to") or ""
-        el = js.window.document.querySelector("[data-lc-id='" + gid + "']")
-        return Datagrid(el) if el is not None else None
-
-    @property
-    def source(self):
-        mid = self._attr("data-bind") or ""
-        el = js.window.document.querySelector(".lc-model[data-lc-id='" + mid + "']")
-        return Model(el) if el is not None else None
+{% include inspector.py %}
 
 
 def _lc_named(expr):
