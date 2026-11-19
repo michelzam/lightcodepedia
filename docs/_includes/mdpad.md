@@ -2054,7 +2054,8 @@ Auto-included by docs/_layouts/default.html.
       ta.focus();
       ta.setSelectionRange(a, b);
       var ok = false;
-      try { ok = document.execCommand && document.execCommand("insertText", false, text); } catch (e) {}
+      /* the pad's own edit, not the learner's typing (the trace, progress.md) */
+      try { ok = document.execCommand && (window.lcTrace ? window.lcTrace.quiet(function () { return document.execCommand("insertText", false, text); }) : document.execCommand("insertText", false, text)); } catch (e) {}
       if (!ok) {
         ta.value = ta.value.slice(0, a) + text + ta.value.slice(b);
         ta.dispatchEvent(new Event("input", { bubbles: true }));
@@ -2314,6 +2315,7 @@ Auto-included by docs/_layouts/default.html.
       var before = v.slice(0, at), lead = !before.trim() ? "" : (/\n\n$/.test(before) ? "" : /\n$/.test(before) ? "\n" : "\n\n");
       var after = v.slice(at), trail = !after.trim() ? "" : (/^\n\n/.test(after) ? "" : /^\n/.test(after) ? "\n" : "\n\n");
       editSpan(at, at, lead + t + trail, at + lead.length + t.length);
+      if (window.lcTrace) window.lcTrace.applied(wrap, t.length);   /* ⬇ Add wrote here */
       flashAt(at + lead.length);
       return true;
     };
@@ -3048,6 +3050,7 @@ Auto-included by docs/_layouts/default.html.
          preview was still being rebuilt — a cell reading a form found none
          ("⚠ can't convert _Empty to int") and kept that error until something
          else moved. Same beat as a learner's own typing: 400 ms after. */
+      if (window.lcTrace) window.lcTrace.applied(wrap, String(t).length - ta.value.length);   /* a button wrote here */
       ta.value = t; lastVal = t; render(); publish(false); paintPiano();
       clearTimeout(_pubT);
       _pubT = setTimeout(function () { publish(true); }, 400);

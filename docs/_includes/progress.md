@@ -147,6 +147,9 @@ Auto-included by docs/_layouts/default.html.
       var m = moments[k] || {};
       out[k] = { kind: "q", seen: m.seen || "", first: m.first || "", correct: m.correct || "" };
     });
+    var traced = {};
+    try { traced = JSON.parse(localStorage.getItem(TRACE_ROWS) || "{}"); } catch (e) {}
+    Object.keys(traced).forEach(function (k) { out[k] = traced[k]; });
     return out;
   }
 
@@ -156,6 +159,7 @@ Auto-included by docs/_layouts/default.html.
       var r = map[k];
       if (r.kind === "f") { lines.push([k, "f", r.tags || "", r.status || "", r.first_red || "", r.first_green || "", (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t")); return; }
       if (r.kind === "q") { lines.push([k, "q", r.seen || "", r.first || "", r.correct || ""].join("\t")); return; }
+      if (r.kind === "c") { lines.push([k, "c", "1", r.typed || 0, r.page || 0, r.ext || 0, r.ext_n || 0, r.applied || 0, r.paths || ""].join("\t")); return; }
       lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || "",
                   (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t"));
     });
@@ -176,6 +180,7 @@ Auto-included by docs/_layouts/default.html.
       if (p.length < 3) return;
       if (p[1] === "f") { var fr = (p[6] || "0/0").split("/"); map[p[0]] = { kind: "f", tags: (p[2] || "").trim(), status: (p[3] || "").trim(), first_red: (p[4] || "").trim(), first_green: (p[5] || "").trim(), red_runs: +fr[0] || 0, green_runs: +fr[1] || 0 }; return; }
       if (p[1] === "q") { map[p[0]] = { kind: "q", seen: (p[2] || "").trim(), first: (p[3] || "").trim(), correct: (p[4] || "").trim() }; return; }
+      if (p[1] === "c") { map[p[0]] = { kind: "c", typed: +p[3] || 0, page: +p[4] || 0, ext: +p[5] || 0, ext_n: +p[6] || 0, applied: +p[7] || 0, paths: (p[8] || "").trim() }; return; }
       var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/"), u = (p[5] || "0/0").split("/");
       map[p[0]] = { won: +q[0] || 0, total: +q[1] || 0,
                     green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim(),
@@ -202,6 +207,7 @@ Auto-included by docs/_layouts/default.html.
           fo.red_runs = Math.max(fo.red_runs, s.red_runs || 0); fo.green_runs = Math.max(fo.green_runs, s.green_runs || 0);
           return;
         }
+        if (s.kind === "c") { if (!out[k]) out[k] = s; return; }   /* a save's trace: one row, written once, never merged */
         if (s.kind === "q") {
           var qo = out[k] && out[k].kind === "q" ? out[k] : (out[k] = { kind: "q", seen: "", first: "", correct: "" });
           qo.seen = earliest(qo.seen, s.seen); qo.first = earliest(qo.first, s.first); qo.correct = earliest(qo.correct, s.correct);
@@ -354,8 +360,101 @@ Auto-included by docs/_layouts/default.html.
   document.addEventListener("lc-bench-write", function (ev) {
     var path = (ev && ev.detail && ev.detail.path) || "";
     if (path.indexOf("progress.txt") >= 0) return;   /* our own write (either name) */
+    traceCut();
     flush();
   });
+
+  /* THE TRACE (Michel, 2026-11-19: "by page, in the progress record, in a
+     less explicit way, but easy to collect for research by deterministic
+     code"; "stay discrete but not penalize … match a paste with any part
+     from that page, including agent's output, and keep the provenance").
+     Per page, between two saves: characters typed, pasted from a part of
+     this page (which part, into which part), pasted from elsewhere (and how
+     many pastes), written by the page itself (a button's Apply, ⬇ Add).
+     Only counts and part ids — never the text. Kept in this browser until
+     a 💾 on the page cuts them into ONE row of the record:
+        <page>@<save time>  c  1  typed  page  elsewhere  pastes  applied  from>to:n;…
+     (`~` is elsewhere; `>` a paste, `=>` the page's own write). Nothing is shown, nothing is blocked, nothing is
+     scored; a save with nothing to count writes nothing. Pastes under 40
+     characters are ignored: a name, a fix. */
+  var TRACE_ROWS = "lc_trace_rows", TRACE_MIN = 40;
+  var traceNow = {}, traceCopies = [], traceActor = null, traceQuiet = 0;
+  function tracePage() { return window.lcPageScores ? window.lcPageScores.norm() : location.pathname; }
+  function traceBucket() {
+    var k = tracePage();
+    return traceNow[k] || (traceNow[k] = { typed: 0, page: 0, ext: 0, ext_n: 0, applied: 0, paths: {} });
+  }
+  function tracePart(el) {
+    var p = el && el.closest ? el.closest("[data-lc-id]") : null;
+    return p ? p.getAttribute("data-lc-id") : "page";
+  }
+  function traceNorm(t) { return String(t || "").replace(/\s+/g, " ").trim(); }
+  function traceTextOf(el) {
+    if (!el) return "";
+    var ta = el.matches && el.matches("textarea, input") ? el : el.querySelector && el.querySelector("textarea");
+    var v = el.getAttribute && el.getAttribute("data-lc-value");
+    if (v) { try { var j = JSON.parse(v); if (j && typeof j.text === "string") return j.text; } catch (e) {} }
+    return (ta && ta.value ? ta.value + "\n" : "") + (el.innerText || el.textContent || "");
+  }
+  /* where a paste came from: something copied on this page, else the
+     smallest part of the page whose text holds it, else elsewhere (~) */
+  function traceSource(text, intoEl) {
+    var n = traceNorm(text);
+    for (var i = traceCopies.length - 1; i >= 0; i--) if (traceCopies[i].text.indexOf(n) >= 0) return traceCopies[i].from;
+    var best = null, bestLen = Infinity;
+    document.querySelectorAll("[data-lc-id]").forEach(function (el) {
+      if (intoEl && (el === intoEl || el.contains(intoEl))) return;
+      var t = traceNorm(traceTextOf(el));
+      if (t.length < bestLen && t.indexOf(n) >= 0) { best = el.getAttribute("data-lc-id"); bestLen = t.length; }
+    });
+    return best || "~";
+  }
+  function traceAdd(from, to, n, kind) {
+    var b = traceBucket(), key = from + (kind === "applied" ? "=>" : ">") + to;   /* => the page wrote it, > it was pasted */
+    b.paths[key] = (b.paths[key] || 0) + n;
+    if (kind === "applied") b.applied += n;
+    else if (from === "~") { b.ext += n; b.ext_n++; }
+    else b.page += n;
+  }
+  document.addEventListener("copy", function () {
+    var sel = window.getSelection ? window.getSelection() : null, t = traceNorm(sel ? String(sel) : "");
+    if (t.length < TRACE_MIN) return;
+    traceCopies.push({ text: t, from: tracePart(sel && sel.anchorNode ? (sel.anchorNode.nodeType === 1 ? sel.anchorNode : sel.anchorNode.parentElement) : null) });
+    if (traceCopies.length > 20) traceCopies.shift();
+  }, true);
+  document.addEventListener("pointerdown", function (ev) { traceActor = { part: tracePart(ev.target), at: Date.now() }; }, true);
+  document.addEventListener("paste", function (ev) {
+    var t = ev.clipboardData ? ev.clipboardData.getData("text/plain") : "";
+    if (!t || t.length < TRACE_MIN) return;
+    var into = ev.target && ev.target.closest ? ev.target.closest("[data-lc-id]") : null;
+    traceAdd(traceSource(t, into), tracePart(ev.target), t.length, "paste");
+  }, true);
+  document.addEventListener("input", function (ev) {
+    if (traceQuiet || !ev.inputType || !ev.data) return;
+    if (ev.inputType === "insertText" || ev.inputType === "insertCompositionText" || ev.inputType === "insertReplacementText")
+      traceBucket().typed += ev.data.length;
+  }, true);
+  window.lcTrace = {
+    /* the page wrote into a part (a button's Apply, ⬇ Add): who pressed, what grew */
+    applied: function (toEl, n) {
+      if (!(n > 0)) return;
+      var from = traceActor && Date.now() - traceActor.at < 5000 ? traceActor.part : "page";
+      traceAdd(from, tracePart(toEl), n, "applied");
+    },
+    /* the page's own edits are not typing */
+    quiet: function (fn) { traceQuiet++; try { return fn(); } finally { traceQuiet--; } },
+    now: function () { return traceNow[tracePage()] || null; }
+  };
+  function traceCut() {
+    var k = tracePage(), b = traceNow[k];
+    if (!b || !(b.typed || b.page || b.ext || b.applied)) return;
+    var paths = Object.keys(b.paths).sort().map(function (p) { return p + ":" + b.paths[p]; }).join(";");
+    var all = {};
+    try { all = JSON.parse(localStorage.getItem(TRACE_ROWS) || "{}"); } catch (e) {}
+    all[k + "@" + new Date().toISOString().replace(/\.\d+Z$/, "Z")] = { kind: "c", typed: b.typed, page: b.page, ext: b.ext, ext_n: b.ext_n, applied: b.applied, paths: paths };
+    try { localStorage.setItem(TRACE_ROWS, JSON.stringify(all)); } catch (e) {}
+    delete traceNow[k];
+  }
   /* LEAVING IS THE OTHER TRIGGER, AND ON A PHONE IT IS NOT `pagehide`.
      iOS backgrounds a tab without firing pagehide reliably —
      visibilitychange is the hook that always fires there. This is the ONLY
