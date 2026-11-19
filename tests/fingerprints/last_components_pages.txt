@@ -1,0 +1,17 @@
+# Recorder … Vitals — the last page components' no-regression set (2026-11-19)
+/components/agent
+/components/cards
+/components/crew
+/components/database
+/components/dataset
+/components/dropdown
+/components/examples/adopt_wanda
+/components/examples/lucky3d
+/components/menu
+/components/pytutor
+/components/radio
+/components/recorder
+/components/retrospective
+/components/run
+/components/scrollable
+/nodes

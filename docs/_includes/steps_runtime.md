@@ -1355,28 +1355,7 @@ class Bar(Object):
 {% include cards.py %}
 
 
-@component(icon="🔽", attrs=[{"n": "label", "t": "str", "data": True, "d": "Menu"}],
-           methods=["open", "close"])
-class Dropdown(Block):
-    def _menu(self):
-        return self._el.querySelector(".lc-dd-menu") if self._el else None
-
-    @property
-    def opened(self):
-        m = self._menu()
-        return bool(m and m.classList.contains("open"))
-
-    def open(self):
-        m = self._menu()
-        if m is not None:
-            m.classList.add("open")
-        return self
-
-    def close(self):
-        m = self._menu()
-        if m is not None:
-            m.classList.remove("open")
-        return self
+{% include dropdown.py %}
 
 
 {% include folder.py %}
@@ -1388,38 +1367,10 @@ class Dropdown(Block):
 {% include map.py %}
 
 
-@component(icon="🍔", methods=["items"])
-class Menu(Block):
-    def items(self):
-        return [o.text for o in self._qq("a, li")]
+{% include menu.py %}
 
 
-@component(icon="📻", attrs=[{"n": "selected", "t": "str"}, {"n": "active", "t": "int"}], methods=["select"])
-class Radio(Block):
-    @property
-    def selected(self):
-        c = self._el.querySelector("input:checked") if self._el else None
-        if not c:
-            return ""
-        lbl = c.parentElement
-        return (lbl.textContent or "").strip() if lbl else ""
-
-    @property
-    def active(self):
-        if self._el is None:
-            return 0
-        ins = self._el.querySelectorAll("input")
-        for i in range(int(ins.length)):
-            if ins.item(i).checked:
-                return i
-        return 0
-
-    def select(self, n):
-        if self._el is not None:
-            ins = self._el.querySelectorAll("input")
-            if ins is not None and int(ins.length) > n:
-                ins.item(n).click()
-        return self
+{% include radio.py %}
 
 
 {% include quiz.py %}
@@ -1541,9 +1492,7 @@ class Slides(Block):
         return self
 
 
-@component(icon="📜", attrs=[{"n": "height", "t": "int", "data": True, "d": 300}])
-class Scrollable(Block):
-    pass
+{% include scrollable.py %}
 
 
 {% include code.py %}
@@ -1551,21 +1500,7 @@ class Scrollable(Block):
 
 {% include agent.py %}
 
-@component(icon="🎥",
-           attrs=[{"n": "pip", "t": "str", "data": True, "d": "bottom-right"},
-                  {"n": "size", "t": "int", "data": True, "d": 240},
-                  {"n": "zoom", "t": "float", "data": True, "d": 1.35},
-                  {"n": "fps", "t": "int", "data": True, "d": 25}],
-           methods=["start", "stop"],
-           states=["idle", "recording", "stopped"])
-class Recorder(Block):
-    @transition(["idle"], "recording")
-    def start(self):
-        return self._tap(".lc-rec-start, [data-lc-start]")
-
-    @transition(["recording"], "stopped")
-    def stop(self):
-        return self._tap(".lc-rec-stop, [data-lc-stop]")
+{% include recorder.py %}
 
 
 {% include qr.py %}
@@ -1613,12 +1548,7 @@ class _Doctests:
 
 {% include ship.py %}
 
-@component(icon="🔬",
-           attrs=[{"n": "height", "t": "int", "data": True, "d": 400},
-                  {"n": "master", "t": "str", "data": True, "d": "",
-                   "attr": "data-bound-to"}])
-class Pytutor(Block):
-    pass
+{% include pytutor.py %}
 
 
 {% include embed.py %}
@@ -1626,89 +1556,25 @@ class Pytutor(Block):
 {% include accordion.py %}
 
 
-@component(icon="🧊",
-           attrs=[{"n": "height", "t": "int", "data": True, "d": 440,
-                   "attr": "height"},
-                  {"n": "loaded", "t": "bool"},
-                  {"n": "last_log", "t": "str"}],
-           methods=["bark", "run", "wag_tail", "swim", "blow_bubble"])
-class Scene3d(Block):
-    @property
-    def loaded(self):
-        return bool(self._el is not None
-                    and self._el.querySelector("canvas") is not None)
-
-    @property
-    def last_log(self):
-        if self._el is None:
-            return ""
-        nl = self._el.querySelectorAll(".lc-s3d-console div")
-        n = int(nl.length)
-        return str(nl.item(n - 1).textContent or "").strip() if n else ""
-
-    def _method_btn(self, name):
-        if self._el is not None:
-            nl = self._el.querySelectorAll(".lc-s3d-methods button")
-            for i in range(int(nl.length)):
-                b = nl.item(i)
-                if str(b.textContent or "").strip() == name + "()":
-                    return Block(b)
-        return Block(None)
-
-    def bark(self):
-        return self._method_btn("bark").click()
-
-    def run(self):
-        return self._method_btn("run").click()
-
-    def wag_tail(self):
-        return self._method_btn("wag_tail").click()
-
-    def swim(self):
-        return self._method_btn("swim").click()
-
-    def blow_bubble(self):
-        return self._method_btn("blow_bubble").click()
+{% include scene3d.py %}
 
 
 {% include avatar.py %}
 
 {% include blocks.py %}
 
-@component(icon="⌨️")
-class Repl(Block):
-    """Interactive Python REPL (.repl)."""
-    pass
+{% include repl.py %}
 
 
 {% include video.py %}
 
 
-@component(icon="📊",
-           attrs=[{"n": "samples", "t": "int"}, {"n": "heap_mb", "t": "float"},
-                  {"n": "dom_nodes", "t": "int"}])
-class Vitals(Block):
-    @property
-    def samples(self):
-        return int(self._attr("data-samples") or 0)
-
-    @property
-    def heap_mb(self):
-        v = self._attr("data-heap")
-        return float(v) if v else None
-
-    @property
-    def dom_nodes(self):
-        return int(self._attr("data-dom") or 0)
+{% include vitals.py %}
 
 
 {% include mdpad.py %}
 
-@component(icon="🏷️", attrs=[{"n": "value", "t": "str"}])
-class Stat(Block):
-    @property
-    def value(self):
-        return self.text
+{% include stat.py %}
 
 
 @component(icon="🧪",
@@ -1733,17 +1599,7 @@ class ModelCheck(Block):
 {% include persona.py %}
 
 
-@component(icon="🔁",
-           assoc=[{"n": "source", "target": "Form"}])
-class Retrospective(Block):
-    """Sprint retrospective (.retrospective) — keep, improve, stop, start."""
-    @property
-    def data(self):
-        return _lc_doc_data(self)
-
-    @property
-    def source(self):
-        return _lc_ref(self, "data-bind")
+{% include retrospective.py %}
 
 
 {% include pitch.py %}
@@ -1755,114 +1611,13 @@ class Retrospective(Block):
 {% include event_flow.py %}
 
 
-@component(icon="🗄️", attrs=[{"n": "unlisted", "t": "str", "data": True, "attr": "unlisted"}, {"n": "live", "t": "bool", "data": True, "attr": "live"}])
-class Database(Block):
-    """The database line (.database): a link whose scheme says the kind, an
-    unlisted name that opens its tables, live="true" to hear their changes."""
-    pass
+{% include database.py %}
 
 
-@component(icon="📡", attrs=[{"n": "exports", "t": "str", "data": True, "attr": "exports"}], assoc=[{"n": "model", "target": "Model"}, {"n": "pages", "target": "Dataset"}])
-class Server(Block):
-    """The server line (.server): serves a model at lc://<name>, and the
-    pages a dataset lists (pages=, rows of path and file); what it knows
-    hangs under its id — traffic, clients, contract, pages."""
-    pass
+{% include server.py %}
 
 
-@component(icon="🧑‍🤝‍🧑",
-           attrs=[{"n": "actions", "t": "str", "data": True, "attr": "actions"},
-                  {"n": "tries", "t": "int", "data": True, "attr": "tries", "d": 2},
-                  {"n": "budget", "t": "int", "data": True, "attr": "budget", "d": 6},
-                  {"n": "fallback", "t": "str", "data": True, "attr": "fallback"},
-                  {"n": "text", "t": "str", "data": True, "attr": "text", "d": "message"},
-                  {"n": "pace", "t": "float", "data": True, "attr": "pace", "d": 0.5},
-                  {"n": "costs", "t": "str", "data": True, "attr": "costs", "d": "1, 30, 900"}],
-           assoc=[{"n": "members", "target": "Agent", "list": True}, {"n": "inbox", "target": "Dataset"}],
-           methods=["run"])
-class Crew(Agent):
-    """A crew (.crew) is an agent made of agents (Michel, 2026-10-24: "the
-    crew should inherit from agent"): its members are agents, their
-    attributes the columns of a dataset (members=), run over an inbox with clear bounds — tries= per message,
-    budget= AI asks in total, fallback= for what stays open. It has an agent's
-    desk and key; its provider, model, temperature and max_tokens are its
-    members' defaults. It writes <id>.sorted and <id>.log, nothing else."""
-    @property
-    def asked(self):
-        """The AI asks this crew made, in its last run."""
-        return self.asks
-
-    @property
-    def replies(self):
-        """What its members said, step by step, in its last run."""
-        return [str(v) for v in self.log.values("out")]
-
-    @property
-    def last(self):
-        r = self.replies
-        return r[-1] if r else ""
-
-    def ask(self, prompt, wait=True):
-        raise AssertionError("a crew works its inbox, not one question — put the message in the inbox, then run()")
-
-    @property
-    def members(self):
-        """Its members: a list of agents (Michel, 2026-10-24: "Crew's members
-        is a list of agents") — the composite: a crew is an agent made of
-        agents, so a member may one day be a crew itself (the tree). Each is
-        the live instance of its row: .asked, .tokens, .last after a run."""
-        ds = getattr(js.window, "lcDatasets", None)
-        arr = getattr(ds, str(self.id) + ".agents", None) if ds else None
-        if not arr:
-            arr = getattr(ds, self._attr("members") or "members", None) if ds else None
-        rows = json.loads(str(js.JSON.stringify(arr))) if arr else []
-        return [_lc_agent_of(r) for r in rows if isinstance(r, dict)]
-
-
-    @property
-    def sorted(self):
-        return Dataset(str(self.id) + ".sorted")
-
-    @property
-    def log(self):
-        return Dataset(str(self.id) + ".log")
-
-    @property
-    def asks(self):
-        return int(self._attr("data-asks") or 0)
-
-    @property
-    def tokens(self):
-        return int(self._attr("data-tokens") or 0)
-
-    @property
-    def done(self):
-        return self._attr("data-state") == "done"
-
-    # THE COST, THREE WORKERS (Michel, 2026-10-24: "python code: the cheapest,
-    # the easier to verify, rigid too; ai: more flexible, but more expensive;
-    # human: the most flexible, creative, and expensive"): costs= gives each
-    # one's price — a rule run, an AI ask, a message left for a person
-    # the crew counts them, once (crew.md), and publishes them as a form does
-    @property
-    def runs(self):
-        """🐍 The rule runs of the last run: the cheapest worker."""
-        return int(self._attr("data-runs") or 0)
-
-    @property
-    def open(self):
-        """🧑 The messages the last run left for a person (its fallback stage)."""
-        return int(self._attr("data-open") or 0)
-
-    @property
-    def cost(self):
-        """💰 runs × 1 + asks × 30 + open × 900 — or the prices costs= gives."""
-        return int(self._attr("data-cost") or 0)
-
-    def run(self):
-        """Press ▶ Run, as a person would; the crew works on, the page repaints."""
-        self._tap(".lc-crew-run")
-        return self
+{% include crew.py %}
 
 
 def _lc_agent_of(row):
