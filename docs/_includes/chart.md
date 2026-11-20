@@ -33,7 +33,7 @@ Dataset-bound (SVG) — re-renders on every dataset update:
     dips="col"    the valley before the point: when the row's value is above zero
                   the line first dives to minus that value (a red ✗), then climbs
                   to the point — the customer journey map's negative experiences
-    trail="col"   the row's beats in time order, a string of ✗ ✓ and ?: beads across
+    trail="col"   the row's beats in time order, a string of ✗ ✓ ? ⇣ ⇢ (? asked, ⇣ ⇢ pasted from elsewhere / the page, on the axis): beads across
                   the column — ✗ below the axis (deeper with each red in a row), ✓
                   above, ? on the axis (a question asked) — the line threading them
                   to the point; replaces dips for the rows that carry one
@@ -477,7 +477,11 @@ Auto-included by docs/_layouts/default.html.
     /* trail="col": a row's runs as beads — ✗ below, each red in a row one deeper,
        ✓ above at the row's own height (Michel, 2026-11-10, "go trail": three reds
        alternating with three greens read as a sawtooth, not as one dip) */
-    var beadsOf = function (d) { return o.trail && d[o.trail] ? String(d[o.trail]).replace(/[^✗✓?]/g, "").split("") : []; };
+    /* beats ON THE AXIS, in their moment: ? a question to a page agent; ⇣ a paste
+       from elsewhere and ⇢ a paste from a part of the page (the paste trace,
+       2026-11-19, Michel: "present it in classroom 4 desk") — never the point */
+    var AXIS = { "?": ["#2563eb", "? asked"], "⇣": ["#7c3aed", "⇣ pasted from elsewhere"], "⇢": ["#64748b", "⇢ pasted from the page"] };
+    var beadsOf = function (d) { return o.trail && d[o.trail] ? Array.from(String(d[o.trail]).replace(/[^✗✓?⇣⇢]/g, "")) : []; };
     var trailMax = 0;
     if (o.dips || o.trail) {
       var deepest = Math.max.apply(null, data.map(function (d) {
@@ -557,12 +561,12 @@ Auto-included by docs/_layouts/default.html.
            beats after the last run stand to the right of the point */
         var beadPts = function (d) {
           var beads = beadsOf(d), out = [], run = 0, n = beads.length, last = -1;
-          beads.forEach(function (b, i) { if (b !== "?") last = i; });
+          beads.forEach(function (b, i) { if (!AXIS[b]) last = i; });
           if (n < 2 || last < 0) return out;
           var bw = Math.min(12, (step * 0.75) / Math.max(n - 1, 1)), top = +d[yc] || 1;
           beads.forEach(function (b, i) {
             if (b === "✗") run++; else if (b === "✓") run = 0;
-            if (i !== last) out.push({ x: X(d) + (i - last) * bw, y: Y(b === "✗" ? -run : b === "?" ? 0 : (top > 0 ? top : 1)), kind: b, i: i + 1, n: n });
+            if (i !== last) out.push({ x: X(d) + (i - last) * bw, y: Y(b === "✗" ? -run : AXIS[b] ? 0 : (top > 0 ? top : 1)), kind: b, i: i + 1, n: n });
           });
           return out;
         };
@@ -586,10 +590,10 @@ Auto-included by docs/_layouts/default.html.
              2026-11-10: "those diamonds could be green, clear then darker") */
           var tone = o.color && d[o.color] ? String(d[o.color]) : "";
           beadPts(d).forEach(function (b) {
-            var fill = b.kind === "✗" ? "#dc2626" : b.kind === "?" ? "#2563eb" : "#86efac";
+            var fill = b.kind === "✗" ? "#dc2626" : AXIS[b.kind] ? AXIS[b.kind][0] : "#86efac";
             var bd = svgEl(svg, NS, "circle", { cx: b.x, cy: b.y, r: 4, fill: fill, "data-bead": b.kind, "data-x": String(d[xCol]) });
-            if (b.kind === "?") svgEl(svg, NS, "text", { x: b.x, y: b.y + 2.5, "text-anchor": "middle", "font-size": 7, fill: "#fff", "pointer-events": "none" }).textContent = "?";
-            svgEl(bd, NS, "title", {}).textContent = d[xCol] + " — beat " + b.i + " of " + b.n + ": " + (b.kind === "✗" ? "✗ red" : b.kind === "?" ? "? asked" : "✓ green") + (hints.trail ? "\n" + hints.trail : "");
+            if (AXIS[b.kind]) svgEl(svg, NS, "text", { x: b.x, y: b.y + 2.5, "text-anchor": "middle", "font-size": 7, fill: "#fff", "pointer-events": "none" }).textContent = b.kind;
+            svgEl(bd, NS, "title", {}).textContent = d[xCol] + " — beat " + b.i + " of " + b.n + ": " + (b.kind === "✗" ? "✗ red" : AXIS[b.kind] ? AXIS[b.kind][1] : "✓ green") + (hints.trail ? "\n" + hints.trail : "");
           });
           var dv = dipOf(d);
           if (dv) {

@@ -19,7 +19,7 @@ class Chart(Block):
     bottom    = Attr(str)                           # a band under the x labels — chips, one per line
     color     = Attr(str)                           # the row's own colour for its point
     dips      = Attr(str)                           # the valley before the summit — setbacks met on the way
-    trail     = Attr(str)                           # the row's beats in time order: ✗ ✓ ? — beads around the point
+    trail     = Attr(str)                           # the row's beats in time order: ✗ ✓ ? ⇣ ⇢ — beads around the point
     hints     = Attr(str)                           # what a hover says about each part: "y: … | bars: …"
     filter    = Attr(str)                           # col=col — only the rows that match the picked row
     source    = Attr("Dataset")                     # the rows it draws

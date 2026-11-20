@@ -65,3 +65,29 @@ def test_journey_lanes_takes_and_words(tmp_path):
     events = list(csv.DictReader(open(str(out) + "_events.csv")))
     kinds = sorted({(e["kind"], e["outcome"]) for e in events})
     assert ("take", "failed") in kinds and ("take", "saved") in kinds and ("ask", "") in kinds and ("proof", "red") in kinds
+
+
+def test_the_paste_trace_lands_as_columns_and_beads(tmp_path):
+    """2026-11-19, the paste trace on the desk: a save's c row → its page's totals, its paths,
+    and its beads in the trail at its moment — ⇣ from elsewhere, ⇢ from a part of the page."""
+    bench = tmp_path / "notes" / "zik"
+    bench.mkdir(parents=True)
+    page = V + "module_09/02_list"
+    trace = "\n%s@2026-11-19T20:10:00Z\tc\t1\t214\t430\t1820\t1\t1960\tbill>feature_pad:430;~>feature_pad:1820;apply_rows=>feature_pad:1960" % page
+    history = [
+        {"sha": "a", "at": "2026-11-19T20:05:00Z", "record": rec([("module_09/02_list", "0/1")], "2026-11-19T20:05:00Z")},
+        {"sha": "b", "at": "2026-11-19T20:10:00Z", "record": rec([("module_09/02_list", "0/1")], "2026-11-19T20:10:00Z") + trace},
+        {"sha": "c", "at": "2026-11-19T20:20:00Z", "record": rec([("module_09/02_list", "1/1")], "2026-11-19T20:20:00Z") + trace},
+    ]
+    (bench / "history.json").write_text(json.dumps(history))
+    out = tmp_path / "journey"
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "journey.py"), "--notes", str(tmp_path / "notes"),
+                        "--out", str(out), "--course", "micro_build_ai"], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    rows = list(csv.DictReader(open(str(out) + ".csv", encoding="utf-8")))
+    row = [x for x in rows if x["page"] == "02_list"][0]
+    assert row["trail"] == "✗⇣⇢✓", row["trail"]
+    assert (row["typed"], row["from_page"], row["from_elsewhere"], row["pastes"], row["applied"]) == ("214", "430", "1820", "1", "1960")
+    assert row["paste_paths"] == "apply_rows ⇒ feature_pad 1960 · bill → feature_pad 430 · elsewhere → feature_pad 1820", row["paste_paths"]
+    ev = [e for e in csv.DictReader(open(str(out) + "_events.csv", encoding="utf-8")) if e["kind"] == "trace"]
+    assert len(ev) == 1 and ev[0]["outcome"] == "214 430 1820 1 1960"
