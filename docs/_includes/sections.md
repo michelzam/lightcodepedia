@@ -43,6 +43,20 @@ Auto-included by docs/_layouts/default.html.
 .lc-acc-live { float: right; font-weight: 400; font-size: 0.82em; color: #64748b; margin-left: 1em; }
 .lc-accordion details[open] > summary { border-bottom: 1px solid #ddd; background: #f0f6ff; color: #0066cc; }
 .lc-accordion details .lc-ac-body { padding: 0.8em 1.2em; }
+/* THE QUIET FOLD (Michel, 2026-11-20: "short visible sentence … in gray", the
+   rest "visible … only if clicked"): `quiet="true"` — a few grey words, no
+   frame. Shut, its text takes no room but STAYS IN THE PAGE, so a reader
+   that is not an eye — a screen reader, the learner's own AI assistant —
+   still gets it (a shut panel's text is otherwise absent or unrendered:
+   Gemini in Chrome saw only the title, same day). */
+.lc-acc-quiet { margin: 0.3em 0 0.8em; }
+.lc-acc-quiet > details { border: 0; margin: 0; overflow: visible; }
+.lc-acc-quiet > details > summary,
+.lc-acc-quiet > details[open] > summary { padding: 0; background: none; border: 0; font-weight: 400; font-size: 0.85em; color: #6b7280; display: inline-block; }
+.lc-acc-quiet > details > summary::before { color: #6b7280; font-size: 0.7em; margin-right: 0.4em; }
+.lc-acc-quiet > .lc-ac-body { color: #4b5563; font-size: 0.9em; padding: 0.3em 0 0.2em 1.1em; border-left: 2px solid #e5e7eb; margin: 0.3em 0; }
+.lc-acc-quiet > details:not([open]) + .lc-ac-body { max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; margin: 0; border: 0; }
+@media print { .lc-acc-quiet > details:not([open]) + .lc-ac-body { max-height: none; overflow: visible; } }
 
 /* the SAME accordion, sourced from a heading: the panel wears the heading
    itself, so a folded section keeps the page's typography */
@@ -101,6 +115,8 @@ Auto-included by docs/_layouts/default.html.
        the day the wording changes. `{: .accordion #author }` + `at: author`
        now points at this group, and do: open/close acts on its panels. */
     if (el.id) { wrap.id = el.id; wrap.setAttribute("data-lc-id", el.id); }
+    var quiet = String(el.getAttribute("quiet") || "").toLowerCase() === "true";
+    if (quiet) wrap.className += " lc-acc-quiet";
     sections.forEach(function(s) {
       /* A PANEL IS LAZY UNLESS ITS AUTHOR SAYS OTHERWISE — and that is not
          an accident: this component page folds a Three.js hive away
@@ -111,6 +127,7 @@ Auto-included by docs/_layouts/default.html.
          keep their content alive by nature: they ARE the page. */
       var eager = s.label.charAt(0) === "!";
       var label = eager ? s.label.slice(1).trim() : s.label;
+      if (quiet) eager = true;   /* its text is in the page from the start */
       var d = document.createElement("details");
       var sum = document.createElement("summary");
       sum.textContent = label;
@@ -152,6 +169,11 @@ Auto-included by docs/_layouts/default.html.
       d.addEventListener("toggle", function() { if (d.open) render(); });
       if (eager) render();
       wrap.appendChild(d);
+      if (quiet) {
+        /* the body sits BESIDE the panel, not inside it: the browser does not
+           render what a shut panel holds, and unrendered text reaches no reader */
+        wrap.appendChild(body);
+      }
     });
     el.parentNode.replaceChild(wrap, el);
   }

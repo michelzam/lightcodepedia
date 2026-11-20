@@ -583,6 +583,62 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
   }
   window.lcLoadCoursePlugins = loadCoursePlugins;
 
+  /* ── NEED ASSISTANCE? — ONE TEXT PER COURSE, ON EVERY PAGE ───────────────
+     Michel, 2026-11-20: "a special spot with the default strategy at the top
+     level and we override it only if necessary, until the page level". A
+     course keeps `_assistance.md` at its root (beside its menu): who the
+     guide is, how a page works, a word for the learner's own AI assistant.
+     The page-level render shows it as a QUIET fold (sections.md) right after
+     the guide's button, or at the end of the page when there is none: a few
+     grey words for the eye, the whole text in the page for a reader that is
+     not one. The nearest file wins — the page's folder, then each folder up
+     to the course — and a page that carries its own `#assistance` fold keeps
+     it. No file, no fold; an empty file switches it off below it. A line of
+     the file holding {helpers} names the page's own agents, and goes when
+     the page has none. Chrome, like the menu: never part of the page's text,
+     so no editor saves it. */
+  var _assistance = {};
+  function courseAssistance(root, src) {
+    var repo = root.dataset.lcSrcRepo, path = root.dataset.lcSrcPath || "";
+    var m = /^((?:.*?\/)?courses\/[^\/]+)\/(.+)$/.exec(path);
+    if (!repo || !m || root.dataset.lcApp) return;
+    var ref = (/@[^@\/]+$/.exec(src) || [""])[0];
+    var dirs = m[2].split("/").slice(0, -1), tries = [];
+    for (var i = dirs.length; i >= 0; i--)
+      tries.push("gh:" + repo + "/" + [m[1]].concat(dirs.slice(0, i)).join("/") + "/_assistance.md" + ref);
+    var read = function (k) {
+      if (k >= tries.length) return Promise.resolve("");
+      var t = tries[k];
+      if (!_assistance[t]) _assistance[t] = loadMd(t).catch(function () { return null; });
+      return _assistance[t].then(function (text) { return text == null ? read(k + 1) : text; });
+    };
+    read(0).then(function (text) {
+      if (root.dataset.lcSrc !== src || !root.isConnected) return;         /* another page since */
+      if (root.querySelector("#assistance, [data-lc-id='assistance'], .lc-assistance")) return;   /* the page's own */
+      if (text.indexOf("---") === 0) {
+        var e = text.indexOf("\n---", 3), nl = e >= 0 ? text.indexOf("\n", e + 1) : -1;
+        if (e >= 0) text = nl >= 0 ? text.slice(nl + 1) : "";
+      }
+      if (!text.trim()) return;
+      var names = [];
+      root.querySelectorAll(".lc-agent-title").forEach(function (n) {
+        var v = (n.textContent || "").trim();
+        if (v && v !== "Agent" && names.indexOf(v) < 0) names.push(v);
+      });
+      text = text.split("\n").filter(function (l) { return names.length || l.indexOf("{helpers}") < 0; })
+                 .join("\n").replace(/\{helpers\}/g, names.join(", ")).replace(/\n{3,}/g, "\n\n");
+      var host = document.createElement("div"), pre = document.createElement("pre");
+      host.className = "lc-assistance";
+      pre.className = "accordion"; pre.id = "assistance"; pre.setAttribute("quiet", "true");
+      pre.textContent = text.trim();
+      host.appendChild(pre);
+      var doc = root.querySelector(".lc-avatar-trigger");
+      if (doc && doc.parentNode) doc.parentNode.insertBefore(host, doc.nextSibling);
+      else (root.lastElementChild && root.lastElementChild.tagName === "SECTION" ? root.lastElementChild : root).appendChild(host);
+      if (window.lcScanElement) window.lcScanElement(host);
+    });
+  }
+
   /* ── ONE ROAD TO A MARKDOWN FILE ─────────────────────────────────────────
      The page render, and anything on the page that needs ANOTHER file of
      the same course (a .feature embedding a sibling lesson's proof), read
@@ -949,6 +1005,7 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
              level runner only: an embedded demo must not hijack its host
              page's deck. */
           if (!fixedSrc && window.lcSlidesRebuild) window.lcSlidesRebuild(root);
+          if (bar) courseAssistance(root, src);   /* the course's "Need assistance?", page-level only */
           status.style.display = "none";
           if (bar) {
             /* a bench (any gh: source that isn't the course vault) flips the

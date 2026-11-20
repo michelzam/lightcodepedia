@@ -109,9 +109,9 @@ Another answer.
 - [ ] It becomes the accordion's outer title, not a panel.
 {: .quiz }
 
-## 🔧 No extra knobs
+## 🔧 Almost no knobs
 
-Accordion has no extra IAL attributes — the structure comes entirely from `### ` headings and body content. Full markdown is supported in every panel body: bullets, tables, `code`, bold, links, even [🐍 Run](/components/run) runners.
+The structure comes entirely from `### ` headings and body content; the two settings are `open="true"` on a heading panel and `quiet="true"` (below). Full markdown is supported in every panel body: bullets, tables, `code`, bold, links, even [🐍 Run](/components/run) runners.
 
 ## 🪄 The same accordion, from a heading
 
@@ -185,6 +185,50 @@ Rendered only if someone asks for it.
 
 A heading panel never needs this: its content *is* the page, always there,
 folded or not.
+
+## 🤫 A quiet fold — a few grey words
+
+Some help is for the few who look for it. `quiet="true"` drops the frame:
+the title is a few grey words, the text appears in grey when they are tapped.
+
+```
+### Need assistance?
+Doc, the round face at the bottom right of a page, is its guide: tap him for a tour.
+```
+{: .accordion #quiet_help quiet="true" }
+
+Shut, a quiet fold takes no room, yet its text **stays in the page**: a
+reader that is not an eye — a screen reader, a learner's own AI assistant —
+still gets it. A framed panel's text does not reach them until someone opens it.
+
+```gherkin
+Feature: A quiet fold keeps its text in the page
+  As a learner who brought an assistant
+  I want the page's directions to reach it without loading everyone's page
+  So that help is there for whoever looks for it
+
+  Scenario: Shut, it takes no room and can still be read
+    Given the quiet fold, shut
+    :::python
+    self.fold: Accordion = self.page.quiet_help
+    self.body = self.fold._qq(".lc-ac-body")[0]
+    self.fold._qq("details")[0]._el.removeAttribute("open")
+    :::
+    Then its text takes no room, and is in the page
+    :::python
+    assert self.body._el.offsetHeight == 0, self.body._el.offsetHeight
+    assert "tap him for a tour" in self.body._el.innerText, self.body._el.innerText
+    :::
+    When a reader opens it
+    :::python
+    self.fold.open()
+    :::
+    Then the text shows
+    :::python
+    assert self.body._el.offsetHeight > 0, self.body._el.offsetHeight
+    :::
+```
+{: .feature tags="ui" status="passing"}
 
 ## ⚠️ Limits worth knowing
 
