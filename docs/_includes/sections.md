@@ -60,7 +60,8 @@ Auto-included by docs/_layouts/default.html.
 .lc-assistance-titled > .lc-acc-quiet { margin: 0; }
 .lc-assistance-titled > .lc-acc-quiet > details { display: none; }
 .lc-assistance-titled > .lc-acc-quiet > details[open] + .lc-ac-body { margin: 0.2em 0 1em; }
-.lc-title-assist { display: inline-block; font-size: 0.42em; font-weight: 400; color: #6b7280; cursor: pointer; margin-left: 0.6em; vertical-align: middle; white-space: nowrap; user-select: none; }
+/* right-justified on the title line (Michel, 2026-11-20: "that I would right justify") */
+.lc-title-assist { float: right; font-size: 0.42em; line-height: 2.4; font-weight: 400; color: #6b7280; cursor: pointer; margin-left: 0.6em; white-space: nowrap; user-select: none; }
 .lc-title-assist::before { content: "\25B8\00a0"; }
 .lc-title-assist[aria-expanded="true"]::before { content: "\25BE\00a0"; }
 .lc-title-assist:hover, .lc-title-assist:focus-visible { color: #374151; text-decoration: underline; }
