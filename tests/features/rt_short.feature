@@ -60,6 +60,59 @@ Feature: 🎬 Short next walk — Doc walks, the page records itself
     Then the phone frame is off
     And the guide's menu shows "🎬 Short next walk" unticked
 
+  Scenario: Public is the owner's choice, unlisted the default — and the upload ends on a post to share
+    Michel, 2026-11-21: "formatted posts, LinkedIn first … keep an option to make the video public
+    (default = unlisted)". YouTube keeps the video; the page writes the post; the owner posts it.
+    Given a marked shim is preinstalled
+    And a builder key and editor repo are connected
+    And the viewer can push to "acme/demo"
+    And the committable GitHub page "courses/demo/mod/short.md" serves:
+      """
+      # Walked page
+
+      ## One
+
+      Some prose.
+
+      ## Two
+
+      More prose.
+
+      ```yaml
+      bot: doc
+      script: []
+      stories:
+        "Say hi":
+          - say: "Hello there."
+            pause: 1
+          - say: "Bye now."
+            pause: 1
+      ```
+      {: .avatar #guide dock="true" size="115" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/short.md"
+    And I wait for the page to be interactive
+    Then the guide's menu offers "🎬 Short next walk"
+    When I tick "🎬 Short next walk" in the guide's menu
+    Then the page is in reel mode
+    And the page wears the phone frame
+    When I pick "Say hi" from the guide's menu
+    Then the voice was blessed before the capture prompt
+    And the Short review dialog shows the clip
+    And the take is held, an end card on offer for "/run.html#src=gh:acme/demo/courses/demo/mod/short.md"
+    And the Short dialog offers to upload "⬆ Upload unlisted"
+    When I tick "public" in the Short dialog
+    Then the Short dialog offers to upload "⬆ Upload public"
+    When I upload the Short, embedded on this page
+    Then the Short went to YouTube public
+    And the Short dialog offers a post holding "Walked page" and "https://youtu.be/stub1234"
+    And the Short's description says where to watch more
+    And the take is released
+    And "courses/demo/mod/short.md" now carries a folded Shorts accordion with Short 1
+    When I close the Short dialog
+    Then the phone frame is off
+    And the guide's menu shows "🎬 Short next walk" unticked
+
   Scenario: A second Short joins the same accordion
     Given a marked shim is preinstalled
     And a builder key and editor repo are connected

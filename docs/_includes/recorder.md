@@ -507,6 +507,7 @@ Auto-included by docs/_layouts/default.html.
         '      <button class="lc-rb-again">↻ Re-record</button>',
         '      <button class="lc-rb-discard">🗑 Discard</button>',
         '    </div>',
+        (window.lcYtVisHtml ? '    ' + window.lcYtVisHtml() : ''),
         '    <div class="lc-rb-yt-area" style="margin-top:10px;"></div>',
         '  </div>',
         '</div>'
@@ -1088,6 +1089,66 @@ Auto-included by docs/_layouts/default.html.
         .catch(function(e){ if (statusEl) statusEl.textContent = "❌ " + e.message; });
     }
 
+    /* PUBLIC, IF THE LEARNER SAYS SO (Michel, 2026-11-21: "keep an option to make
+       the video public (default = unlisted)"). One checkbox wherever an upload
+       starts; it is unticked every time it is drawn. */
+    window._lcYtPublic = false;
+    window.lcYtVisHtml = function () {
+      window._lcYtPublic = false;
+      return '<label class="lc-yt-vis" style="display:block;font-size:0.82em;color:#444;margin:6px 0;text-align:left;">' +
+             '<input type="checkbox" class="lc-yt-public"> Make it <strong>public</strong>: anyone can find it. ' +
+             'Unticked, it is <strong>unlisted</strong>: only people with the link.</label>';
+    };
+    document.addEventListener("change", function (e) {
+      if (e.target && e.target.classList && e.target.classList.contains("lc-yt-public")) window._lcYtPublic = !!e.target.checked;
+    });
+    /* POST IT (Michel, 2026-11-21: "formatted posts, LinkedIn first"): YouTube
+       keeps the video, the page writes the post, the learner posts it as
+       themselves. No network's door is asked for anything: LinkedIn's own share
+       window takes the link, the words travel by the clipboard; a phone's share
+       sheet takes both. The words come from the page — its title, its tags —
+       and are the learner's to change. */
+    window.lcYtPostRow = function (videoUrl) {
+      var title = (document.title || "").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim();
+      /* the lesson's or the app's own name first; the site page that carries it last */
+      var h1 = document.querySelector("#lc-run h1") || document.querySelector(".lc-app-bar .lc-app-title") || document.querySelector("main h1");
+      if (h1) { var c = h1.cloneNode(true); c.querySelectorAll(".lc-title-tags").forEach(function (n) { n.remove(); }); title = c.textContent.trim() || title; }
+      var tags = [];
+      document.querySelectorAll(".lc-title-tag").forEach(function (t) {
+        var v = "#" + (t.getAttribute("data-tag") || t.textContent || "").trim().replace(/[^A-Za-z0-9_]+/g, "");
+        if (v.length > 1 && tags.indexOf(v) < 0) tags.push(v);
+      });
+      var text = (title ? title + "\n\n" : "") + "A short recording of what I built.\n\n▶ " + videoUrl + (tags.length ? "\n\n" + tags.join(" ") : "");
+      var box = document.createElement("div");
+      box.className = "lc-yt-post";
+      box.style.cssText = "margin-top:10px;text-align:left;border-top:1px solid #e5e7eb;padding-top:8px;";
+      box.innerHTML =
+        '<div style="font-size:0.85em;font-weight:600;margin-bottom:4px;">📣 Post it</div>' +
+        '<textarea class="lc-yt-post-text" rows="6" aria-label="Your post" style="width:100%;box-sizing:border-box;font:inherit;font-size:0.82em;padding:7px 9px;border:1px solid #ddd;border-radius:7px;"></textarea>' +
+        '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">' +
+          '<button class="lc-yt-post-in" style="flex:1;padding:7px;background:#0a66c2;color:#fff;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;font-weight:600;">in LinkedIn</button>' +
+          '<button class="lc-yt-post-copy" style="flex:1;padding:7px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">📋 Copy the post</button>' +
+          (navigator.share ? '<button class="lc-yt-post-share" style="flex:1;padding:7px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">📤 Share…</button>' : '') +
+        '</div>' +
+        '<div class="lc-yt-post-note" aria-live="polite" style="font-size:0.78em;color:#555;margin-top:5px;line-height:1.4;">Whoever sees your post can watch the video, unlisted or not.</div>';
+      var ta = box.querySelector(".lc-yt-post-text"), note = box.querySelector(".lc-yt-post-note");
+      ta.value = text;
+      var copy = function () {
+        if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(ta.value).catch(function () {});
+        ta.select(); try { document.execCommand("copy"); } catch (e) {}
+        return Promise.resolve();
+      };
+      box.querySelector(".lc-yt-post-copy").addEventListener("click", function () { copy(); note.textContent = "✅ Post copied."; });
+      box.querySelector(".lc-yt-post-in").addEventListener("click", function () {
+        copy();
+        window.open("https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent(videoUrl), "_blank", "noopener");
+        note.textContent = "✅ Post copied. In LinkedIn's window: paste it, then Post.";
+      });
+      var sh = box.querySelector(".lc-yt-post-share");
+      if (sh) sh.addEventListener("click", function () { navigator.share({ text: ta.value, url: videoUrl }).catch(function () {}); });
+      return box;
+    };
+
     // Core upload: takes a File or Blob, returns videoUrl via onDone(url) or onDone(null, err).
     window.lcYtInsertIntoPage = ytInsertIntoPage;
     /* the result as it looks after an upload, without one — for a proof or a test */
@@ -1103,7 +1164,7 @@ Auto-included by docs/_layouts/default.html.
         },
         body: JSON.stringify({
           snippet: { title: title, description: description || ("Recorded on Lightcodepedia · " + new Date().toLocaleDateString()) },
-          status: { privacyStatus: "unlisted" }
+          status: { privacyStatus: window._lcYtPublic ? "public" : "unlisted" }
         })
       }).then(function(r){
         if (!r.ok) return r.text().then(function(t){ throw new Error(r.status + ": " + t); });
@@ -1153,8 +1214,11 @@ Auto-included by docs/_layouts/default.html.
               'paste the embed on a new line at the end, <strong>💾 Save</strong>. The video plays on your page; ' +
               '🚀 Ship it again and the QR code carries it.</div>'),
           '<div class="lc-yt-insert-status" style="font-size:0.78em;color:#555;margin-top:5px;text-align:center;min-height:1em;"></div>',
+          '<div class="lc-yt-post-slot"></div>',
         '</div>'
       ].join("");
+      var postSlot = container.querySelector(".lc-yt-post-slot");
+      var offerPost = function (videoUrl) { if (postSlot && !postSlot.firstChild) postSlot.appendChild(window.lcYtPostRow(videoUrl)); };
       var barEl    = container.querySelector(".lc-yt-bar");
       var pctEl    = container.querySelector(".lc-yt-pct");
       var resultEl = container.querySelector(".lc-yt-result");
@@ -1176,6 +1240,7 @@ Auto-included by docs/_layouts/default.html.
             pctEl.textContent = "✅ Upload complete!";
             resultEl.style.display = "block";
             urlEl.value = videoUrl;
+            offerPost(videoUrl);
             copyEl.onclick = function(){
               if (navigator.clipboard) navigator.clipboard.writeText(videoUrl);
               else { urlEl.select(); urlEl.setSelectionRange(0,99999); document.execCommand("copy"); }
@@ -1194,6 +1259,7 @@ Auto-included by docs/_layouts/default.html.
       /* a proof or a test shows the finished state without an upload */
       container._lcYtDone = function (videoUrl) {
         barEl.style.width = "100%"; pctEl.textContent = "✅ Upload complete!"; resultEl.style.display = "block"; urlEl.value = videoUrl;
+        offerPost(videoUrl);
         if (embEl) embEl.onclick = function(){ embEl.textContent = "✅ Embed copied"; if (insStEl) insStEl.textContent = "Two lines, ready to paste at the end of your pad."; };
       };
 
@@ -1216,8 +1282,9 @@ Auto-included by docs/_layouts/default.html.
       ov.innerHTML = [
         '<div style="background:#fff;border-radius:16px;padding:28px 24px;max-width:400px;width:100%;font-family:-apple-system,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.3);">',
           '<div style="font-size:1.1em;font-weight:700;margin-bottom:8px;">📹 Upload to YouTube</div>',
-          '<div style="font-size:0.85em;color:#555;margin-bottom:20px;">Pick your recording. It will be uploaded as <strong>unlisted</strong> to your YouTube channel.</div>',
+          '<div style="font-size:0.85em;color:#555;margin-bottom:20px;">Pick your recording. It goes to your own YouTube channel.</div>',
           '<input type="file" id="lc-yt-file" accept="video/*" style="width:100%;margin-bottom:16px;font-size:0.9em;box-sizing:border-box;">',
+          window.lcYtVisHtml(),
           '<div id="lc-yt-upload-area" style="margin-bottom:12px;"></div>',
           '<div style="display:flex;gap:8px;">',
             '<button id="lc-yt-upload-btn" style="flex:1;padding:10px;background:#ff0000;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;font-size:0.95em;">⬆ Upload</button>',
@@ -1554,6 +1621,7 @@ Auto-included by docs/_layouts/default.html.
         canCard ? '      <label><input type="checkbox" class="lc-short-card" checked> End card and description: <em>Watch more:</em></label>' : '',
         canCard ? '      <input type="text" class="lc-short-url" aria-label="Watch more address">' : '',
         '      <label><input type="checkbox" class="lc-short-embed"> Also embed on this page</label>',
+        (window.lcYtVisHtml ? '      ' + window.lcYtVisHtml() : ''),
         '    </div>',
         '    <div class="lc-rec-review-acts">',
         '      <button class="lc-short-up">⬆ Upload unlisted</button>',
@@ -1601,6 +1669,8 @@ Auto-included by docs/_layouts/default.html.
       ov.querySelector(".lc-rb-discard").addEventListener("click", discard);
       ov.querySelector(".lc-rec-panel-close").addEventListener("click", discard);
       ov.addEventListener("click", function (e) { if (e.target === ov) discard(); });
+      var pub = ov.querySelector(".lc-yt-public");
+      if (pub) pub.addEventListener("change", function () { up.textContent = pub.checked ? "⬆ Upload public" : "⬆ Upload unlisted"; });
       up.addEventListener("click", function () {
         if (!window.lcYtUpload) { st.textContent = "⚠️ Upload module not ready, try again."; return; }
         up.disabled = true;
@@ -1612,7 +1682,8 @@ Auto-included by docs/_layouts/default.html.
           return window.lcYtUpload(b, b.type || "video/webm", title + (long ? " — Walk" : " — Short"), function (pct) { st.textContent = "Uploading… " + pct + "%"; }, desc);
         })
           .then(function (videoUrl) {
-            st.textContent = "✅ Uploaded (unlisted): " + videoUrl;
+            st.textContent = "✅ Uploaded (" + (window._lcYtPublic ? "public" : "unlisted") + "): " + videoUrl;
+            if (window.lcYtPostRow && !ov.querySelector(".lc-yt-post")) st.parentNode.appendChild(window.lcYtPostRow(videoUrl));
             if (window.lcDocLog && window.lcDocLog.log) { try { window.lcDocLog.log({ host: null }, "🎬 recording", videoUrl, "recorder uploaded"); window.lcDocLog.flush(); } catch (e) {} }
             if (!embed) return;
             st.textContent += " · embedding…";

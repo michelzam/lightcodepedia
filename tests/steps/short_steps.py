@@ -336,3 +336,29 @@ def step_insert_link(context, url):
 def step_insert_status(context, text):
     got = context.page.inner_text("#lc-yt-insert-probe")
     assert text in got, got
+
+
+@then('the Short went to YouTube public')
+def step_public(context):
+    assert context.yt_posts, "no upload was started"
+    meta = _json.loads(context.yt_posts[-1])
+    assert meta.get("status", {}).get("privacyStatus") == "public", meta
+
+
+@then('the Short dialog offers to upload "{label}"')
+def step_up_label(context, label):
+    expect(context.page.locator(".lc-short-ov .lc-short-up")).to_have_text(label)
+
+
+@when('I tick "public" in the Short dialog')
+def step_tick_public(context):
+    context.page.locator(".lc-short-ov .lc-yt-public").check()
+
+
+@then('the Short dialog offers a post holding "{title}" and "{url}"')
+def step_post_offered(context, title, url):
+    ta = context.page.locator(".lc-short-ov .lc-yt-post .lc-yt-post-text")
+    expect(ta).to_have_count(1, timeout=15_000)
+    text = ta.input_value()
+    assert title in text and url in text, "the post reads %r" % text
+    expect(context.page.locator(".lc-short-ov .lc-yt-post .lc-yt-post-in")).to_be_visible()
