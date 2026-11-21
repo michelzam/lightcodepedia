@@ -56,6 +56,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-acc-quiet > details > summary::before { color: #6b7280; font-size: 0.7em; margin-right: 0.4em; }
 .lc-acc-quiet > .lc-ac-body { color: #4b5563; font-size: 0.9em; padding: 0.3em 0 0.2em 1.1em; border-left: 2px solid #e5e7eb; margin: 0.3em 0; }
 .lc-acc-quiet > details:not([open]) + .lc-ac-body { max-height: 0; overflow: hidden; padding-top: 0; padding-bottom: 0; margin: 0; border: 0; }
+/* the course's assistance: its handle is a chip in the title line (runner.md) */
+.lc-assistance-titled > .lc-acc-quiet { margin: 0; }
+.lc-assistance-titled > .lc-acc-quiet > details { display: none; }
+.lc-assistance-titled > .lc-acc-quiet > details[open] + .lc-ac-body { margin: 0.2em 0 1em; }
+.lc-title-assist { display: inline-block; font-size: 0.42em; font-weight: 400; color: #6b7280; cursor: pointer; margin-left: 0.6em; vertical-align: middle; white-space: nowrap; user-select: none; }
+.lc-title-assist::before { content: "\25B8\00a0"; }
+.lc-title-assist[aria-expanded="true"]::before { content: "\25BE\00a0"; }
+.lc-title-assist:hover, .lc-title-assist:focus-visible { color: #374151; text-decoration: underline; }
 @media print { .lc-acc-quiet > details:not([open]) + .lc-ac-body { max-height: none; overflow: visible; } }
 
 /* the SAME accordion, sourced from a heading: the panel wears the heading

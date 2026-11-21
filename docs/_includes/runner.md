@@ -588,8 +588,8 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      level and we override it only if necessary, until the page level". A
      course keeps `_assistance.md` at its root (beside its menu): who the
      guide is, how a page works, a word for the learner's own AI assistant.
-     The page-level render shows it as a QUIET fold (sections.md) right after
-     the guide's button, or at the end of the page when there is none: a few
+     The page-level render shows it as a QUIET fold (sections.md) whose
+     handle is a grey chip in the title line, after the tags: a few
      grey words for the eye, the whole text in the page for a reader that is
      not one. The nearest file wins — the page's folder, then each folder up
      to the course — and a page that carries its own `#assistance` fold keeps
@@ -632,10 +632,31 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
       pre.className = "accordion"; pre.id = "assistance"; pre.setAttribute("quiet", "true");
       pre.textContent = text.trim();
       host.appendChild(pre);
-      var doc = root.querySelector(".lc-avatar-trigger");
-      if (doc && doc.parentNode) doc.parentNode.insertBefore(host, doc.nextSibling);
+      /* IN THE TITLE LINE, AFTER THE TAGS (Michel, 2026-11-20, on the first
+         published version, which sat under the guide's button: "since this is
+         supposed to be generic … in the title line, after the tags, ready to
+         be clicked"). Every page has a title; not every page has a guide's
+         button. The words are a chip of the title; the text unfolds under it. */
+      var h1 = root.querySelector("h1");
+      if (h1 && h1.parentNode) h1.parentNode.insertBefore(host, h1.nextSibling);
       else (root.lastElementChild && root.lastElementChild.tagName === "SECTION" ? root.lastElementChild : root).appendChild(host);
       if (window.lcScanElement) window.lcScanElement(host);
+      var d = host.querySelector("details"), sum = d && d.querySelector("summary");
+      if (h1 && d && sum) {
+        var tags = h1.querySelector(".lc-title-tags");
+        if (!tags) { tags = document.createElement("span"); tags.className = "lc-title-tags"; h1.appendChild(tags); }
+        var chip = document.createElement("span");
+        chip.className = "lc-title-assist"; chip.setAttribute("role", "button"); chip.tabIndex = 0;
+        chip.textContent = (sum.textContent || "").trim();
+        var flip = function (ev) {
+          if (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ") return;
+          ev.preventDefault(); d.open = !d.open; chip.setAttribute("aria-expanded", d.open ? "true" : "false");
+        };
+        chip.setAttribute("aria-expanded", "false");
+        chip.addEventListener("click", flip); chip.addEventListener("keydown", flip);
+        tags.appendChild(chip);
+        host.classList.add("lc-assistance-titled");   /* the chip is its handle */
+      }
     });
   }
 
