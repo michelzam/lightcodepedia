@@ -50,6 +50,28 @@ files a learner is already working in.
 .lc-run[data-lc-app] .lc-runner-embed:not(.lc-runner-win) {
   border: 0; border-radius: 0; padding: 0; margin: 0.9em 0; background: transparent;
 }
+/* A WINDOW IN A WINDOW HAS NO FRAME (Michel, 2026-11-20, on Demo's POC —
+   Canvas, the lesson, the POC's window, its tabs, the brief's window, its
+   tabs, the map's window: "how many app frames in app frames we really
+   need? … KISS"). This closes the second half of the rule above: inside an
+   app or inside another window, a TITLED embed loses its frame too — no
+   dots, no border, no padding of its own. Under a tab, the tab is its name
+   and the bar goes; anywhere else the title stays, as a plain caption. One
+   frame: the outermost. */
+.lc-mdpad-app .lc-runner-win, .lc-run[data-lc-app] .lc-runner-win, .lc-runner-win .lc-runner-win {
+  border: 0; border-radius: 0; background: transparent; margin: 0.9em 0; overflow: visible;
+}
+.lc-mdpad-app .lc-runner-win > .lc-win-bar, .lc-run[data-lc-app] .lc-runner-win > .lc-win-bar,
+.lc-runner-win .lc-runner-win > .lc-win-bar { background: none; border: 0; padding: 0 0 0.3em; }
+.lc-mdpad-app .lc-runner-win > .lc-win-bar .lc-win-dots, .lc-run[data-lc-app] .lc-runner-win > .lc-win-bar .lc-win-dots,
+.lc-runner-win .lc-runner-win > .lc-win-bar .lc-win-dots { display: none; }
+.lc-mdpad-app .lc-runner-win > .lc-win-bar .lc-win-title, .lc-run[data-lc-app] .lc-runner-win > .lc-win-bar .lc-win-title,
+.lc-runner-win .lc-runner-win > .lc-win-bar .lc-win-title { text-align: left; padding-right: 0; color: #6b7280; }
+.lc-mdpad-app .lc-runner-win > .lc-run, .lc-run[data-lc-app] .lc-runner-win > .lc-run, .lc-runner-win .lc-runner-win > .lc-run,
+.lc-mdpad-app .lc-runner-win > .lc-run-status, .lc-run[data-lc-app] .lc-runner-win > .lc-run-status,
+.lc-runner-win .lc-runner-win > .lc-run-status { padding: 0; }
+.lc-mdpad-app .lc-tab-panel > .lc-runner-win > .lc-win-bar, .lc-run[data-lc-app] .lc-tab-panel > .lc-runner-win > .lc-win-bar,
+.lc-runner-win .lc-tab-panel > .lc-runner-win > .lc-win-bar { display: none; }
 /* THE FRAME STAYS, THE CONTENT SCROLLS (Michel, 2026-10-25: "that outer
    frame to remain a stable fixed menu on top, with the content scrolling
    inside"). A shipped app's window in a lesson keeps its bar and scrolls its
@@ -1013,7 +1035,11 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
           /* the author's margin belongs to the file on screen, not the last one
              (same story: __run.notes.md, Michel 2026-08-06) */
           if (window.lcForgetNotes) window.lcForgetNotes();
-          if (window.lcSetCrumb) crumbFrom(src, root);
+          /* THE BAR NAMES THE LESSON, never a page shown inside it: every render
+             used to write the trail, so the last window to land renamed the
+             page — Demo read "My first feature", then "Welcome to my app"
+             (Michel's Canvas screenshots, 2026-11-20). Page-level only. */
+          if (bar && window.lcSetCrumb) crumbFrom(src, root);
           if (window.lcScanElement) window.lcScanElement(root);
           if (window.lcRebase)      window.lcRebase(root);
           if (window.lcCellsRescan) window.lcCellsRescan();   // {= } cells in the rendered page

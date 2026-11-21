@@ -99,6 +99,72 @@ Feature: Frame flags are a scope, not a page setting
     And the about bubble credits the content, the platform and the AI
 
 
+  Scenario: A page shown inside the lesson never renames the lesson in the bar
+    Michel's Canvas screenshots, 2026-11-20: on Demo the bar read "My first feature", then
+    "Welcome to my app" — the name of whichever window landed last. The bar names the lesson.
+
+    Given the GitHub contents API serves "courses/demo/mod/index.md" with the document:
+      """
+      # 📦 02·A Long Walk
+      """
+    And the GitHub contents API serves "courses/demo/mod/inner.md" with the document:
+      """
+      # 👋 Welcome to my app
+
+      Hello.
+      """
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # 🚦 Gates
+
+      [inner](#)
+      {: .runner src="inner.md" title="" }
+      """
+    When I navigate to "/run.html?crumb=BUILD-AI#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the window titled "Welcome to my app" has landed
+    And the crumb reads "BUILD-AI" then "02·A Long Walk" then "Gates"
+    And the crumb never reads "Welcome to my app"
+
+  Scenario: A window inside a window has no frame — one frame, the outermost
+    Michel, 2026-11-20, on Demo's POC: "how many app frames in app frames we really need? … KISS".
+    Under a tab, the tab is the inner window's name; anywhere else its title stays, a plain caption.
+
+    Given the GitHub contents API serves "courses/demo/mod/inner.md" with the document:
+      """
+      # 👋 Welcome to my app
+
+      Hello.
+      """
+    And the GitHub contents API serves "courses/demo/mod/outer.md" with the document:
+      """
+      # 🧪 My POC
+
+      ````
+      ### 🥇 The List
+
+      [inner](#)
+      {: .runner src="inner.md" title="Under a tab" }
+      ````
+      {: .tabs #poc }
+
+      [inner](#)
+      {: .runner src="inner.md" title="On its own" }
+      """
+    And the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # 🚦 Gates
+
+      [outer](#)
+      {: .runner src="outer.md" title="Outer app" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the window titled "On its own" has landed
+    And the window titled "Outer app" wears its frame
+    And the window titled "On its own" has no frame, and keeps its title as a caption
+    And the window titled "Under a tab" has no frame, and no title of its own
+
   Scenario: The crumb survives the hop into a module
     Michel, 2026-08-13: "when I navigate to a given module, the
     'Lightcodepedia' full menu comes back". A scope that only holds on the

@@ -246,7 +246,9 @@ Feature: 🚀 Ship — the author-designed deployment component
     And I wait for the page to be interactive
     Then the ship qr says nothing is shipped yet
 
-  Scenario: Inside a shipped app, a part has no frame; a titled window keeps its own
+  Scenario: Inside a shipped app, a part has no frame; a titled window keeps its title, not its frame
+    Michel, 2026-11-20: "how many app frames in app frames we really need? … KISS" — one frame, the
+    outermost; this closes the 2026-10-25 half of the rule that let a titled embed keep its window.
     Given the bay manifest points "spike_dogs" at "cafebabe12345678" with entry "_ship_app.md"
     And the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:
       """
@@ -276,7 +278,7 @@ Feature: 🚀 Ship — the author-designed deployment component
     When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/assignment.md"
     And I wait for the page to be interactive
     Then the ship embed renders "An app inside the app."
-    And inside the shipped app "A part of the app." has no frame and "An app inside the app." keeps its window
+    And inside the shipped app "A part of the app." has no frame and "An app inside the app." keeps only its title
 
   Scenario: A shipped app opened on its own pins its title on top, the content scrolls under it
     Given the bay serves "bays/spike_dogs_cafebabe12345678/_ship_app.md" with the document:

@@ -208,15 +208,16 @@ def step_ship_qr_waiting(context):
     assert qr.get_attribute("data-lc-text") is None, "no address before a ship"
 
 
-@then('inside the shipped app "{part}" has no frame and "{inner}" keeps its window')
+@then('inside the shipped app "{part}" has no frame and "{inner}" keeps only its title')
 def step_ship_frames(context, part, inner):
     app = context.page.locator(".lc-run[data-lc-ship-bay]").first
     p = app.locator(".lc-runner-embed", has_text=part).last
     i = app.locator(".lc-runner-embed", has_text=inner).last
     expect(p).to_be_visible(timeout=20_000)
     assert p.evaluate("e => getComputedStyle(e).borderTopWidth") == "0px", "a part drew its own box"
-    expect(i.locator(".lc-win-bar")).to_have_count(1)
-    assert i.evaluate("e => getComputedStyle(e).borderTopWidth") != "0px", "a titled window lost its frame"
+    assert i.evaluate("e => getComputedStyle(e).borderTopWidth") == "0px", "a frame inside the app's frame"
+    assert i.locator(".lc-win-dots").evaluate("e => e.offsetWidth") == 0, "the inner window kept its dots"
+    expect(i.locator(".lc-win-title")).to_be_visible()
 
 
 @then('the shipped app\'s title "{title}" stays on top as the page scrolls')

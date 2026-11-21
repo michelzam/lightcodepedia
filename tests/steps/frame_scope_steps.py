@@ -256,3 +256,49 @@ def step_about_bubble(context):
         assert want in tip, "the about bubble says %r" % tip
     assert chip.evaluate("el => getComputedStyle(el).cursor") == "default", \
         "the bubble looks clickable, and it does nothing yet"
+
+
+@then('the crumb never reads "{text}"')
+def step_crumb_never(context, text):
+    """an inner window lands after the page: give it the time it used to take to rename the bar"""
+    context.page.wait_for_timeout(1500)
+    got = context.page.locator("#lc-crumb").inner_text()
+    assert text not in got, "the bar reads %r" % got
+
+
+def _win(context, title):
+    return context.page.locator(".lc-runner-win", has=context.page.locator(
+        ":scope > .lc-win-bar .lc-win-title", has_text=title)).last
+
+
+@then('the window titled "{title}" has landed')
+def step_win_landed(context, title):
+    win = _win(context, title)
+    win.wait_for(state="attached", timeout=20_000)
+    expect(win.locator(":scope > .lc-run")).to_contain_text("Hello", timeout=20_000)
+
+
+def _frame(win):
+    return win.evaluate("""w => { const cs = getComputedStyle(w), bar = w.querySelector(':scope > .lc-win-bar'),
+        dots = bar.querySelector('.lc-win-dots'), run = w.querySelector(':scope > .lc-run');
+        return { border: parseFloat(cs.borderTopWidth), dots: dots.offsetWidth > 0, bar: bar.offsetHeight > 0,
+                 pad: parseFloat(getComputedStyle(run).paddingLeft) }; }""")
+
+
+@then('the window titled "{title}" wears its frame')
+def step_win_framed(context, title):
+    f = _frame(_win(context, title))
+    assert f["border"] > 0 and f["dots"] and f["bar"], "the outer window lost its frame: %r" % f
+
+
+@then('the window titled "{title}" has no frame, and keeps its title as a caption')
+def step_win_caption(context, title):
+    f = _frame(_win(context, title))
+    assert f["border"] == 0 and not f["dots"] and f["pad"] == 0, "a frame inside a frame: %r" % f
+    assert f["bar"], "its title is gone, and no tab names it"
+
+
+@then('the window titled "{title}" has no frame, and no title of its own')
+def step_win_bare(context, title):
+    f = _frame(_win(context, title))
+    assert f["border"] == 0 and not f["dots"] and not f["bar"] and f["pad"] == 0, "a frame under a tab: %r" % f
