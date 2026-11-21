@@ -160,6 +160,7 @@ Auto-included by docs/_layouts/default.html.
       if (r.kind === "f") { lines.push([k, "f", r.tags || "", r.status || "", r.first_red || "", r.first_green || "", (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t")); return; }
       if (r.kind === "q") { lines.push([k, "q", r.seen || "", r.first || "", r.correct || ""].join("\t")); return; }
       if (r.kind === "c") { lines.push([k, "c", "1", r.typed || 0, r.page || 0, r.ext || 0, r.ext_n || 0, r.applied || 0, r.paths || ""].join("\t")); return; }
+      if (r.kind === "t") { lines.push([k, "t", "1", r.tool || "", r.who || ""].join("\t")); return; }
       lines.push([k, r.won + "/" + r.total, r.green + "/" + r.feats, r.ts || "", r.bench || bench || "",
                   (r.red_runs || 0) + "/" + (r.green_runs || 0)].join("\t"));
     });
@@ -181,6 +182,7 @@ Auto-included by docs/_layouts/default.html.
       if (p[1] === "f") { var fr = (p[6] || "0/0").split("/"); map[p[0]] = { kind: "f", tags: (p[2] || "").trim(), status: (p[3] || "").trim(), first_red: (p[4] || "").trim(), first_green: (p[5] || "").trim(), red_runs: +fr[0] || 0, green_runs: +fr[1] || 0 }; return; }
       if (p[1] === "q") { map[p[0]] = { kind: "q", seen: (p[2] || "").trim(), first: (p[3] || "").trim(), correct: (p[4] || "").trim() }; return; }
       if (p[1] === "c") { map[p[0]] = { kind: "c", typed: +p[3] || 0, page: +p[4] || 0, ext: +p[5] || 0, ext_n: +p[6] || 0, applied: +p[7] || 0, paths: (p[8] || "").trim() }; return; }
+      if (p[1] === "t") { map[p[0]] = { kind: "t", tool: (p[3] || "").trim(), who: (p[4] || "").trim() }; return; }
       var q = (p[1] || "0/0").split("/"), f = (p[2] || "0/0").split("/"), u = (p[5] || "0/0").split("/");
       map[p[0]] = { won: +q[0] || 0, total: +q[1] || 0,
                     green: +f[0] || 0, feats: +f[1] || 0, ts: (p[3] || "").trim(),
@@ -208,6 +210,7 @@ Auto-included by docs/_layouts/default.html.
           return;
         }
         if (s.kind === "c") { if (!out[k]) out[k] = s; return; }   /* a save's trace: one row, written once, never merged */
+        if (s.kind === "t") { if (!out[k]) out[k] = s; return; }   /* a tool call: one row, written once */
         if (s.kind === "q") {
           var qo = out[k] && out[k].kind === "q" ? out[k] : (out[k] = { kind: "q", seen: "", first: "", correct: "" });
           qo.seen = earliest(qo.seen, s.seen); qo.first = earliest(qo.first, s.first); qo.correct = earliest(qo.correct, s.correct);
@@ -443,7 +446,21 @@ Auto-included by docs/_layouts/default.html.
     },
     /* the page's own edits are not typing */
     quiet: function (fn) { traceQuiet++; try { return fn(); } finally { traceQuiet--; } },
-    now: function () { return traceNow[tracePage()] || null; }
+    now: function () { return traceNow[tracePage()] || null; },
+    /* AN ASSISTANT CALLED A TOOL OF THE PAGE (Michel, 2026-11-21: "the smallest
+       MCP … with tracing in the bench, similar to the one we trace for our own
+       agents and doc"). A tool is never called by a click, so this row is the
+       one certain sign that an assistant acted on the page:
+         <page>@<time>  t  1  <tool>  <who it said it was>
+       It travels with the next save, like every other row. */
+    tool: function (name, who) {
+      var all = {}, at = Date.now(), key;
+      try { all = JSON.parse(localStorage.getItem(TRACE_ROWS) || "{}"); } catch (e) {}
+      do { key = tracePage() + "@" + new Date(at).toISOString().replace(/\.\d+Z$/, "Z"); at += 1000; } while (all[key]);
+      all[key] = { kind: "t", tool: String(name || "").replace(/\s+/g, " ").slice(0, 60),
+                   who: String(who || "").replace(/\s+/g, " ").trim().slice(0, 60) };
+      try { localStorage.setItem(TRACE_ROWS, JSON.stringify(all)); } catch (e) {}
+    }
   };
   function traceCut() {
     var k = tracePage(), b = traceNow[k];

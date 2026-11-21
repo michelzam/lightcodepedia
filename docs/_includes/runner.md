@@ -619,8 +619,60 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
      the file holding {helpers} names the page's own agents, and goes when
      the page has none. Chrome, like the menu: never part of the page's text,
      so no editor saves it. */
+  /* ── ONE TOOL FOR AN ASSISTANT THAT CAN CALL ONE (WebMCP) ────────────────
+     Michel, 2026-11-21: "the smallest MCP that will give some information".
+     A course that keeps an assistance file offers the browser's assistant
+     one READ-ONLY tool, about_this_page: the lesson, who helps on it, each
+     check and its first red step, the course's rules. Never a solution, a
+     quiz's answer or an agent's directions; nothing is acted on. Each call
+     leaves a row in the learner's record (progress.md) — the sensor: a tool
+     is never called by a click. Offered only where the browser has the door
+     (document.modelContext; navigator's was its first home) and lets this
+     frame use it — inside another site's frame that takes allow="tools" on
+     the frame. Resolves true when the tool is on offer. */
+  var _toolsOff = null;
+  function offerPageTool(root, rules) {
+    if (_toolsOff) { try { _toolsOff.abort(); } catch (e) {} _toolsOff = null; }
+    var mc = document.modelContext || navigator.modelContext;
+    if (!mc || typeof mc.registerTool !== "function" || typeof AbortController === "undefined") return Promise.resolve(false);
+    var about = function (args) {
+      var h1 = root.querySelector("h1"), name = "";
+      if (h1) { var c = h1.cloneNode(true); c.querySelectorAll(".lc-title-tags").forEach(function (n) { n.remove(); }); name = c.textContent.trim(); }
+      var helpers = [];
+      root.querySelectorAll(".lc-agent-title").forEach(function (n) {
+        var v = (n.textContent || "").trim();
+        if (v && v !== "Agent" && helpers.indexOf(v) < 0) helpers.push(v);
+      });
+      var checks = [];
+      root.querySelectorAll(".feature[data-status], .lc-feature[data-status]").forEach(function (card) {
+        var red = card.querySelector(".lc-feature-step-icon.fail"), row = red && red.parentNode;
+        checks.push({ check: card.getAttribute("data-lc-id") || card.id || "", state: card.getAttribute("data-status") || "not run",
+                      red_step: row ? (row.textContent || "").replace(/\s+/g, " ").trim().slice(0, 200) : "" });
+      });
+      try { if (window.lcTrace && window.lcTrace.tool) window.lcTrace.tool("about_this_page", args && args.assistant); } catch (e) {}
+      return { lesson: name, page: root.dataset.lcSrcPath || "",
+               guide: document.querySelector(".lc-avatar-char") ? "Doc, the round face at the bottom right of the page: a guided tour of this page, spoken, with captions" : "",
+               helpers: helpers, checks: checks,
+               quick_checks: "A quick check is the learner's own question: this tool never gives its answer.",
+               rules: rules };
+    };
+    var ctl = new AbortController();
+    try {
+      var done = mc.registerTool({
+        name: "about_this_page",
+        description: "Read-only. Describes this lesson page for an assistant helping a learner: the lesson, the course's own guide and helpers, each check with its state and first red step, and the course's rules for assistants. Changes nothing on the page.",
+        inputSchema: { type: "object", properties: { assistant: { type: "string", description: "Your own name, for example Gemini. Optional." } } },
+        annotations: { readOnlyHint: true },
+        execute: about
+      }, { signal: ctl.signal });
+      _toolsOff = ctl;
+      return Promise.resolve(done).then(function () { return true; }, function () { _toolsOff = null; return false; });
+    } catch (e) { return Promise.resolve(false); }
+  }
+
   var _assistance = {};
   function courseAssistance(root, src) {
+    if (_toolsOff) { try { _toolsOff.abort(); } catch (e) {} _toolsOff = null; }   /* the last page's tool leaves with it */
     var repo = root.dataset.lcSrcRepo, path = root.dataset.lcSrcPath || "";
     var m = /^((?:.*?\/)?courses\/[^\/]+)\/(.+)$/.exec(path);
     if (!repo || !m || root.dataset.lcApp) return;
@@ -636,12 +688,20 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
     };
     read(0).then(function (text) {
       if (root.dataset.lcSrc !== src || !root.isConnected) return;         /* another page since */
-      if (root.querySelector("#assistance, [data-lc-id='assistance'], .lc-assistance")) return;   /* the page's own */
       if (text.indexOf("---") === 0) {
         var e = text.indexOf("\n---", 3), nl = e >= 0 ? text.indexOf("\n", e + 1) : -1;
         if (e >= 0) text = nl >= 0 ? text.slice(nl + 1) : "";
       }
       if (!text.trim()) return;
+      var plain = text.split("\n").filter(function (l) { return !/^#{1,6}\s/.test(l) && !/\{(helpers|tools)\}/.test(l); }).join("\n").replace(/\*\*/g, "").trim();
+      return offerPageTool(root, plain).then(function (offered) { return { text: text, offered: offered }; });
+    }).then(function (got) {
+      if (!got || root.dataset.lcSrc !== src || !root.isConnected) return;
+      var text = got.text;
+      /* a line of the file holding {tools} names the tool, and goes when this browser offers none */
+      text = text.split("\n").filter(function (l) { return got.offered || l.indexOf("{tools}") < 0; })
+                 .join("\n").replace(/\{tools\}/g, "about_this_page");
+      if (root.querySelector("#assistance, [data-lc-id='assistance'], .lc-assistance")) return;   /* the page's own */
       var names = [];
       root.querySelectorAll(".lc-agent-title").forEach(function (n) {
         var v = (n.textContent || "").trim();
