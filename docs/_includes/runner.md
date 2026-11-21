@@ -948,6 +948,17 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
                 });
                 rec.insertAdjacentElement("afterend", yt);
               }
+              /* 📤 after Record and Upload: the app's address, a post, a frame (recorder.md) */
+              if (window.lcOpenShareApp && !appBar.querySelector(".lc-app-share")) {
+                var sh = document.createElement("button");
+                sh.type = "button"; sh.className = "lc-app-share"; sh.textContent = "📤 Share my app";
+                sh.title = "A post for LinkedIn, the link, and a frame for your own site";
+                sh.addEventListener("click", function () {
+                  var more = appBar.querySelector(".lc-app-more"); if (more) more.open = false;
+                  window.lcOpenShareApp();
+                });
+                (appBar.querySelector(".lc-app-yt") || rec).insertAdjacentElement("afterend", sh);
+              }
             })();
           }
         }).catch(function () {});

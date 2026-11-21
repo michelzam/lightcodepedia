@@ -525,7 +525,7 @@ Auto-included by docs/_layouts/default.html.
         var ytBtn = ov.querySelector(".lc-rb-yt");
         ytBtn.disabled = true;
         var area = ov.querySelector(".lc-rb-yt-area");
-        var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
+        var title = (window.lcPageName && window.lcPageName()) || (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
         if (window.lcYtUploadBlob) {
           window.lcYtUploadBlob(blob, blob.type || "video/webm", title, area);
         } else {
@@ -1108,17 +1108,23 @@ Auto-included by docs/_layouts/default.html.
        window takes the link, the words travel by the clipboard; a phone's share
        sheet takes both. The words come from the page — its title, its tags —
        and are the learner's to change. */
-    window.lcYtPostRow = function (videoUrl) {
+    /* THE PAGE'S OWN NAME: the lesson's or the shipped app's, never the site page
+       that carries it — a video uploaded from "Study Buddy — POC" was titled
+       "Runner" (Michel's screenshot, 2026-11-21) */
+    window.lcPageName = function () {
       var title = (document.title || "").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim();
-      /* the lesson's or the app's own name first; the site page that carries it last */
-      var h1 = document.querySelector("#lc-run h1") || document.querySelector(".lc-app-bar .lc-app-title") || document.querySelector("main h1");
+      var h1 = document.querySelector(".lc-app-bar .lc-app-title") || document.querySelector("#lc-run h1") || document.querySelector("main h1");
       if (h1) { var c = h1.cloneNode(true); c.querySelectorAll(".lc-title-tags").forEach(function (n) { n.remove(); }); title = c.textContent.trim() || title; }
+      return title;
+    };
+    window.lcYtPostRow = function (videoUrl, sentence) {
+      var title = window.lcPageName();
       var tags = [];
       document.querySelectorAll(".lc-title-tag").forEach(function (t) {
         var v = "#" + (t.getAttribute("data-tag") || t.textContent || "").trim().replace(/[^A-Za-z0-9_]+/g, "");
         if (v.length > 1 && tags.indexOf(v) < 0) tags.push(v);
       });
-      var text = (title ? title + "\n\n" : "") + "A short recording of what I built.\n\n▶ " + videoUrl + (tags.length ? "\n\n" + tags.join(" ") : "");
+      var text = (title ? title + "\n\n" : "") + (sentence || "A short recording of what I built.") + "\n\n▶ " + videoUrl + (tags.length ? "\n\n" + tags.join(" ") : "");
       var box = document.createElement("div");
       box.className = "lc-yt-post";
       box.style.cssText = "margin-top:10px;text-align:left;border-top:1px solid #e5e7eb;padding-top:8px;";
@@ -1130,7 +1136,7 @@ Auto-included by docs/_layouts/default.html.
           '<button class="lc-yt-post-copy" style="flex:1;padding:7px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">📋 Copy the post</button>' +
           (navigator.share ? '<button class="lc-yt-post-share" style="flex:1;padding:7px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">📤 Share…</button>' : '') +
         '</div>' +
-        '<div class="lc-yt-post-note" aria-live="polite" style="font-size:0.78em;color:#555;margin-top:5px;line-height:1.4;">Whoever sees your post can watch the video, unlisted or not.</div>';
+        '<div class="lc-yt-post-note" aria-live="polite" style="font-size:0.78em;color:#555;margin-top:5px;line-height:1.4;">' + (sentence ? "Posting makes your app, and your name on it, public." : "Whoever sees your post can watch the video, unlisted or not.") + '</div>';
       var ta = box.querySelector(".lc-yt-post-text"), note = box.querySelector(".lc-yt-post-note");
       ta.value = text;
       var copy = function () {
@@ -1302,10 +1308,46 @@ Auto-included by docs/_layouts/default.html.
         var file = document.getElementById("lc-yt-file").files[0];
         if (!file) { alert("Please select a video file first."); return; }
         document.getElementById("lc-yt-upload-btn").style.display = "none";
-        var title = (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
+        var title = (window.lcPageName && window.lcPageName()) || (document.title || "Lightcodepedia recording").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia recording";
         ytShowUploadUI(document.getElementById("lc-yt-upload-area"), file, file.type || "video/mp4", title);
       };
     }
+
+    /* 📤 SHARE MY APP (Michel, 2026-11-21: "a new menu option after record to share
+       the app … with a little message and maybe with an iframe so they can
+       advertise their own application", its Author tab being where they ask to
+       be hired). The same post row as a video's, on the app's own address, and
+       the frame's code for a portfolio. The maker posts as themselves. */
+    window.lcOpenShareApp = function () {
+      if (document.getElementById("lc-share-app")) return;
+      var url = location.href, ov = document.createElement("div");
+      ov.id = "lc-share-app";
+      ov.style.cssText = "position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:2147483646;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+      ov.innerHTML =
+        '<div role="dialog" aria-label="Share my app" style="background:#fff;border-radius:16px;padding:24px;max-width:440px;width:100%;max-height:90vh;overflow:auto;font-family:-apple-system,sans-serif;box-shadow:0 20px 60px rgba(0,0,0,.3);">' +
+          '<div style="font-size:1.1em;font-weight:700;margin-bottom:4px;">📤 Share my app</div>' +
+          '<div style="font-size:0.85em;color:#555;">Its address, a post ready to edit, and a frame for your own site.</div>' +
+          '<div class="lc-share-app-post"></div>' +
+          '<div style="font-size:0.85em;font-weight:600;margin:12px 0 4px;">🖼 On your own site</div>' +
+          '<textarea class="lc-share-app-frame" readonly rows="3" aria-label="Frame code" style="width:100%;box-sizing:border-box;font-family:monospace;font-size:0.75em;padding:7px 9px;border:1px solid #ddd;border-radius:7px;background:#f9f9f9;"></textarea>' +
+          '<div style="display:flex;gap:6px;margin-top:6px;">' +
+            '<button class="lc-share-app-copyframe" style="flex:1;padding:7px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">📋 Copy the frame</button>' +
+            '<button class="lc-share-app-close" style="padding:7px 16px;background:#f0f0f0;border:none;border-radius:7px;cursor:pointer;font-size:0.85em;">Close</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(ov);
+      ov.querySelector(".lc-share-app-post").appendChild(window.lcYtPostRow(url, "An app I built. Try it:"));
+      var fr = ov.querySelector(".lc-share-app-frame"), cf = ov.querySelector(".lc-share-app-copyframe");
+      fr.value = '<iframe src="' + url.replace(/"/g, "&quot;") + '" width="100%" height="720" style="border:0" loading="lazy"></iframe>';
+      cf.addEventListener("click", function () {
+        var done = function () { cf.textContent = "✅ Frame copied"; };
+        if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(fr.value).then(done, done);
+        else { fr.select(); try { document.execCommand("copy"); } catch (e) {} done(); }
+      });
+      var close = function () { ov.remove(); };
+      ov.querySelector(".lc-share-app-close").addEventListener("click", close);
+      ov.addEventListener("click", function (e) { if (e.target === ov) close(); });
+    };
 
     handleYtCallback();
 
@@ -1675,7 +1717,7 @@ Auto-included by docs/_layouts/default.html.
         if (!window.lcYtUpload) { st.textContent = "⚠️ Upload module not ready, try again."; return; }
         up.disabled = true;
         var embed = ov.querySelector(".lc-short-embed").checked;
-        var title = (document.title || "Lightcodepedia").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia";
+        var title = (window.lcPageName && window.lcPageName()) || (document.title || "Lightcodepedia").replace(/\s*[|·—]\s*Lightcodepedia.*$/i, "").trim() || "Lightcodepedia";
         var desc = (watchLine() ? watchLine() + "\n\n" : "") + "Recorded on Lightcodepedia · " + new Date().toLocaleDateString();
         st.textContent = wantCard() ? "Adding the end card…" : "Uploading…";
         final().then(function (b) {
