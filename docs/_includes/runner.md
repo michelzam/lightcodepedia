@@ -669,7 +669,9 @@ html.lc-app-mode .lc-tabs.lc-app-tabs { border: 0; overflow: visible; }
         if (!tags) { tags = document.createElement("span"); tags.className = "lc-title-tags"; h1.appendChild(tags); }
         var chip = document.createElement("span");
         chip.className = "lc-title-assist"; chip.setAttribute("role", "button"); chip.tabIndex = 0;
-        chip.textContent = (sum.textContent || "").trim();
+        var words = document.createElement("span");   /* the words, at the tags' size, centred in the title's line */
+        words.textContent = (sum.textContent || "").trim();
+        chip.appendChild(words);
         var flip = function (ev) {
           if (ev.type === "keydown" && ev.key !== "Enter" && ev.key !== " ") return;
           ev.preventDefault(); d.open = !d.open; chip.setAttribute("aria-expanded", d.open ? "true" : "false");

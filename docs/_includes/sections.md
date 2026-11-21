@@ -27,6 +27,16 @@ Auto-included by docs/_layouts/default.html.
 .lc-tabs .lc-tab-btn.active { background: white; color: #0066cc; font-weight: 600; box-shadow: inset 0 -3px 0 #0066cc; }
 .lc-tabs .lc-tab-panel { display: none; padding: 1em 1.4em; }
 .lc-tabs .lc-tab-panel.active { display: block; }
+/* TABS INSIDE A TAB ARE LIGHTER (Michel, 2026-11-21: "go lighter inner tabs",
+   on Demo's POC — the app's two tabs, then the brief's three): the outer row
+   is the menu, the inner one a section's own choices — no box, no grey bar,
+   smaller words, an underline for the open one. */
+.lc-tabs .lc-tab-panel .lc-tabs { border: 0; border-radius: 0; margin: 0.4em 0; overflow: visible; }
+.lc-tabs .lc-tab-panel .lc-tabs > .lc-tab-bar { background: none; border-bottom: 1px solid #e5e7eb; }
+.lc-tabs .lc-tab-panel .lc-tabs > .lc-tab-bar .lc-tab-btn { padding: 0.3em 0.9em 0.35em; font-size: 0.85em; color: #6b7280; border-right: 0; }
+.lc-tabs .lc-tab-panel .lc-tabs > .lc-tab-bar .lc-tab-btn:hover { background: none; color: #374151; }
+.lc-tabs .lc-tab-panel .lc-tabs > .lc-tab-bar .lc-tab-btn.active { background: none; color: #0066cc; font-weight: 600; box-shadow: inset 0 -2px 0 #0066cc; }
+.lc-tabs .lc-tab-panel .lc-tabs > .lc-tab-panel { padding: 0.8em 0 0.2em; }
 
 .lc-accordion { margin: 1em 0; }
 .lc-accordion details { border: 1px solid #ddd; border-radius: 6px; margin: 0.4em 0; overflow: hidden; }
@@ -60,11 +70,14 @@ Auto-included by docs/_layouts/default.html.
 .lc-assistance-titled > .lc-acc-quiet { margin: 0; }
 .lc-assistance-titled > .lc-acc-quiet > details { display: none; }
 .lc-assistance-titled > .lc-acc-quiet > details[open] + .lc-ac-body { margin: 0.2em 0 1em; }
-/* right-justified on the title line (Michel, 2026-11-20: "that I would right justify") */
-.lc-title-assist { float: right; font-size: 0.42em; line-height: 2.4; font-weight: 400; color: #6b7280; cursor: pointer; margin-left: 0.6em; white-space: nowrap; user-select: none; }
-.lc-title-assist::before { content: "\25B8\00a0"; }
-.lc-title-assist[aria-expanded="true"]::before { content: "\25BE\00a0"; }
-.lc-title-assist:hover, .lc-title-assist:focus-visible { color: #374151; text-decoration: underline; }
+/* right-justified on the title line (Michel, 2026-11-20: "that I would right justify"). The chip
+   is as tall as one line of the title, its words centred in it like the tags (2026-11-21: "not
+   that well aligned vertically") */
+.lc-title-assist { float: right; font-weight: 400; color: #6b7280; cursor: pointer; margin-left: 0.6em; white-space: nowrap; user-select: none; }
+.lc-title-assist > span { font-size: 0.42em; vertical-align: middle; }
+.lc-title-assist > span::before { content: "\25B8\00a0"; }
+.lc-title-assist[aria-expanded="true"] > span::before { content: "\25BE\00a0"; }
+.lc-title-assist:hover > span, .lc-title-assist:focus-visible > span { color: #374151; text-decoration: underline; }
 @media print { .lc-acc-quiet > details:not([open]) + .lc-ac-body { max-height: none; overflow: visible; } }
 
 /* the SAME accordion, sourced from a heading: the panel wears the heading

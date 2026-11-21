@@ -302,3 +302,25 @@ def step_win_caption(context, title):
 def step_win_bare(context, title):
     f = _frame(_win(context, title))
     assert f["border"] == 0 and not f["dots"] and not f["bar"] and f["pad"] == 0, "a frame under a tab: %r" % f
+
+
+def _tabs(context, tid):
+    t = context.page.locator('.lc-tabs[data-lc-id="%s"], #%s.lc-tabs' % (tid, tid)).first
+    t.wait_for(state="visible", timeout=20_000)
+    return t.evaluate("""t => { const bar = t.querySelector(':scope > .lc-tab-bar'), b = bar.querySelector('.lc-tab-btn');
+        return { box: parseFloat(getComputedStyle(t).borderTopWidth), bar: getComputedStyle(bar).backgroundColor,
+                 size: parseFloat(getComputedStyle(b).fontSize) }; }""")
+
+
+@then('the tabs "{tid}" wear their box and their grey bar')
+def step_tabs_outer(context, tid):
+    f = _tabs(context, tid)
+    context.lc_outer_tabs = f
+    assert f["box"] > 0 and f["bar"] not in ("rgba(0, 0, 0, 0)", "transparent"), "the outer tabs lost their look: %r" % f
+
+
+@then('the tabs "{tid}" wear neither, and their words are smaller')
+def step_tabs_inner(context, tid):
+    f = _tabs(context, tid)
+    assert f["box"] == 0 and f["bar"] in ("rgba(0, 0, 0, 0)", "transparent"), "a box in a box: %r" % f
+    assert f["size"] < context.lc_outer_tabs["size"], "the inner words are as large: %r" % f

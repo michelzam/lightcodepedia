@@ -165,6 +165,35 @@ Feature: Frame flags are a scope, not a page setting
     And the window titled "On its own" has no frame, and keeps its title as a caption
     And the window titled "Under a tab" has no frame, and no title of its own
 
+  Scenario: Tabs inside a tab are lighter — the outer row is the menu
+    Michel, 2026-11-21: "go lighter inner tabs" — the POC's two tabs, then the brief's three.
+
+    Given the GitHub contents API serves "courses/demo/mod/lesson.md" with the document:
+      """
+      # 🚦 Gates
+
+      `````
+      ### 🥇 The List
+
+      ````
+      ### 🎯 Problem
+      Hello.
+
+      ### 🗺 Map
+      There.
+      ````
+      {: .tabs #inner }
+
+      ### 🧭 Sprint Zero
+      Later.
+      `````
+      {: .tabs #outer }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo-vault/courses/demo/mod/lesson.md"
+    And I wait for the page to be interactive
+    Then the tabs "outer" wear their box and their grey bar
+    And the tabs "inner" wear neither, and their words are smaller
+
   Scenario: The crumb survives the hop into a module
     Michel, 2026-08-13: "when I navigate to a given module, the
     'Lightcodepedia' full menu comes back". A scope that only holds on the
