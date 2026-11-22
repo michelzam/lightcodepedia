@@ -163,8 +163,8 @@ All configuration goes in the YAML block.
 |---|---|---|
 | `system` | "You are a helpful assistant." | The system prompt — defines the persona |
 | `level` | (none) | The declared pedagogical level — `direct`, `aristotelian`, `socratic`, `silent`: one fixed template appended to the briefing, stamped on the panel and written into every trace line, so a later read can tell what kind of help a save had |
-| `provider` | the ring's default (`gemini`) | The author's *suggestion* of an engine — a learner's ★ on the ring outranks it |
-| `model` | the engine's own preset (`gemini-flash-latest`, `llama-3.3-70b-versatile`…) | Any model that engine serves — applies on that engine only; on another, the ring's preset answers |
+| `provider` | the ring's default (`groq`) | The author's *suggestion* of an engine — a learner's ★ on the ring outranks it |
+| `model` | the engine's own preset (`openai/gpt-oss-120b`, `gemini-flash-latest`…) | Any model that engine serves — applies on that engine only; on another, the ring's preset answers |
 | `model_fallback` | (the fallback preset's own) | Model to ask a fallback engine for, when its preset's default is not what you want |
 | `temperature` | `0.7` | 0 = deterministic oracle, 1 = jazz improvisation |
 | `max_tokens` | `500` | Caps response length (and API cost) |
@@ -578,13 +578,13 @@ and says so under the answer. Steer it by editing the list — nothing breaks
 meanwhile.
 
 ```yaml
-default: gemini
+default: groq
 providers:
   groq:
     name: Groq
     base: https://api.groq.com/openai/v1
-    model: llama-3.3-70b-versatile
-    models: [llama-3.3-70b-versatile, llama-3.1-8b-instant]
+    model: openai/gpt-oss-120b
+    models: [openai/gpt-oss-120b, llama-3.3-70b-versatile, llama-3.1-8b-instant]
     key_name: Groq key
     key_url: https://console.groq.com/keys
     key_hint: gsk_...

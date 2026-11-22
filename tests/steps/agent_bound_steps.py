@@ -358,6 +358,18 @@ def step_two_keys(context, a, b, first):
         "localStorage.setItem('lc_ai_first','%s');" % (a, a, b, b, first))
 
 
+@given('keys for "{a}", "{b}" and "{c}" are saved on this device, none answering first')
+def step_three_keys(context, a, b, c):
+    context.page.add_init_script("".join(
+        "localStorage.setItem('lc_ai_key_%s','k-%s');" % (x, x) for x in (a, b, c)))
+
+
+@then('the guide\'s brain speaks to "{engine}"')
+def step_guide_engine(context, engine):
+    got = context.page.evaluate("() => window.lcBotAsk.engine().id")
+    assert got == engine, got
+
+
 def _record_hosts(context):
     if not hasattr(context, "asked_hosts"):
         context.asked_hosts = []

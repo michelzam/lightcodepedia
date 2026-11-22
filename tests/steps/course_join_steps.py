@@ -373,7 +373,7 @@ def step_invites_refresh(context):
 @given("the energy provider accepts the key")
 def step_energy_ok(context):
     context.page.route(
-        "**/generativelanguage.googleapis.com/**/models*",
+        "**/api.groq.com/**/models*",
         lambda r: r.fulfill(status=200, content_type="application/json",
                             body='{"data": []}'))
 
@@ -381,7 +381,7 @@ def step_energy_ok(context):
 @given("the energy provider rejects the key")
 def step_energy_bad(context):
     context.page.route(
-        "**/generativelanguage.googleapis.com/**/models*",
+        "**/api.groq.com/**/models*",
         lambda r: r.fulfill(status=401, content_type="application/json",
                             body='{"error": "invalid key"}'))
 
@@ -455,13 +455,13 @@ def step_key_form_contract(context):
 # good. Only 400/401 — the provider saying the key itself is wrong — may
 # throw one away.
 
-ENERGY_SLOT = "lc_ai_key_gemini"
+ENERGY_SLOT = "lc_ai_key_groq"
 
 
 @given("the energy provider will not let us test the key")
 def step_energy_forbidden(context):
     context.page.route(
-        "**/generativelanguage.googleapis.com/**/models*",
+        "**/api.groq.com/**/models*",
         lambda r: r.fulfill(
             status=403, content_type="application/json",
             body='{"error": {"message": "Requests from referer are blocked."}}'))
@@ -471,7 +471,7 @@ def step_energy_forbidden(context):
 def step_energy_unreachable(context):
     # abort = no HTTP answer ever arrives, an ad-blocker's view of the world
     context.page.route(
-        "**/generativelanguage.googleapis.com/**/models*",
+        "**/api.groq.com/**/models*",
         lambda r: r.abort())
 
 

@@ -2279,7 +2279,7 @@ Auto-included by docs/_layouts/default.html.
          (and they get told to paste a GitHub token at a Google service). */
       var eng = (window.lcBotAsk && window.lcBotAsk.engine)
         ? window.lcBotAsk.engine()
-        : { id: 'gemini', key_name: 'AI key', key_hint: 'sk-…', key_url: '' };
+        : { id: 'groq', key_name: 'AI key', key_hint: 'sk-…', key_url: '' };
       var esc = window.lcEscapeHtml || function (t) {
         return String(t == null ? '' : t).replace(/[&<>"']/g, function (c) {
           return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];

@@ -374,6 +374,20 @@ Auto-included by docs/_layouts/default.html.
      permanent: the provider is CONFIGURATION, never architecture. A dead
      provider costs a yaml line (provider: / base_url:), not a course. */
   var PROVIDERS = {
+    groq: {
+      base: 'https://api.groq.com/openai/v1',
+      model: 'openai/gpt-oss-120b',
+      key_name: 'Groq key',
+      key_url: 'https://console.groq.com/keys',
+      key_hint: 'gsk_...'
+    },
+    openrouter: {
+      base: 'https://openrouter.ai/api/v1',
+      model: 'meta-llama/llama-3.3-70b-instruct:free',
+      key_name: 'OpenRouter key',
+      key_url: 'https://openrouter.ai/keys',
+      key_hint: 'sk-or-...'
+    },
     gemini: {
       base: 'https://generativelanguage.googleapis.com/v1beta/openai',
       /* the -latest alias rides Google's version churn (2.5 retires
@@ -384,23 +398,9 @@ Auto-included by docs/_layouts/default.html.
       key_url: 'https://aistudio.google.com/apikey',
       key_hint: 'AIza...'
     },
-    openrouter: {
-      base: 'https://openrouter.ai/api/v1',
-      model: 'meta-llama/llama-3.3-70b-instruct:free',
-      key_name: 'OpenRouter key',
-      key_url: 'https://openrouter.ai/keys',
-      key_hint: 'sk-or-...'
-    },
-    groq: {
-      base: 'https://api.groq.com/openai/v1',
-      model: 'llama-3.3-70b-versatile',
-      key_name: 'Groq key',
-      key_url: 'https://console.groq.com/keys',
-      key_hint: 'gsk_...'
-    },
     custom: { base: '', model: '', key_name: 'API key', key_url: '', key_hint: 'sk-...' }
   };
-  var DEFAULT_PROVIDER = 'gemini';
+  var DEFAULT_PROVIDER = 'groq';
 
   /* THE RING IS A FILE. docs/bots/providers.yml declares the engines — name,
      endpoint, model, where a key comes from — and never a key. Adding an
@@ -462,7 +462,9 @@ Auto-included by docs/_layouts/default.html.
 
   var DEFAULTS = {
     system: 'You are a helpful assistant.',
-    provider: DEFAULT_PROVIDER,
+    /* empty = the ring's default, read when asked: the ring file loads
+       after this table and may name another engine */
+    provider: '',
     base_url: '',
     model: '',
     intro: '',

@@ -125,9 +125,9 @@ def step_groq_retired(context):
     def chat(route):
         body = json.loads(route.request.post_data or "{}")
         context.crew_models.append(body.get("model"))
-        if body.get("model") == "llama-3.3-70b-versatile":
+        if body.get("model") == "openai/gpt-oss-120b":
             return route.fulfill(status=400, content_type="application/json", body=json.dumps({"error": {
-                "message": "The model `llama-3.3-70b-versatile` has been decommissioned and is no longer accessible.",
+                "message": "The model `openai/gpt-oss-120b` has been decommissioned and is no longer accessible.",
                 "type": "invalid_request_error", "code": "model_decommissioned"}}))
         system = body["messages"][0]["content"]
         text = "AGREE — one stage at a time" if "AGREE or DISAGREE" in system else "VERDICT: meet"
@@ -135,12 +135,12 @@ def step_groq_retired(context):
             "choices": [{"message": {"content": text}}], "usage": {"total_tokens": 10}}))
     context.page.route("**/api.groq.com/**/chat/completions*", chat)
     context.page.route("**/api.groq.com/**/models*", lambda r: r.fulfill(status=200, content_type="application/json",
-        body=json.dumps({"data": [{"id": "llama-3.1-8b-instant"}, {"id": "openai/gpt-oss-120b"}]})))
+        body=json.dumps({"data": [{"id": "llama-3.1-8b-instant"}, {"id": "gemma2-9b-it"}]})))
 
 
 @then('the crew healed onto "{model}"')
 def step_crew_healed(context, model):
-    assert "llama-3.3-70b-versatile" in context.crew_models, context.crew_models
+    assert "openai/gpt-oss-120b" in context.crew_models, context.crew_models
     assert context.crew_models[-1] == model, context.crew_models
 
 

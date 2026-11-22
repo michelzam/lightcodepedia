@@ -355,7 +355,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
       """
     When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
     And I wait for the page to be interactive
-    Then the desk's ring offers "gemini", "openrouter" and "groq"
+    Then the desk's ring offers "groq", "openrouter" and "gemini"
     When I paste "gsk_test" as the "groq" key on the desk
     Then the desk is connected through "api.groq.com"
 
@@ -377,6 +377,49 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I wait for the page to be interactive
     And I ask the "desk" agent "hi"
     Then the question went to "api.groq.com" and never to "generativelanguage.googleapis.com"
+
+  # Michel 2026-11-22: "doc is using gemini by default who's often busy and
+  # always slow … make groq the first and open router the second one for both
+  # avatars and agents". The ring's order is Groq, OpenRouter, Gemini; a
+  # learner's ★ still outranks it.
+  Scenario: With no ★, a learner holding all three keys is served by Groq — the desk and Doc alike
+    Given I have a clean browser page
+    And keys for "gemini", "openrouter" and "groq" are saved on this device, none answering first
+    And every engine answers "hello" and records who was asked
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi"
+    Then the question went to "api.groq.com" and never to "generativelanguage.googleapis.com"
+    And the question went to "api.groq.com" and never to "openrouter.ai"
+    And the guide's brain speaks to "groq"
+
+  Scenario: With no ★, a busy Groq is answered by OpenRouter, before Gemini
+    Given I have a clean browser page
+    And keys for "gemini", "openrouter" and "groq" are saved on this device, none answering first
+    And "api.groq.com" answers 503 while "openrouter.ai" answers "hello"
+    And the GitHub contents API serves "courses/demo/module_01/one.md" with the document:
+      """
+      # One desk
+
+      ```yaml
+      system: One.
+      ```
+      {: .agent #desk rows="3" }
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/module_01/one.md"
+    And I wait for the page to be interactive
+    And I ask the "desk" agent "hi", accepting the other engine when offered
+    Then the agent says "openrouter.ai answered"
+    And the question went to "openrouter.ai" and never to "generativelanguage.googleapis.com"
 
   Scenario: A busy ★ engine is answered by the next key on the ring, and the desk says so
     Given I have a clean browser page
@@ -442,7 +485,7 @@ Feature: The agent's bound= knob — legacy pinned, expressions added
     And I wait for the page to be interactive
     And I ask the "desk" agent "hi"
     Then the desk answered "healed hello" with the model "llama-3.1-8b-instant"
-    And the agent says "llama-3.3-70b-versatile is gone; using llama-3.1-8b-instant"
+    And the agent says "openai/gpt-oss-120b is gone; using llama-3.1-8b-instant"
     And the device remembers "llama-3.1-8b-instant" for "groq"
 
   Scenario: A remembered model that wants credits is forgotten, and the ring's free preset answers

@@ -193,7 +193,7 @@ Feature: The learner course wizard (/courses/join)
     And the learner can read the vault
     And the energy provider accepts the key
     When I open the course wizard with a stored key
-    And I paste the energy key "AIzaTestKey" and check it
+    And I paste the energy key "gsk_TestKey" and check it
     Then the energy step confirms the key works and will follow the learner
 
   Scenario: A rejected energy key says rejected, not broken
@@ -201,7 +201,7 @@ Feature: The learner course wizard (/courses/join)
     And the learner can read the vault
     And the energy provider rejects the key
     When I open the course wizard with a stored key
-    And I paste the energy key "AIzaWrong" and check it
+    And I paste the energy key "gsk_Wrong" and check it
     Then the energy step reports the rejection with the status code
 
   Scenario: A resolved bench completes the connection pair
@@ -235,7 +235,7 @@ Feature: The learner course wizard (/courses/join)
     And the learner can read the vault
     And the energy provider will not let us test the key
     When I open the course wizard with a stored key
-    And I paste the energy key "AIzaRestricted" and check it
+    And I paste the energy key "gsk_Restricted" and check it
     Then the energy step says the key is saved but untested
     And the energy key is on this device
 
@@ -247,7 +247,7 @@ Feature: The learner course wizard (/courses/join)
     And the learner can read the vault
     And the energy provider cannot be reached at all
     When I open the course wizard with a stored key
-    And I paste the energy key "AIzaBlockedRoad" and check it
+    And I paste the energy key "gsk_BlockedRoad" and check it
     Then the energy step says the key is saved but untested
     And the energy key is on this device
 
@@ -259,7 +259,7 @@ Feature: The learner course wizard (/courses/join)
     And the learner can read the vault
     And the energy provider rejects the key
     When I open the course wizard with a stored key
-    And I paste the energy key "AIzaWrong" and check it
+    And I paste the energy key "gsk_Wrong" and check it
     Then the energy step reports the rejection with the status code
     And no energy key is on this device
 
@@ -269,7 +269,7 @@ Feature: The learner course wizard (/courses/join)
 
     Given a stubbed GitHub that accepts the key with repo scope
     And the learner can read the vault
-    And an energy key "AIzaAlreadyMine" is on this device
+    And an energy key "gsk_AlreadyMine" is on this device
     When I open the course wizard with a stored key
     Then the energy step is already done
 

@@ -156,15 +156,36 @@ The check is live truth against the API, never cached. Done steps reopen via
       '<div class="lcj-row" data-bench></div></div></div>' +
 
       '<div class="lcj-step off" data-n="5"><div class="lcj-head"><span class="lcj-num">5</span>Your energy key — the AI badge</div>' +
-      '<div class="lcj-body"><p style="margin-top:0">The course’s AI helpers run on a second, free key — separate from your course key on purpose: one badge for your <b>work</b>, one for the AI’s <b>energy</b>. Create it (any Google account), paste it below, and when your browser offers to <b>save it as a password — say yes</b>: it will follow you to your other devices by itself.</p>' +
-      '<div class="lcj-row"><a class="lcj-btn alt" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">⚡ Create the energy key →</a></div>' +
+      '<div class="lcj-body"><p style="margin-top:0">The course’s AI helpers run on a second, free key — separate from your course key on purpose: one badge for your <b>work</b>, one for the AI’s <b>energy</b>. Create it (<span data-energy-where>free, a minute</span>), paste it below, and when your browser offers to <b>save it as a password — say yes</b>: it will follow you to your other devices by itself.</p>' +
+      '<div class="lcj-row"><a class="lcj-btn alt" data-energy-link href="https://console.groq.com/keys" target="_blank" rel="noopener">⚡ Create the energy key →</a></div>' +
       '<form class="lcj-energy" autocomplete="on">' +
-      '<input type="text" name="username" value="lc-gemini" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager" style="position:absolute;left:-9999px">' +
-      '<div class="lcj-row"><input class="lcj-ekey" type="password" name="password" autocomplete="current-password" placeholder="AIza…" spellcheck="false">' +
+      '<input type="text" name="username" value="lc-groq" autocomplete="username" tabindex="-1" readonly aria-label="Key account name, used by your password manager" style="position:absolute;left:-9999px">' +
+      '<div class="lcj-row"><input class="lcj-ekey" type="password" name="password" autocomplete="current-password" placeholder="gsk_…" spellcheck="false">' +
       '<button type="submit" class="lcj-btn">Check key ✓</button></div>' +
       '</form>' +
       '<div class="lcj-msg" data-m="5"></div></div></div>';
     el.parentNode.replaceChild(wrap, el);
+
+    /* step 5 names the ring's FIRST engine, never a vendor of its own: the
+       link, the key's shape, the keychain identity and the live check all
+       come from the one place that decides (Michel 2026-11-22, Groq first).
+       The words above are only the fallback for a door without the engine. */
+    var ENERGY = { id: "groq", name: "Groq", base: "https://api.groq.com/openai/v1",
+                   key_url: "https://console.groq.com/keys", key_hint: "gsk_..." };
+    function paintEnergy() {
+      try {
+        var e = window.lcBotAsk && window.lcBotAsk.engine && window.lcBotAsk.engine();
+        if (e && e.id && e.base) ENERGY = e;
+      } catch (x) {}
+      var q = function (sel) { return wrap.querySelector(sel); };
+      if (q("[data-energy-where]")) q("[data-energy-where]").textContent = "free, at " + (ENERGY.name || ENERGY.id);
+      if (q("[data-energy-link]") && ENERGY.key_url) q("[data-energy-link]").href = ENERGY.key_url;
+      if (q('.lcj-energy input[name="username"]')) q('.lcj-energy input[name="username"]').value = "lc-" + ENERGY.id;
+      if (q(".lcj-ekey")) q(".lcj-ekey").placeholder = String(ENERGY.key_hint || "").replace("...", "…");
+    }
+    paintEnergy();
+    if (window.lcProvidersReady && window.lcProvidersReady.then) window.lcProvidersReady.then(paintEnergy);
+    document.addEventListener("lc-providers", paintEnergy);
 
     /* ── can this frame REMEMBER? (David, 2026-09-09) ────────────────────
        Canvas frames the wizard; Chrome with third-party cookies blocked, an
@@ -359,7 +380,7 @@ The check is live truth against the API, never cached. Done steps reopen via
        so ask it; the raw read is the fallback when the engine isn't on the page */
     function haveEnergyKey() {
       if (window.lcBotAsk && window.lcBotAsk.ready) { try { return !!window.lcBotAsk.ready(); } catch (e) {} }
-      try { return !!localStorage.getItem("lc_ai_key_gemini"); } catch (e) { return false; }
+      try { return !!localStorage.getItem("lc_ai_key_" + ENERGY.id); } catch (e) { return false; }
     }
 
     function benchStart() {
@@ -480,7 +501,7 @@ The check is live truth against the API, never cached. Done steps reopen via
 
     /* step 5: a LIVE check against the provider — the same trip a desk
        makes. Success submits the form so the password manager offers to
-       save (username lc-gemini, the exact identity every agent panel uses:
+       save (username lc-<engine>, the exact identity every agent panel uses:
        autofill then hands the key to any desk on any page, any device). */
     /* step 2 submits through its form (Enter or the button) so the browser
        files the key under the lc-course-key identity instead of stealing a
@@ -496,16 +517,16 @@ The check is live truth against the API, never cached. Done steps reopen via
     if (energyForm) energyForm.addEventListener("submit", function (e) {
       e.preventDefault();
       var k = (wrap.querySelector(".lcj-ekey").value || "").trim();
-      if (!k) { msg(5, "Paste the key first — it starts with AIza…", "err"); return; }
+      if (!k) { msg(5, "Paste the key first — it starts with " + String(ENERGY.key_hint || "").replace("...", "…"), "err"); return; }
       msg(5, "⏳ Asking the provider…", "");
       /* One code path for saving the energy key: agent.md owns the storage and
          the provider id, and it tells every open desk on the page. The door
-         used to write "lc_ai_key_gemini" by hand — a second place to keep in
+         used to write the key's slot by hand — a second place to keep in
          step, and open panels never heard about it. The raw write stays as the
          fallback for a door rendered without the agent engine on the page. */
       var keep = function () {
         if (window.lcBotAsk && window.lcBotAsk.connect) { window.lcBotAsk.connect(k); return; }
-        try { localStorage.setItem("lc_ai_key_gemini", k); } catch (e) {}
+        try { localStorage.setItem("lc_ai_key_" + ENERGY.id, k); } catch (e) {}
       };
       /* SAVE FIRST, then report. A key is only proven WRONG by the provider
          saying so (400/401); every other outcome — a 403 for a website-limited
@@ -513,7 +534,7 @@ The check is live truth against the API, never cached. Done steps reopen via
          about the key and everything about the road. Throwing it away on those
          is what made a learner paste it again after every refresh (Michel,
          2026-08-05). Keep it, say plainly what we could and could not check. */
-      fetch("https://generativelanguage.googleapis.com/v1beta/openai/models",
+      fetch(ENERGY.base + "/models",
             { headers: { Authorization: "Bearer " + k } })
         .then(function (r) {
           if (r.ok) {
@@ -523,7 +544,7 @@ The check is live truth against the API, never cached. Done steps reopen via
             setState("5", "ok");
             msg(5, "✅ The key works — saved. Every AI helper in the course now opens connected on this device; if your browser also offered to save it, that copy follows you to your other devices.", "ok");
           } else if (r.status === 400 || r.status === 401) {
-            msg(5, "❌ The provider rejected this key (" + r.status + ") — it is not a valid key. Copy the whole key from AI Studio and try again.", "err");
+            msg(5, "❌ The provider rejected this key (" + r.status + ") — it is not a valid key. Copy the whole key from " + (ENERGY.name || "the provider") + " and try again.", "err");
           } else {
             /* NOT setState ok: a done step folds its body away, and this
                message is the one a learner most needs to read. The key is
