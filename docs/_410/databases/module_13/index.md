@@ -25,8 +25,10 @@ what is already done.
 ````
 ### 🧭 Step 1 · Where are you? One card, one next bite
 
-Before anything else, take stock. Tick where you are, honestly — nobody
-grades this card, it only tells you (and Ari) where to start.
+Before anything else, take stock. Your progress for the instructor goes
+in the **progress survey** of this module on Canvas. This card is for
+**you**: when instructors and tutors are not around, fill it honestly,
+and Ari reads it to give you some guidance. Nobody grades it.
 
 ```yaml
 scenario: {value: "-", options: ["-", "1 · SkillBridge", "2 · Multilingual Course Management", "4 · Smart Logistics", "5 · Cultural Events Archive", "My own, approved by the instructor"]}
@@ -41,18 +43,14 @@ stuck: "where you are stuck, if anywhere"
 
 **Your next bite** is the first piece still at *not yet*, in this order:
 diagram → create script → data script → engaging query → report →
-export. Module 12 walks each piece on the worked example:
+export. Module 12 walks each piece on the worked example, Scenario 3.
 
-| Piece | Where to look again |
-|---|---|
-| 🗺️ Diagram, parents on top | [Module 12 · Step 3](../module_12/index.md) |
-| 🏗️ Create, then populate | [Module 12 · Step 4](../module_12/index.md) |
-| 🔍 The engaging query | [Module 12 · Step 5](../module_12/index.md) |
-| 🧾 Audit your own model | [Module 08 · Step 7](../module_08/index.md) |
+Need guidance? Fill the card, then press **Ask**: Ari reads it and asks
+the one question that moves you forward. Ari never writes your SQL, your
+tables or your report.
 
-Stuck? Fill the card, then press **Ask**: Ari reads it and asks the one
-question that moves you forward. Ari never writes your SQL, your tables
-or your report. Optional: Ari needs a free AI key (🔑 on its panel).
+- **Ari is optional.** It needs a free AI key (🔑 on its panel).
+- **Ari is the only AI allowed** for the project. Other AI tools are not.
 
 ```yaml
 name: Ari
@@ -90,6 +88,8 @@ system: |
     or report text. Never draw the model.
   - If the student is behind, be encouraging and concrete: one bite for tonight.
   - When everything is done, point to the export and the final checklist (step 6).
+  - Ari is optional, and the only AI allowed for the project: if the student asks
+    about another AI tool, say it is not allowed, kindly, and go on.
   - Light humor, one emoji at most.
 ```
 {: .agent #coach bound="{= dict(scenario=status.scenario, diagram=status.diagram, create_script=status.create_script, data_script=status.data_script, engaging_query=status.engaging_query, report=status.report, stuck=status.stuck) }" rows="2" }
@@ -97,53 +97,42 @@ system: |
 {: .accordion #where }
 
 ````
-### 📝 Step 2 · The report template, section by section
+### 📝 Step 2 · The report template — what it asks, how much detail
 
-The template is a **guide to the detail expected**, not a form to copy:
-every section shows what *you* write, then an example on Scenario 3.
-The example is pedagogical — your report tells **your** scenario.
+Your report follows the **Word document** of this module on Canvas:
+📜 *INFOST 410 — Final Report Template*. Download it and write your
+report **in** it.
 
-| # | Section | What you write | Size |
-|---|---|---|---|
-| 1 | System overview | What the database is for, and for whom | 3–5 sentences |
-| 2.1 | ER diagram explanation | The entities, the key relationships, the cardinalities — and **one** screenshot of the diagram | a paragraph + the picture |
-| 2.2 | Workflow and data-loading order | The story of your data, in the order it is inserted: parents first | a short list |
-| 3 | Schema overview | How you structured the tables — names, keys, links. The full SQL stays in your `.sql` file | a paragraph |
-| 4 | Data population | What sample data you inserted — with **SELECT screenshots** | a paragraph + pictures |
-| 5 | Engaging query | 5.1 the SQL · 5.2 a screenshot of the query **and** its result · 5.3 what it returns, and why it answers the question | SQL + picture + 3–5 sentences |
-| 6 | Challenges and notes | What went wrong, and how you got past it — your own story | 5–7 sentences |
-| 7 | Conclusion | How the database meets the scenario's needs | 3–5 sentences |
+How to use it:
 
-Three sections deserve a closer look.
+- It has **seven sections**, in order: system overview · ER diagram +
+  workflow and data-loading order · schema overview · data population ·
+  engaging query · challenges and notes · conclusion.
+- Each section opens with a line for you (*Students: …*): what to write,
+  and how long — usually 3 to 5 sentences.
+- Then comes an **example on Scenario 3**. It shows the level of detail
+  expected. Replace it with **your** scenario; do not keep it.
+- Every *Insert screenshot here* becomes a picture from your own
+  database (step 5).
 
-**2.2 · The workflow is the loading order.** The template tells
-Scenario 3 as a story — *the admin adds doctors, users subscribe,
-medications are recorded, doctors prescribe, users book appointments,
-patients log their doses* — and each sentence is one table, filled in
-that order. Tell yours the same way: who does what first, and which
-table each step fills. If the story reads well, your INSERTs never meet
-error 1452.
+**The level of detail expected** — the template's example for section 1,
+*System Overview*, on Scenario 3:
 
-**4 · Data population: one SELECT per table.** One small screenshot per
-table, the query and its rows in the same picture:
+> This system supports a mobile health-tracking application where
+> patients log medication adherence and doctor appointments. The database
+> stores users, doctors, medications, prescriptions, appointments, and
+> logs. It is designed so doctors can review medication history and
+> adherence in relation to recent visits. Relationships ensure prescribed
+> medications are correctly linked to the users and logs that refer to
+> them.
 
-[A SELECT screenshot — Doctors](_slides/m13_select_doctors.jpg)
-{: .embed image="true" width="60%" }
+Four sentences: what the system is for, what it stores, who uses it and
+why, and what holds it together. Every section of your report aims for
+that: short, concrete, about **your** tables and **your** data.
 
-[A SELECT screenshot — Users](_slides/m13_select_users.jpg)
-{: .embed image="true" width="80%" }
-
-**5 · The engaging query: SQL, picture, explanation.** The picture shows
-the query **and** its result together — the proof it runs:
-
-[The engaging query and its result — Scenario 3](_slides/m13_query_results.jpg)
-{: .embed image="true" width="100%" }
-
-Then 3–5 sentences: what each row is, what the joins bring together,
-why it answers the person who asked.
-
-✅ **Done when** your document has the seven headings, each filled with
-your scenario, and every *Insert screenshot here* replaced by a picture.
+✅ **Done when** your document has the seven sections, each written for
+your scenario, no Scenario 3 example left, and every *Insert screenshot
+here* replaced by a picture.
 ````
 {: .accordion #template }
 
@@ -154,11 +143,16 @@ The report needs your diagram as an **image**: a `.mwb` file opens only
 in Workbench, and nobody reading your report has it open.
 
 1. Open your model's **EER diagram** in Workbench.
-2. **Lay it out** before exporting: parents (no foreign key) on top,
-   children below, every line flowing down. A diagram reverse-engineered
-   from SQL drops the tables in creation order — drag them into place.
-3. **File → Export → Export as PNG…** and save the picture.
-4. Insert it in section 2.1 of your report, and keep the file for the
+2. **Audit it** with the audit sheet of module 08 before exporting: the
+   diagram you hand in must comply with it — naming (tables plural,
+   columns CamelCase, keys singular + ID), every line 1 : N with a table
+   in the middle for a many-to-many, foreign keys named like the key they
+   point to, no repeated facts. 0 violations on the design half.
+3. **Lay it out**: parents (no foreign key) on top, children below,
+   every line flowing down. A diagram reverse-engineered from SQL drops
+   the tables in creation order — drag them into place.
+4. **File → Export → Export as PNG…** and save the picture.
+5. Insert it in section 2.1 of your report, and keep the file for the
    hand-in.
 
 This is what a laid-out diagram looks like — the template's own:
@@ -166,8 +160,9 @@ This is what a laid-out diagram looks like — the template's own:
 [Scenario 3 — the diagram, parents on top](_slides/m13_scenario3_erd.jpg)
 {: .embed image="true" width="100%" }
 
-✅ **Done when** your PNG reads top-down: Medications, Users, Doctors on
-the first row in the example; in yours, every table with no foreign key.
+✅ **Done when** your diagram complies with the audit sheet, and your
+PNG reads top-down: Medications, Users, Doctors on the first row in the
+example; in yours, every table with no foreign key.
 ````
 {: .accordion #diagram_export }
 
@@ -226,9 +221,15 @@ The list, section by section:
 | Section | Screenshot |
 |---|---|
 | 2.1 | The ER diagram, exported as PNG (step 3) |
-| 4 | One `SELECT * FROM YourTable;` per table, with its rows |
+| 4 | One `SELECT * FROM YourTable;` per table, with its rows (below) |
 | 5.2 | The engaging query and its result |
 | 6 | Optional: an error you met and fixed — a good challenge story |
+
+A SELECT screenshot as the template shows it — the query and its rows,
+cropped:
+
+[A SELECT screenshot — Users](_slides/m13_select_users.jpg)
+{: .embed image="true" width="80%" }
 
 ✅ **Done when** every *Insert screenshot here* of the template holds a
 picture you made from your own database.
@@ -251,8 +252,8 @@ The whole package, one last look:
 
 And three checks of your own:
 
-1. **Audit** your model with the sheet of [module 08](../module_08/index.md):
-   0 violations on the design half.
+1. **Audit** your model with the audit sheet of module 08: 0 violations
+   on the design half.
 2. **Run everything once more**, in order, on an empty schema: create,
    populate, query. What runs for you runs for the reader.
 3. **Read your report aloud**: section 6 should sound like *you* — what
@@ -276,13 +277,13 @@ script:
   - say: "Welcome back! No new material this week. It is a week to catch up, finish your database, and package it: the report, and the export."
   - at: where
     do: open
-    say: "Step one. Where are you? Fill the card honestly. Your next bite is the first piece still at not yet. Ari can ask you the question that moves you forward."
+    say: "Step one. Where are you? Your progress for the instructor goes in the survey on Canvas. This card is for you: fill it, and Ari, optional and the only AI allowed, gives you some guidance when nobody else is around."
   - at: template
     do: open
-    say: "Step two. The report template. Seven sections, each with an example on Scenario 3. Tell your own scenario, and replace every insert screenshot here with your own picture."
+    say: "Step two. The report template, the Word document of this module. Seven sections, each with an example on Scenario 3 that shows the level of detail expected. Write your own scenario in its place."
   - at: diagram_export
     do: open
-    say: "Step three. Export the diagram as a picture. Lay it out first, parents on top. Then file, export, export as PNG."
+    say: "Step three. Export the diagram as a picture. Audit it first with the module eight audit sheet, lay it out with parents on top, then file, export, export as PNG."
   - at: db_export
     do: open
     say: "Step four. Export the database. Server, Data Export, your schema, structure and data, one self contained file. Then test it once: import it into an empty schema."
