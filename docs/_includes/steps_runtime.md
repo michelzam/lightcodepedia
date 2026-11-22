@@ -165,6 +165,20 @@ except NameError:
     _CLASSES = {}      # class name → class object (for per-class to_dot dispatch)
     _TRANSITIONS = {}  # function object → (pre states, post state, axis, order)
 
+try:
+    _LC_TAKEN
+except NameError:
+    _LC_TAKEN = {}     # "Class.verb" → True: the arrows a real run has taken
+_LC_REC = [None]       # the flow being recorded, if any
+_LC_OFF = {}           # "Class.verb" → True: a guard switched off for a check
+_LC_QUIET = [0]        # trying every order is not a run: nothing is counted
+
+try:
+    _GUARDS
+except NameError:
+    _GUARDS = {}       # function object → its guard, as the author wrote it
+    _INVARIANTS = {}   # function object → True: a rule of the class, declared
+
 # Bases shown as a "➭ <icon>" marker in the class title instead of a drawn edge.
 # Object and Block are notorious roots — almost everything descends from them,
 # so arrows to them are obvious noise. The marker keeps the fact without the
@@ -175,8 +189,14 @@ _DOT_ROOT_BASES = {"Object", "Block"}
 _T_ORD = [0]   # declaration counter — keeps method buttons in source order
 
 
-def transition(pre=(), post=None, state=None):
+def transition(pre=(), post=None, state=None, guard=None):
     """Decorate a method as a state transition.
+
+    guard="ahead.free" — the condition on the arrow, as in a state diagram:
+    a short expression on the object's own attributes and its neighbours'
+    (Michel, 2026-11-22: "a param to the @transition for the guard, expressed
+    in python, which is almost UML"). Declared, so it can be read out, drawn
+    and listed; when it does not hold the method raises PreconditionError.
 
     @transition(["pending", "placed"], "paid")
     def pay(self): ...
@@ -191,6 +211,30 @@ def transition(pre=(), post=None, state=None):
     def deco(fn):
         _T_ORD[0] += 1
         _TRANSITIONS[fn] = ([pre] if isinstance(pre, str) else list(pre), post, state, _T_ORD[0])
+        if guard:
+            _GUARDS[fn] = str(guard).strip()
+        return fn
+    return deco
+
+
+def invariant(what):
+    """A rule of the class that must always hold — said in words, answered
+    True or False by the method under it:
+
+        @invariant("A segment never holds two trains")
+        def one_train_at_most(self):
+            return self.trains <= 1
+
+    Checked after each of the object's own transitions (InvariantError), listed
+    by rules(), and tried over every order of events by always(). The sentence
+    is given to the decorator because the page's Python keeps no docstrings;
+    a bare @invariant reads the method's name."""
+    if callable(what):
+        _INVARIANTS[what] = True
+        return what
+
+    def deco(fn):
+        _INVARIANTS[fn] = str(what).strip() or True
         return fn
     return deco
 
@@ -232,6 +276,42 @@ def _prop(attr, typ, default, settable):
 
 class PreconditionError(Exception):
     pass
+
+
+class InvariantError(Exception):
+    pass
+
+
+def _lc_guard_ok(obj, guard):
+    """Does the guard hold for this object? Its bare names are the object's own
+    attributes (ahead.free reads obj.ahead.free); self is the object."""
+    ns = dict()
+    ns["self"] = obj
+    text = guard + " "
+    i, n = 0, len(text)
+    while i < n:
+        ch = text[i]
+        if ch.isalpha() or ch == "_":
+            j = i
+            while j < n and (text[j].isalpha() or text[j].isdigit() or text[j] == "_"):
+                j += 1
+            word = text[i:j]
+            before = text[i - 1] if i else " "
+            if before != "." and word not in ns and word not in ("and", "or", "not", "in", "is", "None", "True", "False"):
+                try:
+                    if hasattr(obj, word):
+                        ns[word] = getattr(obj, word)
+                except Exception:
+                    pass
+            i = j
+        elif ch in "\"'":
+            j = i + 1
+            while j < n and text[j] != ch:
+                j += 1
+            i = j + 1
+        else:
+            i += 1
+    return bool(eval(guard, globals(), ns))
 
 
 class Attr:
@@ -531,7 +611,7 @@ def _lc_bracket(fn):
     return w
 
 
-def _lc_guard(name, fn, pre, post, sfn):
+def _lc_guard(name, fn, pre, post, sfn, guard=None):
     """Wrap a transition method: gate on the State field, apply post — and
     mark the instance as running its own behaviour, so ro fields accept
     plain assignment from inside (the lock only faces the outside world)."""
@@ -542,6 +622,10 @@ def _lc_guard(name, fn, pre, post, sfn):
             if cur not in pre:
                 raise PreconditionError(name + "() needs " + "/".join(pre)
                                         + " — " + sfn + " is " + str(cur))
+        if guard and not _LC_OFF.get(type(self).__name__ + "." + name) and not _lc_guard_ok(self, guard):
+            raise PreconditionError(name + "() needs [" + guard + "]")
+        rec = _LC_REC[0]
+        was = dict(self._v) if rec is not None else None
         self._lc_active = getattr(self, "_lc_active", 0) + 1
         try:
             r = fn(self, *a, **k)
@@ -549,6 +633,15 @@ def _lc_guard(name, fn, pre, post, sfn):
             self._lc_active -= 1
         if sfn and post:
             self._v[sfn] = post
+        if rec is not None:
+            rec._note(self, name, guard, was)
+        if not _LC_QUIET[0]:
+            _LC_TAKEN[type(self).__name__ + "." + name] = True
+        invs = getattr(type(self), "_lc_invs", None)
+        if invs:
+            for iname in invs:
+                if not getattr(self, iname)():
+                    raise InvariantError(invs[iname])
         _lc_push_obj(self)
         return r
     return w
@@ -589,7 +682,13 @@ def _lc_harvest(cls):
             v = getattr(cls, n)
         except Exception:
             continue
-        if isinstance(v, Attr) and v.n in (None, n):
+        # A FIELD IS A FIELD, WHICHEVER LOAD OF THE ENGINE MADE IT. A class is
+        # registered at its first use; when that first use is a proof, the
+        # engine has been loaded again since the class was written, and its
+        # Attr is no longer "the" Attr — the class was taken for one with no
+        # fields at all (found 2026-11-22, the two trains: classes declared in
+        # a block that nothing on the page had used yet).
+        if (isinstance(v, Attr) or type(v).__name__ in ("Attr", "State")) and v.n in (None, n):
             v.n = n
             own.append(v)
     own.sort(key=lambda f: f._ord)
@@ -627,11 +726,31 @@ def _lc_harvest(cls):
         _root = _root.__bases__[0] if _root.__bases__ else None
     if not isinstance(_root, type):
         _root = None
+    # the class's declared rules: found before any wrapping renames the functions
+    invs = dict(getattr(cls, "_lc_invs", {}) or {})
+    guards = dict(getattr(cls, "_lc_guards", {}) or {})
+    for n in dir(cls):
+        try:
+            fn = getattr(cls, n)
+            if callable(fn) and _INVARIANTS.get(fn):
+                said = _INVARIANTS.get(fn)
+                invs[n] = said if isinstance(said, str) else n.replace("_", " ")
+            if callable(fn) and _TRANSITIONS.get(fn) is not None:
+                # declared in THIS class: its guard is the one written here — an
+                # override without a guard has none, whatever its parent said
+                if _GUARDS.get(fn):
+                    guards[n] = _GUARDS.get(fn)
+                elif n in guards:
+                    del guards[n]
+        except Exception:
+            continue
+    cls._lc_invs = invs
+    cls._lc_guards = guards
     pub = {}
     if _root is not None and cls is not _root:
         pub = dict(getattr(cls, "_lc_pub", {}) or {})
         for n in dir(cls):
-            if n.startswith("_") or n in tmeta or hasattr(_root, n):
+            if n.startswith("_") or n in tmeta or n in invs or hasattr(_root, n):
                 continue
             try:
                 fn = getattr(cls, n)
@@ -666,7 +785,7 @@ def _lc_harvest(cls):
             fn = getattr(cls, n, None)
             if fn is not None and _TRANSITIONS.get(fn) is not None:   # not yet wrapped
                 pre, post, sfn, _o = tmeta[n]
-                setattr(cls, n, _lc_guard(n, fn, pre, post, sfn))
+                setattr(cls, n, _lc_guard(n, fn, pre, post, sfn, guards.get(n)))
     cls._lc_fields = fields
     cls._lc_own = own          # DRY: specs/diagrams show only own declarations
     cls._lc_own_t = own_t
@@ -800,14 +919,16 @@ def component(icon="", attrs=(), assoc=(), events=(), methods=(), states=()):
             fn = getattr(cls, m, None)
             meta = _TRANSITIONS.get(fn) or (getattr(cls, "_lc_tmeta", {}) or {}).get(m)
             pre, post = (meta[0], meta[1]) if meta else ([], None)
-            meth_specs.append({"n": m, "pre": list(pre), "post": post})
+            meth_specs.append({"n": m, "pre": list(pre), "post": post,
+                               "guard": (getattr(cls, "_lc_guards", None) or {}).get(m)})
         # transition-decorated methods declared HERE join the spec even when
         # not listed (inherited ones stay on the base class's node — DRY)
         own_t = getattr(cls, "_lc_own_t", {}) or {}
         listed = set(methods)
         for n in sorted(own_t, key=lambda k: own_t[k][3]):
             if n not in listed:
-                meth_specs.append({"n": n, "pre": list(own_t[n][0]), "post": own_t[n][1]})
+                meth_specs.append({"n": n, "pre": list(own_t[n][0]), "post": own_t[n][1],
+                                   "guard": (getattr(cls, "_lc_guards", None) or {}).get(n)})
                 listed.add(n)
         if fields:   # author models: own public plain methods join the node
             base = cls.__bases__[0] if cls.__bases__ else None
@@ -1078,7 +1199,8 @@ class Object:
             # and hung on the row's text once the SVG is drawn (diagram.md)
             tips.append([text, tip or text])
             return _dot_esc(text) + "\\l"
-        title = ((sp["icon"] + " ") if sp["icon"] else "") + cn
+        _ic = _lc_dot_icon(cn, sp)
+        title = ((_ic + " ") if _ic else "") + cn
         for b in sp["bases"]:                          # ➭ <icon> for root bases
             if b in _DOT_ROOT_BASES:
                 title += " ➭ " + (_MODEL.get(b, {}).get("icon") or "◻️")
@@ -1159,7 +1281,8 @@ class Object:
         # label = class icon + the State FIELD's name (mood) + 🎛️ — falls
         # back to "states" for legacy states= classes with no named field.
         # (no class name — the icon and the dashed tie identify the owner)
-        ico = (sp["icon"] + " ") if sp["icon"] else ""
+        _ic = _lc_dot_icon(cn, sp)
+        ico = (_ic + " ") if _ic else ""
         sfn = None
         for a in sp["attrs"]:
             if a.get("state"):
@@ -1222,8 +1345,12 @@ class Object:
                     # state's box (↺ cancel) — an orthogonal loop drew a frame
                 for p in froms:
                     L.append("  " + sid(p) + " -> " + sid(m["post"])
-                             + ' [' + tail + ' xlabel="' + _disp(m["n"]) + '", fontsize=8,'
-                             + ' color="gray45", fontcolor="gray45",'
+                             + ' [' + tail + ' xlabel="' + _disp(m["n"])
+                             + ((" [" + str(m.get("guard")).replace('"', "'") + "]") if m.get("guard") else "")
+                             + '", fontsize=8,'
+                             + (' color="#16a34a", fontcolor="#15803d", penwidth=1.6,' if _LC_TAKEN.get(cn + "." + m["n"])
+                                else ' color="gray45", fontcolor="gray45",')
+                             + ''
                              + ' minlen=2, constraint=false]')
         # tie the cluster below its class (dashed, no arrow); constraint keeps it
         # directly under the class node rather than floating off to the side.
@@ -2236,6 +2363,9 @@ def _lc_model_spec_push(cls, subs=True):
     for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
         pre, post, sfn, _o = tmeta[n]
         trans[n] = {"pre": list(pre), "post": post}
+        _g = (getattr(cls, "_lc_guards", None) or {}).get(n)
+        if _g:
+            trans[n]["guard"] = _g
     verbs = [n for n in _lc_verbs(cls) if n not in tmeta]
     spec = {"fields": fields, "state": statef.n if statef else None,
             "states": list(statef.enum) if statef else [], "transitions": trans,
@@ -2243,6 +2373,8 @@ def _lc_model_spec_push(cls, subs=True):
             "verbs": verbs, "src": getattr(cls, "_lc_source", None) or "",
             # MicroPython's dict keeps no order: the transitions as declared
             "torder": [n for n in sorted(tmeta, key=lambda k: tmeta[k][3])],
+            # the class's declared rules, in words (rules(), the diagram, a prover)
+            "invariants": dict(getattr(cls, "_lc_invs", None) or {}),
             "read": getattr(cls, "_lc_read", "all"), "write": getattr(cls, "_lc_write", "all"),
             "was": getattr(cls, "was", None) if isinstance(getattr(cls, "was", None), str) else None,
             "subs": [k.__name__ for k in kids], "order": [f.n for f in cls._lc_fields] + [n for n in props if n not in fmap0]}
@@ -2610,6 +2742,40 @@ def _lc_rows_load(cls_name, rows_json):
     _lc_publish_all()
 
 
+def _lc_dot_icon(cn, sp):
+    """A class's emoji ON THE DIAGRAM: its own, or — for an author's class,
+    which registers with the plain box — the one its docstring opens with,
+    read from the block as written (Michel, 2026-11-22: "why the class
+    docstring emojis are not used in the class diagram"). The class's
+    registration is left alone: changing it there broke a client's grid on
+    the microserver the same day."""
+    ic = sp.get("icon") or ""
+    if not ic or ic == "📦":
+        d = _lc_src_doc(cn)
+        h = d.split(" ", 1)[0] if d else ""
+        if h and not (h[0].isalpha() or h[0].isdigit()):
+            return h
+    return ic
+
+
+def _lc_src_doc(name):
+    """A class's docstring, first line, read from its block's text."""
+    for mid in _LC_SRC:
+        lines = _LC_SRC[mid].split("\n")
+        for i in range(len(lines)):
+            ln = lines[i]
+            if ln.startswith("class ") and ln[6:].split("(")[0].split(":")[0].strip() == name:
+                for nxt in lines[i + 1:i + 4]:
+                    t = nxt.strip()
+                    if not t:
+                        continue
+                    for q in ('"""', "'''"):
+                        if t.startswith(q):
+                            return t[3:].split(q)[0].strip()
+                    return ""
+    return ""
+
+
 def _lc_decl_order(cls):
     """The names a class's own block declares with def, in the order written —
     read from the fence's text (MicroPython keeps no line numbers)."""
@@ -2854,6 +3020,376 @@ class _LcBatch:
 def batch():
     """Hold the page's repaints while many objects change; publish once at the end."""
     return _LcBatch()
+
+
+# ════════════════ every order of events (Michel, 2026-11-22) ════════════════
+# "what other ultimate quality measure … to demonstrate that, for instance,
+# 2 trains will never collapse each other". A scenario shows one order of
+# events; always() tries them ALL: from where the objects stand, every
+# transition any of them can take, then every one after that, until no new
+# situation appears. The rule holds on each, or the answer is the shortest
+# story that breaks it — written as steps, the way a scenario is.
+
+class _LcFlow:
+    """A run, written down as an event flow: who acted, the command, the guard
+    that let it through, what changed. recording("name") fills the page's
+    {: .event_flow source="name" }."""
+    def __init__(self, name=""):
+        self.name = name
+        self.rows = []
+        self._last = None
+
+    def _row(self, kind, text):
+        r = dict()
+        r[kind] = str(text)
+        self.rows.append(r)
+
+    def _note(self, obj, verb, guard, was):
+        who = ""
+        try:
+            who = str(obj._v.get("name") or "")
+        except Exception:
+            who = ""
+        who = who or _lc_name_of(obj) or type(obj).__name__
+        if who != self._last:
+            self._row("user", who)
+            self._last = who
+        self._row("command", verb)
+        if guard:
+            self._row("rule", guard)
+        changed = []
+        for k in sorted(obj._v):
+            a, b = (was or {}).get(k), obj._v.get(k)
+            if a is not b and a != b:
+                changed.append(k + ": " + _lc_say_val(a) + " → " + _lc_say_val(b))
+        self._row("event", who + " — " + ("; ".join(changed) if changed else verb + ", nothing of its own changed"))
+
+    def show(self, name=None):
+        name = name or self.name
+        if name:
+            js.window.lcSetDataset(name, js.window.JSON.parse(json.dumps(self.rows)))
+        return self
+
+    def __enter__(self):
+        self._held = _LC_REC[0]
+        _LC_REC[0] = self
+        return self
+
+    def __exit__(self, *a):
+        _LC_REC[0] = self._held
+        self.show()
+        return False
+
+
+def _lc_say_val(v):
+    try:
+        nm = v._v.get("name")
+        if nm:
+            return str(nm)
+    except Exception:
+        pass
+    return str(v)
+
+
+def recording(name=""):
+    """with recording("happy"): …  — the transitions run inside are written as
+    an event flow, drawn by {: .event_flow source="happy" }."""
+    return _LcFlow(name)
+
+
+class _LcProof:
+    def __init__(self, holds, seen, path, why, ends, world=None):
+        self.holds = holds          # True: no order of events breaks the rule
+        self.situations = seen      # how many different situations were visited
+        self._steps = path          # (label, object, verb) of the story that breaks it
+        self.path = [p[0] for p in path]
+        self.why = why
+        self.dead_ends = [[p[0] for p in e] for e in ends]   # where nothing can move any more
+        self._world = world
+
+    def __bool__(self):
+        return self.holds
+
+    @property
+    def story(self):
+        if self.holds:
+            return ("holds in all " + str(self.situations) + " situations"
+                    + (" (" + str(len(self.dead_ends)) + " where nothing can move)" if self.dead_ends else ""))
+        if not self.path:
+            return "broken before anything moves: " + self.why
+        lines = ["When " + self.path[0]] + ["And " + p for p in self.path[1:]]
+        return "\n".join(lines) + "\nThen " + self.why
+
+    def show(self, name):
+        """The story as an event flow on the page: {: .event_flow source="<name>" }.
+        The moves are played again from the start, written down, then undone."""
+        flow = _LcFlow(name)
+        if self._steps and self._world:
+            objs, start = self._world
+            now = _lc_snap(objs)
+            _lc_unsnap(objs, start)
+            _LC_BATCH[0] += 1
+            _LC_QUIET[0] += 1
+            held = _LC_REC[0]
+            _LC_REC[0] = flow
+            try:
+                for _label, o, verb in self._steps:
+                    try:
+                        getattr(o, verb)()
+                    except InvariantError:
+                        pass
+            finally:
+                _LC_REC[0] = held
+                _LC_QUIET[0] -= 1
+                _LC_BATCH[0] -= 1
+                if not _LC_BATCH[0]:
+                    del _LC_BATCH_SEEN[:]
+                _lc_unsnap(objs, now)
+        flow._row("rule", self.why if not self.holds else ((self.why + " — " if self.why else "") + self.story))
+        flow.show()
+        return self
+
+
+def _lc_flat(objects):
+    out = []
+    for o in objects:
+        if isinstance(o, (list, tuple)):
+            out.extend(_lc_flat(o))
+        elif o is not None and o not in out:
+            out.append(o)
+    return out
+
+
+def _lc_who(obj, objs):
+    nm = ""
+    try:
+        nm = obj._v.get("name") or ""
+    except Exception:
+        nm = ""
+    return str(nm) or _lc_name_of(obj) or (type(obj).__name__.lower() + "_" + str(objs.index(obj) + 1))
+
+
+def _lc_snap(objs):
+    return [dict((k, list(v) if isinstance(v, list) else v) for k, v in o._v.items()) for o in objs]
+
+
+def _lc_unsnap(objs, snap):
+    for o, v in zip(objs, snap):
+        o._v = dict((k, list(x) if isinstance(x, list) else x) for k, x in v.items())
+
+
+def _lc_key(objs):
+    def one(v):
+        if isinstance(v, list):
+            return "[" + ",".join(one(x) for x in v) + "]"
+        if v in objs:
+            return "#" + str(objs.index(v))
+        return repr(v)
+    parts = []
+    for o in objs:
+        parts.append(";".join(k + "=" + one(o._v[k]) for k in sorted(o._v)))
+    return "|".join(parts)
+
+
+def _lc_explore(objects, never=None, goal=None, limit=20000):
+    actors = _lc_flat(objects)
+    # the actors move; everything alive may change with them (a train's move
+    # frees one segment and fills the next), so the whole cast is remembered
+    objs = list(actors)
+    for o in _LC_OBJS:
+        if o not in objs and getattr(o, "_v", None) is not None:
+            objs.append(o)
+    start = _lc_snap(objs)
+    seen = {}
+    seen[_lc_key(objs)] = True
+    queue = [(start, [])]
+    ends = []
+    found = None
+    _LC_BATCH[0] += 1
+    _LC_QUIET[0] += 1
+    held = _LC_REC[0]
+    _LC_REC[0] = None
+    try:
+        if never is not None and not never():
+            found = ([], "the rule is already broken")
+        elif goal is not None and goal():
+            found = ([], "reached")
+        qi = 0
+        while found is None and qi < len(queue):
+            snap, path = queue[qi]
+            qi += 1
+            moved = False
+            for o in actors:
+                cls = type(o)
+                tmeta = getattr(cls, "_lc_tmeta", None) or {}
+                for name in sorted(tmeta, key=lambda k: tmeta[k][3]):
+                    _lc_unsnap(objs, snap)
+                    step = (_lc_who(o, objs) + "." + name + "()", o, name)
+                    try:
+                        getattr(o, name)()
+                    except PreconditionError:
+                        continue
+                    except TypeError:
+                        continue            # a verb that needs an argument is not an event
+                    except InvariantError as e:
+                        found = (path + [step], "the rule is broken: " + str(e))
+                        break
+                    moved = True
+                    if never is not None and not never():
+                        found = (path + [step], "the rule is broken")
+                        break
+                    if goal is not None and goal():
+                        found = (path + [step], "reached")
+                        break
+                    key = _lc_key(objs)
+                    if key not in seen:
+                        seen[key] = True
+                        if len(seen) > limit:
+                            raise ValueError("more than " + str(limit) + " situations — fewer objects, or a tighter model")
+                        queue.append((_lc_snap(objs), path + [step]))
+                if found is not None:
+                    break
+            if not moved and found is None:
+                ends.append(path)
+    finally:
+        _lc_unsnap(objs, start)
+        _LC_BATCH[0] -= 1
+        _LC_QUIET[0] -= 1
+        _LC_REC[0] = held
+        if not _LC_BATCH[0]:
+            del _LC_BATCH_SEEN[:]
+    return found, len(seen), ends, (objs, start)
+
+
+def always(rule, *objects):
+    """Does the rule hold in EVERY order of events these objects can live?
+    rule: an @invariant of an object (line.one_train_per_segment), or any
+    function answering True/False. The answer reads as a sentence, and when
+    the rule can be broken, .story is the shortest scenario that breaks it."""
+    doc = ""
+    if isinstance(rule, type):
+        # a class: every rule it declares, on every one of its objects alive
+        kls, invs = rule, getattr(rule, "_lc_invs", None) or {}
+        if not invs:
+            raise ValueError(kls.__name__ + " declares no @invariant")
+        doc = "; ".join(invs[n] for n in sorted(invs))
+
+        def rule():
+            for o in _LC_OBJS:
+                if isinstance(o, kls):
+                    for n in invs:
+                        if not getattr(o, n)():
+                            return False
+            return True
+    else:
+        doc = str(getattr(rule, "__doc__", "") or "").strip().split("\n")[0].strip()
+    found, seen, ends, world = _lc_explore(objects, never=rule)
+    if found is None:
+        return _LcProof(True, seen, [], doc, ends, world)
+    why = found[1] if (not doc or doc in found[1]) else doc + " — " + found[1]
+    return _LcProof(False, seen, found[0], why, ends, world)
+
+
+def sometimes(goal, *objects):
+    """Can these objects ever get there? True with the shortest way (.path)
+    when some order of events reaches the goal: the happy flow stays possible."""
+    found, seen, ends, world = _lc_explore(objects, goal=goal)
+    if found is None:
+        return _LcProof(False, seen, [], "no order of events gets there", ends, world)
+    return _LcProof(True, seen, found[0], "", ends, world)
+
+
+class _LcGuards:
+    def __init__(self, needed, idle):
+        self.needed = needed      # guards whose removal lets the rule break
+        self.idle = idle          # guards the rule does not need, or does not test
+
+    def __bool__(self):
+        return not self.idle
+
+    @property
+    def story(self):
+        out = []
+        for g in self.needed:
+            out.append("without " + g + ", the rule breaks")
+        for g in self.idle:
+            out.append("without " + g + ", nothing is noticed")
+        return "\n".join(out) or "no guard to take away"
+
+
+def without_guards(rule, *objects):
+    """Is each guard doing something? One at a time, every guard of the actors'
+    classes is switched off and the rule tried again in every order of events.
+    A guard whose removal breaks nothing is idle: either it is not needed, or
+    the rule does not look where it matters. True when no guard is idle."""
+    actors = _lc_flat(objects)
+    names = []
+    for o in actors:
+        k = type(o)
+        guards = getattr(k, "_lc_guards", None) or {}
+        for n in sorted(guards):
+            key = k.__name__ + "." + n
+            if key not in names:
+                names.append(key)
+    needed, idle = [], []
+    for key in names:
+        _LC_OFF[key] = True
+        try:
+            ok = always(rule, *actors).holds
+        finally:
+            del _LC_OFF[key]
+        label = key + " [" + (getattr(_CLASSES.get(key.split(".")[0]), "_lc_guards", None) or {}).get(key.split(".")[1], "") + "]"
+        (idle if ok else needed).append(label)
+    return _LcGuards(needed, idle)
+
+
+def untaken(*classes):
+    """The arrows no run has taken yet — transitions declared and never used
+    by a scenario (trying every order does not count as a run)."""
+    out = []
+    for cls in classes:
+        if not isinstance(cls, type):
+            cls = _CLASSES.get(str(cls)) or globals().get(str(cls))
+            if not isinstance(cls, type):
+                continue
+        tmeta = getattr(cls, "_lc_tmeta", None) or {}
+        for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+            if not _LC_TAKEN.get(cls.__name__ + "." + n):
+                out.append(cls.__name__ + "." + n)
+    return out
+
+
+def rules(*classes):
+    """The rules a class declares itself, one sentence each, read from the class:
+    its transitions (from, to, guard) and its invariants."""
+    out = []
+    for cls in classes:
+        if not isinstance(cls, type):
+            # by name — in a {= cell } a class's name means its objects, not the class
+            cls = _CLASSES.get(str(cls)) or globals().get(str(cls))
+            if not isinstance(cls, type):
+                continue
+        if getattr(cls, "_lc_harvested_for", None) is not cls:
+            component(icon="📦")(cls)       # asking for its rules is a first use
+        cn = cls.__name__
+        # what THIS class declares: what it inherits is said by the class it extends
+        tmeta = getattr(cls, "_lc_own_t", None) or {}
+        guards = getattr(cls, "_lc_guards", None) or {}
+        for n in sorted(tmeta, key=lambda k: tmeta[k][3]):
+            pre, post, sfn, _o = tmeta[n]
+            line = cn + "." + n + ": " + ("from " + " or ".join(pre) if pre else "from any state")
+            if post:
+                line += " to " + str(post)
+            if guards.get(n):
+                line += ", only when " + guards[n]
+            out.append(line)
+        invs = getattr(cls, "_lc_invs", None) or {}
+        base = cls.__bases__[0] if getattr(cls, "__bases__", None) else None
+        inherited = getattr(base, "_lc_invs", None) or {}
+        for n in sorted(invs):
+            if n not in inherited:
+                out.append(cn + ", always: " + invs[n])
+    return out
 
 
 def _lc_push_obj(obj):
@@ -3105,10 +3641,40 @@ def _dot_legend():
             + inher + "|" + imp + '}"')
 
 
+def _lc_use_class(name, seen=None):
+    """Being drawn is a use: the class a diagram names is registered if nothing
+    had used it yet, with the classes its attributes point to and the ones
+    that extend it — on a page that only declares and draws, the picture used
+    to wait for a proof to run (2026-11-22, the two trains)."""
+    seen = seen if seen is not None else []
+    if name in seen:
+        return
+    seen.append(name)
+    k = globals().get(name)
+    if not isinstance(k, type):
+        return
+    if k is not _CLASSES.get(name) and getattr(k, "_lc_harvested_for", None) is not k:
+        try:
+            component(icon="📦")(k)
+        except Exception:
+            return
+    for f in getattr(k, "_lc_fields", None) or []:
+        if getattr(f, "ref", False) and isinstance(f.t, str):
+            _lc_use_class(f.t, seen)
+    for gk, gv in list(globals().items()):
+        if gk.startswith("_") or not isinstance(gv, type) or gv is k:
+            continue
+        b = gv.__bases__[0] if getattr(gv, "__bases__", None) else None
+        if b is k:
+            _lc_use_class(gk, seen)
+
+
 def _scope_set(scope):
     # "*"/"all"/empty → whole model.
     if not scope or scope in ("*", "all"):
         return set(_MODEL.keys())
+    if "," not in scope:
+        _lc_use_class(scope)
     # "Canvas,GH" → the union of each name's closure. Managers with no
     # inbound association need naming, or the picture omits them (Michel,
     # 2026-08-23: "surprised the class diagram is missing GH and Canvas").
@@ -3197,6 +3763,18 @@ def to_dot(scope=None, gaps=None, packages=None, statemachines=True):
     # statemachines=False hides the state-machine clusters (a display knob).
     # `packages` optionally overrides the default _pkg_of mapping (e.g. from the
     # docs folder layout, supplied by the build step).
+    # A CLASS WRITTEN AGAIN IS DRAWN AGAIN (Michel, 2026-11-22, the two trains:
+    # he added two states and a transition in the pad, pressed ▶ Apply, and the
+    # diagram kept the old class). A class is registered at its first use; on a
+    # page where nothing uses it yet, the new one stayed unknown and the picture
+    # showed the one it replaced. Being drawn is a use.
+    for _n in list(_MODEL.keys()):
+        _k = globals().get(_n)
+        if isinstance(_k, type) and _k is not _CLASSES.get(_n) and getattr(_k, "_lc_harvested_for", None) is not _k:
+            try:
+                component(icon="📦")(_k)
+            except Exception:
+                pass
     sel = set(_MODEL.keys()) if not scope else _scope_set(scope)
     # Graph/node/edge defaults mirror ModuleDecorator.get_diagram exactly:
     # square filled records, sans-serif @12, hairline edges.

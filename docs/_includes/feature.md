@@ -246,7 +246,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
         return;
       }
       if (t === ":::python") { inPy = true; pyLines = []; return; }
-      var hm = t.match(/^(Feature|Scenario(?:\s+Outline)?|Background|Examples)\s*:\s*(.*)/i);
+      /* Rule: — Gherkin's own word for what the scenarios under it are examples of (2026-11-22) */
+      var hm = t.match(/^(Feature|Rule|Scenario(?:\s+Outline)?|Background|Examples)\s*:\s*(.*)/i);
       if (hm) { rows.push({ kind: /^feature$/i.test(hm[1]) ? "feature" : "scenario", keyword: hm[1], text: hm[2].trim() }); return; }
       var sm = t.match(/^(Given|When|Then|And|But)\s+(.*)/i);
       if (sm) { rows.push({ kind: "step", keyword: sm[1], text: sm[2].trim() }); return; }

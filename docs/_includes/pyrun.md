@@ -1773,7 +1773,17 @@ Auto-included by docs/_layouts/default.html.
     window._lcPageRuntime = Promise.all([lcMpy(), loadJsYaml()])
       .then(function(results){ return results[0]; })
       .then(function(mp){
-        try { mp.runPython(BOOTSTRAP_TPL.replace(/__ID__/g, "page")); }
+        /* THE PAGE'S OBJECT STAYS THE ENGINE'S. The pad's own start-up writes a
+           plain `class Object` (a bag of attributes, for a program run in a
+           pad). Run here for the page's cells, it replaced the engine's Object
+           for everything written afterwards: a model's classes re-applied
+           from the pad then extended the plain one, could no longer be
+           registered once one of them had a subclass, and their diagram kept
+           the old class (Michel, 2026-11-22: "the apply button … doesn't look
+           like it reflects changes in the diagram" — two trains, a page with
+           cells). The engine's Object is put back after the start-up. */
+        try { mp.runPython("_lc_kore_Object = globals().get('Object')\n" + BOOTSTRAP_TPL.replace(/__ID__/g, "page") +
+                           "\nif getattr(_lc_kore_Object, '_all', None) is not None:\n    Object = _lc_kore_Object\n"); }
         catch (e) { if (window.console) console.warn("[lc page-rt bootstrap]", e.message || e); }
         return mp;
       });

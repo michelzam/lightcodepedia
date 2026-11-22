@@ -72,7 +72,8 @@ def step_features_pass(context):
             # surface the in-page runner's own error text (step + builtin rows)
             # which never reaches behave otherwise — makes failures diagnosable
             try:
-                detail = (cards.nth(i).inner_text() or "")[:1200]
+                _t = cards.nth(i).inner_text() or ""
+                detail = _t if len(_t) <= 2400 else _t[:900] + "\n…\n" + _t[-1500:]   # the red step is often the last one
             except Exception as e:
                 detail = "<could not read feature card: %s>" % e
             raise AssertionError(
