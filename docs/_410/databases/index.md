@@ -21,6 +21,7 @@ Start with the first module, then follow the quest:
 - [🧙 10 · Advanced SQL — Procedures, Cursors, and Triggers](module_10/index.md)
 - [🌉 11 · From SQL Mastery to NoSQL Beginnings](module_11/index.md)
 - [🐘 12 · Your Project, One Bite at a Time](module_12/index.md)
+- [📤 13 · Second Iteration — The Report and the Export](module_13/index.md)
 
 [Browse](#)
 {: .folder }
@@ -47,6 +48,7 @@ stories:
     - Module 10 moves logic inside the database: a procedure you call, a trigger that reacts, a cursor that walks row by row.
     - Module 11 plays SQuizL to prove your SQL, then opens NoSQL: documents, graphs, and how to choose with CAP.
     - Module 12 walks the final project through its worked example, one bite at a time, parents first.
+    - Module 13 is a catch-up week: the report template section by section, and the database exported from Workbench.
     - Open module 01 to begin, or browse the folder to see everything at once.
 ```
 {: .avatar #guide dock="true" size="115" }
