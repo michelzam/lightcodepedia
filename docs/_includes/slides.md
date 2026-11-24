@@ -339,8 +339,19 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       var groups = [];
       var cur = [];
       groups.push(cur);
+      /* A SECTION THAT FOLDS IS STILL A SECTION (Michel, 2026-11-24, the pilot
+         meeting page: "present and reel don't work"). A heading written
+         {: .accordion } has already become a panel wearing it, so a page whose
+         every section folds showed no H2 here: one slide, no deck, both modes
+         refused. The panel starts a slide the way its heading would. */
+      function startsSlide(el) {
+        if (el.tagName === 'H2') return true;
+        if (!el.classList || !el.classList.contains('lc-acc-section')) return false;
+        var s = el.firstElementChild && el.firstElementChild.firstElementChild;   /* details > summary */
+        return !!(s && s.firstElementChild && s.firstElementChild.tagName === 'H2');
+      }
       children.forEach(function(el){
-        if (el.tagName === 'H2') {
+        if (startsSlide(el)) {
           cur = [el];
           groups.push(cur);
         } else {
@@ -487,7 +498,13 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       navJump.value = String(current);
     }
 
+    /* a slide whose section folds is shown unfolded: nobody presents a shut panel */
+    function unfoldSlide(s) {
+      var p = s && s.firstElementChild;
+      if (p && p.classList && p.classList.contains('lc-acc-section') && p.firstElementChild && p.firstElementChild.tagName === 'DETAILS') p.firstElementChild.open = true;
+    }
     function showSlide() {
+      if (document.body.classList.contains('lc-slides-active')) unfoldSlide(slides[current]);
       slides.forEach(function(s, i){
         s.setAttribute('data-active', i === current ? 'true' : 'false');
         var frags = s.querySelectorAll('.lc-slide-fragment');
@@ -700,6 +717,7 @@ body.lc-rt-deck.lc-reel-active .lc-deck-chain > :not(.lc-deck-chain):not(.lc-sli
       if (!hasDeck()) return;
       if (body.classList.contains('lc-slides-active')) exit();      // mutually exclusive
       body.classList.add('lc-reel-active');
+      slides.forEach(unfoldSlide);                                   // a reel shows every screen, none shut
       _flickStack.length = 0;
       syncReelFab(true);
       try {

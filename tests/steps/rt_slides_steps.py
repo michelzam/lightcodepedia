@@ -631,3 +631,9 @@ def step_bubble_no_cue(context, text):
         "document.querySelector('.lc-avatar-speech').textContent.includes('<break')"
     )
     assert not leaked, "the voice-cue tag leaked into the bubble"
+
+
+@when("the deck moves to slide {n:d}")
+def step_deck_moves(context, n):
+    context.page.evaluate("(i) => window.lcSlides.goto(i, true)", n - 1)
+    context.page.wait_for_timeout(500)

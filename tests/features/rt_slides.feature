@@ -81,3 +81,34 @@ Feature: RT slides parity — Present and Reel work on a runner render
     Then the runner render partitions into 3 slides
     When the runner hash-navigates to "gh:acme/demo/courses/demo/flat.md"
     Then the Present and Reel options are hidden again
+
+  # Michel, 2026-11-24, on a page whose every section folds (the pilot meeting):
+  # "present and reel don't work". A folding heading becomes a panel, so the deck
+  # found no section to cut on, counted one slide and refused both modes.
+  Scenario: A page whose sections all fold still makes a deck, and a slide shows its section open
+    Given I have a clean browser page
+    And the GitHub contents API serves "courses/demo/mod/folds.md" with the document:
+      """
+      # Folding page
+
+      Intro.
+
+      ## 1 · First
+      {: .accordion }
+
+      Alpha content.
+
+      ## 2 · Second
+      {: .accordion }
+
+      Beta content.
+      """
+    When I navigate to "/run.html#src=gh:acme/demo/courses/demo/mod/folds.md"
+    And I wait for the page to be interactive
+    Then the runner render partitions into 3 slides
+    When the page enters "present" mode
+    Then the page is in "present" mode
+    When the deck moves to slide 2
+    Then the active slide shows "Alpha content."
+    When the page enters "reel" mode
+    Then the page is in "reel" mode
