@@ -3861,7 +3861,7 @@
     "url": "/assets/ux-report.html#scenario_428"
   },
   {
-    "status": "✅",
+    "status": "❌",
     "scenario": "⇥ slides the preview over a still editor; ✎ slides it back",
     "feature": "The pad types like a text field, painted",
     "tags": "",
