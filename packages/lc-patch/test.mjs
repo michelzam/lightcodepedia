@@ -231,5 +231,57 @@ function sortDeep(v) {
   return v;
 }
 
+feature('Markdown with a YAML header (0.2.0, Toni: the long texts move after the header)');
+{
+  /* the 14 episodes of Paris Révolutionnaire, converted by text surgery
+     (2026-11-26, partner material, never mirrored); one synthetic record
+     carries the same scenarios without them */
+  const MD = join(HERE, '..', 'partners', 'bluelion', 'fixtures', 'episodes-md-2026-11-26');
+  const md = {};
+  if (existsSync(MD)) for (const f of readdirSync(MD)) md[f] = readFileSync(join(MD, f), 'utf8');
+  else md['synthetic.md'] = "---\n# source: synthetic\nid: synthetic\ntitle: 'L''épisode'\nperiods:\n  - commune\n---\n\nFirst paragraph.\n\nSecond paragraph.\n";
+  const names = Object.keys(md).sort();
+  scenario('every untouched Markdown record is written back byte-identical (' + names.length + ' files)', () => {
+    for (const n of names) {
+      const r = patchWith(md[n], load(md[n]));
+      eq(r.fallback, false, n + ': ' + r.reason); eq(r.text, md[n], n); deep(r.changed, [], n);
+    }
+  });
+  const n0 = names[0], t0 = md[n0];
+  const bodyOf = (t) => t.slice(t.indexOf('\n---\n') + 5);
+  scenario('editing a header field changes one line, the text after the header keeps its bytes', () => {
+    const o = load(t0); o.title = o.title + ' (révisé)';
+    const r = patchWith(t0, o);
+    eq(r.fallback, false, r.reason); eq(changedLines(t0, r.text).length, 1); deep(r.changed, ['title']);
+    eq(bodyOf(r.text), bodyOf(t0)); deep(load(r.text), o);
+  });
+  scenario('editing the text changes the text only, the header keeps its bytes', () => {
+    const o = load(t0); o.body = o.body + '\n\nUn paragraphe ajouté.';
+    const r = patchWith(t0, o);
+    eq(r.fallback, false, r.reason); deep(r.changed, ['body']);
+    eq(r.text.slice(0, t0.indexOf('\n---\n') + 5), t0.slice(0, t0.indexOf('\n---\n') + 5));
+    ok(r.text.endsWith('Un paragraphe ajouté.\n')); deep(load(r.text), o);
+  });
+  scenario('a record sent without body keeps its text', () => {
+    const o = load(t0); delete o.body; o.title = 'Autre titre';
+    const r = patchWith(t0, o);
+    eq(r.fallback, false, r.reason); eq(bodyOf(r.text), bodyOf(t0)); eq(load(r.text).body, load(t0).body);
+  });
+  scenario('a header that also carries a body: key is refused, never re-emitted', () => {
+    const bad = '---\nid: x\nbody: hidden\n---\n\nText\n';
+    assert.throws(() => patchWith(bad, { id: 'x', body: 'Text' }), /never in a body: key/);
+  });
+  scenario('a Windows checkout (CRLF) stays CRLF, untouched and edited', () => {
+    const w = t0.replace(/\n/g, '\r\n');
+    const same = patchWith(w, load(w)); eq(same.fallback, false, same.reason); eq(same.text, w);
+    const o = load(w); o.title = o.title + ' (révisé)';
+    const r = patchWith(w, o); eq(r.fallback, false, r.reason);
+    ok(!/[^\r]\n/.test(r.text), 'a bare LF crept in'); eq(changedLines(w, r.text).length, 1); deep(load(r.text), o);
+  });
+  scenario('a body that is not a string is refused', () => {
+    assert.throws(() => patchWith(t0, { ...load(t0), body: ['a'] }), /body must be a string/);
+  });
+}
+
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);

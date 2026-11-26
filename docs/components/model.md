@@ -215,6 +215,16 @@ class, a card with its verbs, a diagram of it. What a class can say:
   leads to. The card shows the states as chips and the methods as buttons,
   grey when the assert would refuse; the diagram draws the classes, their
   links and the state machine. Python Module 11 (SwiftSip) uses it.
+- **A big field, beside the card**: a value too long for a card's line — a
+  text of several lines, a program, a list of pictures — shows a bit, and
+  **›** after its label opens the whole of it in a pane beside the card:
+  text as text with its links live, Python in the [pad](run), read-only and
+  still runnable, a picture as a picture. Pick another row: the pane follows.
+  A read-only value is grey, with no lock; the class's description is the
+  card title's tooltip.
+- **A verb that waits**: a verb that starts something the page cannot see —
+  a file being read, an answer on its way — says `self.busy()`; its card
+  greys its buttons and turns a small wheel until `self.busy(False)`.
 - **Where the rows live**: `class Family(Object, source="calls")` wears a
   list on the page; `{: .model source="shelter" }` puts every class in a
   [database](database), a table each.

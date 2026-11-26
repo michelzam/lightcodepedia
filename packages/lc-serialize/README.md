@@ -32,7 +32,37 @@ isLossless(yamlText);             // parsed data survives round-trip (order-inde
 `dump(obj, { order })` — pass an explicit key order if you want a canonical order
 instead of the object's own order. Omit it to preserve the source order.
 
+## Markdown with a YAML header (0.2.0)
+
+A record can also be a Markdown file whose data sits in a YAML header — one
+record, one file, the long text readable as it is:
+
+```markdown
+---
+# source: xwiki-export
+id: mort-de-segur
+title: Mort de la comtesse de Ségur
+---
+
+Le 9 février 1874, elle s’éteint…
+```
+
+- `load(text)` returns the header's keys and then `body`, the text after the
+  closing fence (without the blank line that follows the fence and without the
+  final newline). The header is read exactly like a YAML record: unquoted dates
+  stay strings, the provenance comment survives.
+- `dump(record, { format: 'md' })` writes it back; `roundtrip` / `isLossless` /
+  `isByteIdentical` recognise the format by its content.
+- A header that carries its own `body:` key is **refused** — the text has one home.
+- A file is Markdown with a header when its first line is exactly `---` and a
+  later line is exactly `---`. Plain YAML reads as before, a lone opening `---`
+  marker included: js-yaml refuses every closed header as a second document, so
+  nothing that loads today changes meaning.
+- `splitFrontMatter(text)` and `formatOf(text)` expose the detection.
+
 ## One-liner corpus check (CLI)
+
+`.md` records (0.2.0) are checked beside `.yaml`; a `.md` without a header (a README) is left out.
 
 Ships a `bin` — point it at a folder (or a file); exits non-zero on any data loss:
 

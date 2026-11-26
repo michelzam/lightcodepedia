@@ -3,7 +3,12 @@
  * Zero-dependency: a tiny Feature/Scenario harness over node:assert.
  * Run: node test.mjs   (or `npm test`)
  */
-import { load, dump, roundtrip, isByteIdentical, isLossless, leadingComments } from './index.js';
+import { load, dump, roundtrip, isByteIdentical, isLossless, leadingComments, splitFrontMatter, formatOf } from './index.js';
+import * as lib from './index.js';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, writeFileSync, readFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import assert from 'node:assert';
 
 let scen = 0, fail = 0;
@@ -130,6 +135,60 @@ scenario('dump(obj, { order }) applies an explicit key order', () => {
 scenario('dump(obj) with no order preserves the object’s own order', () => {
   eq(dump({ b: 1, a: 2 }).trim(), 'b: 1\na: 2');
 });
+
+feature('Markdown with a YAML header (0.2.0, Toni: the long texts move after the header)');
+{
+  const md = "---\n# source: xwiki-export\nid: mort-de-segur\ntitle: Mort de la comtesse de Ségur\ndaterange:\n  startYear: 1874\n  startDay: 1874-02-09\n---\n\nLe 9 février 1874, elle s’éteint.\n\nElle est inhumée à Pluneret.\n";
+  scenario('the header reads as the record and the text after the fence as body', () => {
+    const r = load(md);
+    deep(Object.keys(r), ['id', 'title', 'daterange', 'body']);
+    eq(r.daterange.startDay, '1874-02-09', 'an unquoted date stays a string in the header');
+    eq(r.body, 'Le 9 février 1874, elle s’éteint.\n\nElle est inhumée à Pluneret.');
+  });
+  scenario('it round-trips byte-identical, provenance comment included', () => {
+    eq(roundtrip(md), md); ok(isByteIdentical(md)); ok(isLossless(md));
+  });
+  scenario('dump(record, { format: "md" }) writes the header, a blank line, the text, a final newline', () => {
+    eq(dump({ id: 'x', title: 'T', body: 'Text.' }, { format: 'md' }), '---\nid: x\ntitle: T\n---\n\nText.\n');
+    eq(dump({ id: 'x', body: '' }, { format: 'md' }), '---\nid: x\n---\n');
+  });
+  scenario('a header that also carries a body: key is refused — the text has one home', () => {
+    assert.throws(() => load('---\nid: x\nbody: hidden\n---\n\nText\n'), /never in a body: key/);
+  });
+  scenario('plain YAML reads as before, a lone opening --- marker included', () => {
+    eq(formatOf(fiche), 'yaml'); eq(splitFrontMatter('---\nid: x\n'), null); deep(load('---\nid: x\n'), { id: 'x' });
+    eq(formatOf(md), 'md');
+  });
+  scenario('the browser copy keeps a single js-yaml call (gen-includes rewrites exactly one)', () => {
+    const src = String(lib.load).length && require_src();
+    eq((src.match(/yaml\.load\(/g) || []).length, 1);
+  });
+  scenario('lc-serialize-check reads .md records beside .yaml, and fails on a refused one', () => {
+    const d = mkdtempSync(join(tmpdir(), 'lcs-'));
+    writeFileSync(join(d, 'a.yaml'), fiche); writeFileSync(join(d, 'b.md'), md); writeFileSync(join(d, 'README.md'), '# not a record\n');
+    const out = execFileSync(process.execPath, [new URL('./check-corpus.mjs', import.meta.url).pathname, d], { encoding: 'utf8' });
+    ok(/2 file\(s\) checked/.test(out), out); ok(/1 \.md/.test(out), out); ok(/PASS/.test(out), out);
+    writeFileSync(join(d, 'c.md'), '---\nid: x\nbody: hidden\n---\n\nText\n');
+    let code = 0; try { execFileSync(process.execPath, [new URL('./check-corpus.mjs', import.meta.url).pathname, d], { stdio: 'pipe' }); } catch (e) { code = e.status; }
+    eq(code, 1);
+  });
+}
+{
+  const md = "---\n# source: x\nid: x\ntitle: T\n---\n\nLine one.\n\nLine two.\n", crlf = md.replace(/\n/g, '\r\n');
+  scenario('a Windows checkout (CRLF) reads the same record, and round-trips without loss', () => {
+    deep(load(crlf), load(md)); ok(isLossless(crlf)); eq(roundtrip(crlf), md);
+  });
+  scenario('lc-serialize-check fails a .md whose header opens and never closes, and takes CRLF records', () => {
+    const d = mkdtempSync(join(tmpdir(), 'lcs-'));
+    writeFileSync(join(d, 'w.md'), crlf);
+    const out = execFileSync(process.execPath, [new URL('./check-corpus.mjs', import.meta.url).pathname, d], { encoding: 'utf8' });
+    ok(/1 file\(s\) checked \(1 \.md\)/.test(out), out);
+    writeFileSync(join(d, 'open.md'), '---\nid: x\ntitle: never closed\n');
+    let code = 0; try { execFileSync(process.execPath, [new URL('./check-corpus.mjs', import.meta.url).pathname, d], { stdio: 'pipe' }); } catch (e) { code = e.status; }
+    eq(code, 1);
+  });
+}
+function require_src() { return readFileSync(new URL('./index.js', import.meta.url), 'utf8'); }
 
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);

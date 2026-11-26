@@ -62,8 +62,12 @@ ${indented}
 
   // dump(obj, order) shim keeps the site's call sites (lcYaml.dump(rec, null)),
   // adapting to the package's dump(obj, { order }).
+  // load is the plain YAML reader: the site's record editor writes back what it
+  // read with dump(rec, null), so a Markdown-with-header file must keep failing
+  // to open here instead of being saved over as YAML (lc-serialize 0.2.0 reads
+  // that format for the npm bricks only).
   window.lcYaml = {
-    load: load,
+    load: loadYaml,
     dump: function (obj, order) { return dump(obj, order ? { order: order } : {}); },
     ready: ready,
     roundtrip: roundtrip,

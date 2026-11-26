@@ -13,7 +13,7 @@ and re-emits only the entries that changed, with lc-serialize's own emitter.
 It imports lc-serialize; it copies nothing from it.
 
 ```sh
-npm i @karmicsoft/lc-patch      # depends on @karmicsoft/lc-serialize ^0.1.1
+npm i @karmicsoft/lc-patch      # depends on @karmicsoft/lc-serialize ^0.2.0
 ```
 
 ```js
@@ -45,6 +45,14 @@ const { text: out2, changed, fallback } = patchWith(text, record);
   still lossless, only less minimal — and `patchWith()` reports
   `fallback: true` with the reason. The brick is never wrong, only sometimes
   less minimal.
+
+## Markdown with a YAML header (0.2.0)
+
+On a Markdown record (lc-serialize 0.2.0) the header is patched line by line like
+any record; the text after the header keeps its bytes when `body` is unchanged —
+or absent from the edited object — and is rewritten whole when it changed
+(`changed` then lists `body`). A header with its own `body:` key, or a `body` that
+is not a string, throws instead of being re-emitted around.
 
 ## What the reader understands
 

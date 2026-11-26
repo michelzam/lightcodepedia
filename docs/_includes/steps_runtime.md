@@ -1107,6 +1107,63 @@ class Object:
         burst(el if el is not None else js.window.document.body)
         return self
 
+    def busy(self, on=True):
+        """Say that this object is waiting on something its verb started —
+        a file being read, an answer on its way. Its card greys its buttons
+        and turns a small wheel until busy(False). A verb that returns at
+        once has nothing to say: only a wait the page cannot see needs it
+        (Michel, 2026-11-25: "when a function/method takes time to be
+        executed, the button should be gray, and a spinning signal should
+        show it's running")."""
+        fn = getattr(js.window, "_lcInspectorBusy", None)
+        if fn:
+            fn(_lc_name_of(self), bool(on))
+        return self
+
+    # ── the world beyond the page, reached through Object — never js in a page ──
+    # (Michel, 2026-11-25, on the grading desk: "calls to js functions or
+    # modules should not be visible there. Please work through Object who is
+    # the bridge and encapsulates / hides js from md pages. Check doctrine!")
+    @staticmethod
+    def _fn_name(fn):
+        return fn if isinstance(fn, str) else (getattr(fn, "__name__", "") if fn else "")
+
+    def note(self, text):
+        """A line in the console under this object's card — what a verb
+        learned later, when its answer landed. Scroll the console to read
+        the sitting back."""
+        fn = getattr(js.window, "_lcInspectorNote", None)
+        if fn:
+            fn(_lc_name_of(self), str(text))
+        return self
+
+    def open_tab(self, url):
+        """Open an address in a new tab."""
+        if url:
+            js.window.open(str(url), "_blank")
+        return self
+
+    def read_repo(self, repo, path, then, said=None):
+        """Read a file from a GitHub repo with the reader's own key — a
+        private repo too. Its text lands in then(text); a refusal or a
+        missing file lands as one line in said(line)."""
+        js.window.lcRepoRead(str(repo or ""), str(path), Object._fn_name(then), Object._fn_name(said))
+        return self
+
+    def write_repo(self, repo, path, text, message, said=None):
+        """Write a text back to a file of a GitHub repo with the reader's
+        own key — refused if the file changed since it was read. What
+        happened lands as one line in said(line)."""
+        js.window.lcRepoWrite(str(repo or ""), str(path), str(text), str(message), Object._fn_name(said))
+        return self
+
+    def ask_ai(self, system, text, then, tag=""):
+        """One question to the reader's own AI engine, with these
+        instructions. The answer lands in then(tag, reply); a refusal lands
+        as a reply that starts with ✗."""
+        js.window.lcDeskAsk(str(system), str(text), Object._fn_name(then), str(tag))
+        return self
+
     def _reload_runtime(self):
         """Re-run the steps preamble in place — exactly what a button click
         does. Object is the js bridge, so author code (feature steps) calls
@@ -3945,10 +4002,26 @@ _inject_store()
 .lc-ins-h { font-size: 0.8em; color: #6b7280; margin: 0.6em 0 0.15em; font-weight: 600; text-transform: none; }
 .lc-ins-p { margin: 0; font-size: 0.92em; line-height: 1.45; white-space: pre-wrap; }
 .lc-ins-loading { color: #94a3b8; font-size: 0.9em; padding: 8px 0; }
+/* a big field shows a bit; › after its label opens the whole of it beside the card */
+.lc-ins-dig { cursor: pointer; color: #0066cc; font-weight: 700; margin-left: 4px; text-decoration: none; }
+.lc-ins-dig.on { color: #dc2626; }
+.lc-ins-more { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.lc-ins-side { flex: 2 1 320px; min-width: 0; max-height: 75vh; overflow: auto; border: 1px solid #d8dee6; border-radius: 10px; padding: 10px 14px; background: #fff; }
+.lc-ins-side-head { display: flex; justify-content: space-between; align-items: center; font-weight: 600; color: #1e293b; margin-bottom: 8px; }
+.lc-ins-side-head button { border: none; background: none; cursor: pointer; font-size: 1.05em; color: #64748b; }
+.lc-ins-side-text { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 0.95em; line-height: 1.5; margin: 0; }
+.lc-ins-side img { max-width: 100%; height: auto; display: block; margin: 0 0 10px; border: 1px solid #e2e8f0; border-radius: 6px; }
+.lc-ins-side-empty { color: #94a3b8; font-style: italic; }
+/* a card whose object waits: its buttons grey, a small wheel turns */
+.lc-ins-card.lc-ins-busy .lc-ins-meths button { background: #cbd5e1; color: #eef2f7; cursor: progress; }
+.lc-ins-spin { display: inline-block; width: 14px; height: 14px; align-self: center; border: 2px solid #cbd5e1; border-top-color: #0066cc; border-radius: 50%; animation: lc-ins-spin 0.9s linear infinite; }
+@keyframes lc-ins-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .lc-ins-spin { animation-duration: 4s; } }
 /* the console under the cards — the editor's own, so a verb that prints
    shows it, prompt and all (Michel, 2026-10-12: "I see nothing when I
    click on come … I would expect a console") */
-.lc-ins-console { border-radius: 8px; margin: -0.4em 0 1em; }
+/* it scrolls: a sitting's lines stay readable (Michel, 2026-11-25: "make the console scrollable, so I can check the content") */
+.lc-ins-console { border-radius: 8px; margin: -0.4em 0 1em; max-height: 14em; overflow-y: auto; }
 /* a MODEL block is invisible on the page — like a dataset: structure, not
    ink. The widgets that use it show it; the x-ray docks it (2026-08-24).
    The pre-upgrade selectors too, so the code never flashes before hiding. */
@@ -4028,11 +4101,15 @@ _inject_store()
        identity belongs to the roster, not the reader. Verbs stay live. */
     var allRo = host.hasAttribute("data-lc-ro");
     var h = "";
+    host._lcLast = d;
     (d.cards || []).forEach(function (c) {
-      h += "<div class='lc-ins-card' data-card='" + esc(c.name) + "'>";
-      h += "<div class='lc-ins-head'>" + esc(c.icon) + " " + esc(c.name)
+      var busy = !!(window._lcBusy && window._lcBusy[c.name]);
+      h += "<div class='lc-ins-card" + (busy ? " lc-ins-busy" : "") + "' data-card='" + esc(c.name) + "'>";
+      /* the class's description is the head's tooltip, not a paragraph on
+         every card (Michel, 2026-11-25: "the inspector description should be
+         available as tooltip, so it won't bring noise there") */
+      h += "<div class='lc-ins-head'" + (c.doc ? " title='" + esc(c.doc) + "'" : "") + ">" + esc(c.icon) + " " + esc(c.name)
         + "<span class='lc-ins-cls'>: " + esc(c.cls) + "</span></div>";
-      if (c.doc) h += "<div class='lc-ins-doc'>" + esc(c.doc) + "</div>";
       /* labels speak the diagram's dialect: Capitalized, type-emoji prefixed */
       function cap(n) { n = String(n).replace(/_/g, " "); return n.charAt(0).toUpperCase() + n.slice(1); }
       /* names="code": the names as the class writes them — `distance`,
@@ -4048,8 +4125,18 @@ _inject_store()
       (c.fields || []).forEach(function (f) {
         if (f.state) return;
         var unit = f.unit ? " <span class='lc-ins-unit'>(" + esc(f.unit) + ")</span>" : "";
+        /* A BIG FIELD shows a bit; › after its label opens the whole of it
+           in a pane beside the card — text as text, links live, Python in
+           the pad, a picture as a picture (Michel, 2026-11-25: "if the
+           field is too big, we should only show a bit and have an
+           additional pane (sidecar) that can open the full content, on
+           demand (click on the field's '>' label postfix to zoom/dig)") */
+        var big = isBig(f);
         h += "<div class='lc-ins-row'" + (f.hint ? " title='" + esc(f.hint) + "'" : "") + ">"
-          + "<label>" + tmoji(f) + " " + esc(label(f.n)) + unit + "</label><div class='lc-ins-ctl'>";
+          + "<label>" + tmoji(f) + " " + esc(label(f.n)) + unit
+          + (big ? "<a class='lc-ins-dig" + (host._lcSide === f.n ? " on" : "") + "' data-dig='" + esc(f.n)
+                 + "' role='button' tabindex='0' title='open the whole content beside the card'>›</a>" : "")
+          + "</label><div class='lc-ins-ctl'>";
         var dis = (f.ro || allRo) ? " disabled" : "";
         if (f.ref) {
           /* typed reference → picklist of live, type-compatible instances */
@@ -4059,12 +4146,14 @@ _inject_store()
           });
           h += "</select><span class='lc-ins-ro'>:" + esc(f.ref) + "</span>";
         } else if (f.t === "bool") {
-          h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">"
-            + (f.ro ? "<span class='lc-ins-ro'>🔒</span>" : "");
+          h += "<input type='checkbox' data-f='" + esc(f.n) + "' data-t='bool'" + (f.v ? " checked" : "") + dis + ">";
         } else if (f.ro || allRo) {
           var w = window.lcWhen ? window.lcWhen(f.v) : null;      /* a stamp, on the reader's clock */
-          h += "<span class='lc-ins-ro'" + (w ? " title='" + esc(w.utc) + "'" : "") + ">"
-            + esc(w ? w.text : f.v) + (f.ro ? " 🔒" : "") + "</span>";
+          /* a read-only value is grey, and that is enough: no lock beside it
+             (Michel, 2026-11-25: "we don't need to display locks for r/o
+             fields. the gray fontcolor should be enough") */
+          h += "<span class='lc-ins-ro" + (big ? " lc-ins-more" : "") + "'" + (w ? " title='" + esc(w.utc) + "'" : "") + ">"
+            + esc(w ? w.text : (big ? excerpt(f.v) : f.v)) + "</span>";
         } else if (f.enum) {
           h += "<select data-f='" + esc(f.n) + "' data-t='str'>";
           f.enum.forEach(function (o) {
@@ -4101,16 +4190,130 @@ _inject_store()
           var gate = m.enabled ? (m.post ? "→ " + m.post : "") : "needs: " + (m.pre || []).join(" / ");
           var doc = m.doc || docs[c.cls + "." + m.n] || "";
           var tip = doc ? (doc + (gate ? " · " + gate : "")) : gate;
-          h += "<button data-m='" + esc(m.n) + "'" + (m.enabled ? "" : " disabled")
+          h += "<button data-m='" + esc(m.n) + "'" + (m.enabled && !busy ? "" : " disabled")
             + (tip ? " title='" + esc(tip) + "'" : "") + ">" + esc(codeNames ? m.n + "()" : cap(m.n)) + "</button>";
         });
+        if (busy) h += "<span class='lc-ins-spin' role='status' aria-label='running'></span>";
         h += "</div>";
       }
       h += "</div>";
     });
     if (d.error) h += "<div class='lc-ins-err'>⚠️ " + esc(d.error) + "</div>";
     host.innerHTML = h;
+    drawSide(host);
   };
+
+  /* a line an object adds to its card's console, any time (Object.note) */
+  window._lcInspectorNote = function (name, text) {
+    document.querySelectorAll("[data-lc-inspector]").forEach(function (host) {
+      var shows = (host._lcLast && host._lcLast.cards || []).some(function (c) { return c.name === name; });
+      var con = host._lcCon;
+      if (!shows || !con) return;
+      if (con.classList.contains("lc-empty")) { con.textContent = ""; con.classList.remove("lc-empty"); }
+      con.textContent += (con.textContent && !/\n$/.test(con.textContent) ? "\n" : "") + text + "\n";
+      con.scrollTop = con.scrollHeight;
+    });
+  };
+
+  /* an object says it waits (Object.busy): every card showing it follows */
+  window._lcInspectorBusy = function (name, on) {
+    window._lcBusy = window._lcBusy || {};
+    if (on) window._lcBusy[name] = 1; else delete window._lcBusy[name];
+    document.querySelectorAll("[data-lc-inspector]").forEach(function (host) {
+      var shows = (host._lcLast && host._lcLast.cards || []).some(function (c) { return c.name === name; });
+      if (shows && !host._lcHold) window._lcInspectorRender(host.getAttribute("data-lc-inspector"), JSON.stringify(host._lcLast));
+    });
+  };
+
+  /* ── the sidecar: a big field, whole, beside its card ─────────────────── */
+  function isBig(f) {
+    if (f.ref || f.state || f.enum || f.secret || typeof f.v !== "string") return false;
+    return f.v.length > 60 || f.v.indexOf("\n") >= 0;
+  }
+  function excerpt(v) {
+    var first = String(v).split("\n").filter(function (l) { return l.trim(); })[0] || "";
+    return (first.length > 44 ? first.slice(0, 44) : first) + " …";
+  }
+  var IMG_EXT = /\.(png|jpe?g|gif|webp|svg)(\?.*)?$/i;
+  function isUrl(l) { return /^https?:\/\/\S+$/.test(l); }
+  function isRepoFile(l) { return /^https:\/\/api\.github\.com\/repos\/[^\/]+\/[^\/]+\/contents\//.test(l); }
+  function sideKind(v) {
+    var lines = String(v).split("\n").map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.length && lines.every(function (l) { return isRepoFile(l) || (isUrl(l) && IMG_EXT.test(l)); })) return "pictures";
+    if (v.indexOf("\n") >= 0 && /^\s*(def |class |import |from \w[\w.]* import |if __name__|print\()/m.test(v)) return "python";
+    return "text";
+  }
+  /* a file in a private repo is read with the reader's key, and shown as a
+     picture when its first bytes say it is one — a name may lack its extension */
+  function sniff(bytes) {
+    var b = new Uint8Array(bytes.slice(0, 12));
+    if (b[0] === 0x89 && b[1] === 0x50) return "image/png";
+    if (b[0] === 0xff && b[1] === 0xd8) return "image/jpeg";
+    if (b[0] === 0x47 && b[1] === 0x49) return "image/gif";
+    if (b[0] === 0x52 && b[1] === 0x49 && b[8] === 0x57) return "image/webp";
+    return "";
+  }
+  function repoPicture(url, slot) {
+    var key = ""; try { key = localStorage.getItem("lc_ed_pat") || ""; } catch (e) {}
+    var h = { Accept: "application/vnd.github.raw" };
+    if (key) h.Authorization = "Bearer " + key;
+    fetch(encodeURI(url), { headers: h }).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.arrayBuffer();
+    }).then(function (buf) {
+      var type = sniff(buf);
+      if (!type) { slot.innerHTML = "<a href='" + esc(url) + "' target='_blank' rel='noopener'>" + esc(url.split("/").pop()) + "</a> — not a picture"; return; }
+      var img = document.createElement("img");
+      img.alt = decodeURIComponent(url.split("/").pop());
+      img.src = URL.createObjectURL(new Blob([buf], { type: type }));
+      slot.textContent = ""; slot.appendChild(img);
+    }).catch(function (e) { slot.textContent = "⚠️ " + url.split("/").pop() + ": " + e.message; });
+  }
+  function drawSide(host) {
+    var old = host.querySelector(".lc-ins-side"); if (old) old.remove();
+    var name = host._lcSide; if (!name) return;
+    var d = host._lcLast || {}, f = null;
+    (d.cards || []).forEach(function (c) { (c.fields || []).forEach(function (x) { if (!f && x.n === name) f = x; }); });
+    var side = document.createElement("div");
+    side.className = "lc-ins-side";
+    side.setAttribute("data-side", name);
+    var title = String(name).replace(/_/g, " ");
+    side.innerHTML = "<div class='lc-ins-side-head'><span>" + esc(title.charAt(0).toUpperCase() + title.slice(1))
+      + "</span><button type='button' data-side-close='1' title='close' aria-label='close'>✕</button></div>";
+    var body = document.createElement("div");
+    side.appendChild(body);
+    host.appendChild(side);
+    var v = f && typeof f.v === "string" ? f.v : "";
+    if (!v.trim()) { body.innerHTML = "<p class='lc-ins-side-empty'>Nothing here.</p>"; return; }
+    var kind = sideKind(v);
+    if (kind === "pictures") {
+      v.split("\n").map(function (l) { return l.trim(); }).filter(Boolean).forEach(function (url) {
+        var slot = document.createElement("div");
+        slot.textContent = "⏳ " + url.split("/").pop();
+        body.appendChild(slot);
+        if (isRepoFile(url)) repoPicture(url, slot);
+        else { slot.innerHTML = "<img alt='' src='" + esc(url) + "'>"; }
+      });
+    } else if (kind === "python") {
+      /* the pad is THE Python editor: read-only here, and it still runs */
+      var pre = document.createElement("pre");
+      pre.className = "run";
+      pre.setAttribute("readonly", "true");
+      pre.setAttribute("title", title);
+      var code = document.createElement("code");
+      code.textContent = v;
+      pre.appendChild(code);
+      body.appendChild(pre);
+      try { if (window.lcScanElement) window.lcScanElement(body); } catch (e) {}
+    } else {
+      var p = document.createElement("p");
+      p.className = "lc-ins-side-text";
+      p.innerHTML = esc(v).replace(/https?:\/\/[^\s<]+/g, function (u) {
+        return "<a href='" + u + "' target='_blank' rel='noopener'>" + u + "</a>";
+      });
+      body.appendChild(p);
+    }
+  }
 
   /* run code with stdout routed to this widget's console; `echo` is the
      line the learner would have typed — `>>> lucky.come()` — so the card
@@ -4249,7 +4452,26 @@ _inject_store()
       var t = ev.target;
       if (t.type === "range" && t.nextElementSibling) t.nextElementSibling.textContent = t.value;
     });
+    function dig(ev) {
+      var a = ev.target.closest && ev.target.closest(".lc-ins-dig");
+      if (a) {
+        ev.preventDefault();
+        host._lcSide = host._lcSide === a.getAttribute("data-dig") ? null : a.getAttribute("data-dig");
+        host.querySelectorAll(".lc-ins-dig").forEach(function (x) { x.classList.toggle("on", x.getAttribute("data-dig") === host._lcSide); });
+        drawSide(host);
+        return true;
+      }
+      if (ev.target.closest && ev.target.closest("[data-side-close]")) {
+        host._lcSide = null;
+        host.querySelectorAll(".lc-ins-dig.on").forEach(function (x) { x.classList.remove("on"); });
+        drawSide(host);
+        return true;
+      }
+      return false;
+    }
+    host.addEventListener("keydown", function (ev) { if (ev.key === "Enter" || ev.key === " ") dig(ev); });
     host.addEventListener("click", function (ev) {
+      if (dig(ev)) return;
       var b = ev.target.closest("button[data-m]");
       if (!b || b.disabled) return;
       var card = b.closest("[data-card]"); if (!card) return;

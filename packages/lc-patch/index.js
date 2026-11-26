@@ -16,9 +16,9 @@
  * is the full re-emit lc-serialize would have produced — never wrong, only
  * less minimal — and `patchWith()` says so.
  */
-import { load, dump, leadingComments } from '@karmicsoft/lc-serialize';
+import { load, dump, leadingComments, splitFrontMatter } from '@karmicsoft/lc-serialize';
 
-export const PATCH_VERSION = '0.1.0';
+export const PATCH_VERSION = '0.2.0';
 
 /** Minimal-diff write: original text + edited object → new text. */
 export function patch(originalText, edited, opts = {}) {
@@ -33,6 +33,11 @@ export function patchWith(originalText, edited, opts = {}) {
   const src = String(originalText == null ? '' : originalText);
   const crlf = src.indexOf('\r\n') !== -1;
   const text = crlf ? src.replace(/\r\n/g, '\n') : src;
+  if (splitFrontMatter(text)) {
+    const r = patchMd(text, edited, opts);
+    if (crlf) r.text = r.text.replace(/\n/g, '\r\n');
+    return r;
+  }
   const leading = leadingComments(text);
   const rest = text.slice(leading.length);
   const changed = [];
@@ -55,6 +60,39 @@ export function patchWith(originalText, edited, opts = {}) {
   }
   if (crlf) out = out.replace(/\n/g, '\r\n');
   return { text: out, changed, fallback, reason };
+}
+
+/* MARKDOWN WITH A YAML HEADER (0.2.0): the header is patched line by line
+   like any record; the text after the fence keeps its bytes when `body` is
+   unchanged (or absent from `edited`) and is rewritten whole when it changed.
+   A header that carries its own `body:` key is refused (lc-serialize's load
+   throws), and so is a body that is not a string — never re-emitted around. */
+function patchMd(text, edited, opts) {
+  load(text);                                        // refuses a header with a body: key
+  if (!isObj(edited)) throw new Error('lc-patch: the edited value is not a mapping');
+  const lines = text.split('\n');
+  let j = 1;
+  while (lines[j] !== '---') j++;
+  const header = j > 1 ? lines.slice(1, j).join('\n') + '\n' : '';
+  const tail = lines.slice(j + 1).join('\n');         // the text after the fence, verbatim
+  const old = splitFrontMatter(text).body;
+  const body = edited.body === undefined ? old : edited.body;
+  if (typeof body !== 'string') throw new Error('lc-patch: body must be a string in a Markdown file');
+  const head = {};
+  for (const k of Object.keys(edited)) if (k !== 'body') head[k] = edited[k];
+  const h = header.trim() === '' && !Object.keys(head).length
+    ? { text: header, changed: [], fallback: false, reason: '' }
+    : patchWith(header, head, opts);
+  const changed = h.changed.slice();
+  let after = tail;
+  if (body !== old) { after = body !== '' ? '\n' + body + '\n' : ''; changed.push('body'); }
+  const out = '---\n' + h.text + '---\n' + after;
+  if (!deepEqual(load(out), { ...head, body })) {
+    const leading = leadingComments(header);
+    return { text: dump({ ...head, body }, { format: 'md', leading, order: Object.keys(load(text)) }),
+             changed: ['* (full re-emit)'], fallback: true, reason: 'the patched text does not load back to the edited object' };
+  }
+  return { text: out, changed, fallback: h.fallback, reason: h.reason };
 }
 
 /** The lines of `text` that would differ from `original` (0-based, in `text`). */

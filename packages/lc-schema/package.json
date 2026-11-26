@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-schema",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Schema → neutral IR → widget definitions (schema compiler) — a LightCode brick.",
   "type": "module",
   "main": "index.js",
@@ -36,7 +36,8 @@
     "js-yaml": "^4.3.0"
   },
   "devDependencies": {
-    "zod": "^3.25.0"
+    "zod": "^3.25.0",
+    "zod46": "npm:zod@4.6.7"
   },
   "publishConfig": {
     "access": "public"

@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-serialize",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "Faithful YAML round-trip for git-backed structured content — a LightCode brick.",
   "type": "module",
   "main": "index.js",

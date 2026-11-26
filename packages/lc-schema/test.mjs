@@ -199,5 +199,33 @@ feature('fromSveltiaConfig takes the same dotted labels (i18n overlay over confi
   });
 }
 
+feature('Zod 4.6 schemas compile (0.1.4, Toni: Astro 7 brings zod 4.6)');
+{
+  /* Zod 4.6 gives z.preprocess its own class, ZodPreprocess (still a pipe):
+     on 0.1.3 every collection wrapped in z.preprocess(stripNull, …) stopped
+     at its root — "expected a z.object at the root, got ZodPreprocess" */
+  const z4 = (await import('zod46')).z;
+  const strip = (v) => v;
+  const dateStr = z4.preprocess((v) => v, z4.string());
+  const workflow = z4.object({ draft: z4.boolean().default(false), note: z4.string().nullable().default(null) }).prefault({});
+  const events = { schema: z4.preprocess(strip, z4.object({
+    title: z4.string(), date: dateStr.optional(), workflow,
+    people: z4.array(z4.string().describe('relation:persons')).default([]),
+  })) };
+  let ir4 = null, err = null;
+  try { ir4 = fromZod({ events }); } catch (e) { err = e; }
+  const w4 = ir4 ? widgets(ir4, 'events') : [];
+  const f4 = (n) => w4.find((f) => f.name === n);
+  scenario('a collection wrapped in z.preprocess reads its object', () => { eq(err, null, err && err.message); eq(w4.length, 4); });
+  scenario('a preprocessed field keeps its own widget', () => eq(f4('date').widget, 'string'));
+  scenario('workflow under .prefault({}) is an object with its defaults', () => {
+    eq(f4('workflow').widget, 'object'); eq(f4('workflow').required, false);
+    eq(f4('workflow').fields.find((f) => f.name === 'draft').default, false);
+  });
+  scenario('a relation in a zod 4.6 array stays a multiple relation', () => {
+    eq(f4('people').widget, 'relation'); eq(f4('people').collection, 'persons'); eq(f4('people').multiple, true);
+  });
+}
+
 console.log(`\n${scen} scenarios, ${fail} failed.`);
 process.exit(fail ? 1 : 0);

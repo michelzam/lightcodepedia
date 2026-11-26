@@ -676,3 +676,59 @@ def step_slide_offers(context, elid, label):
     got = context.page.evaluate("""([id, label]) => { const h = document.getElementById(id); const s = h && h.closest('.lc-slide');
       return s ? Array.from(s.querySelectorAll('a')).filter(a => a.textContent.indexOf(label) >= 0).map(a => a.getAttribute('href')) : null; }""", [elid, label])
     assert got and "?slides=0" in got, "the slide of %s offers no %r back to the first slide: %r" % (elid, label, got)
+
+
+@then('the guide\'s voice is set to "{lang}"')
+def step_guide_speaks(context, lang):
+    got = context.page.evaluate("() => window._lcAvatars.guide.voice")
+    assert got == lang, "the guide's voice is %r" % got
+
+
+@when('the "{pad_id}" pad\'s text "{old}" becomes "{new}"')
+def step_pad_text_becomes(context, pad_id, old, new):
+    """a person edits the pad: select the words, type the new ones"""
+    ta = context.page.locator("[data-lc-id='%s'] .lc-mdpad-in" % pad_id)
+    ok = ta.evaluate("""(t, [a, b]) => { const i = t.value.indexOf(a); if (i < 0) return false;
+        t.focus(); t.setSelectionRange(i, i + a.length); return true; }""", [old, new])
+    assert ok, "the pad does not hold %r" % old
+    context.page.keyboard.type(new)
+    context.page.wait_for_timeout(1800)
+
+
+@then('the team shows {n:d} human "{human}" and the AI agents "{agents}"')
+def step_team(context, n, human, agents):
+    cards = context.page.evaluate("() => { const e = window.lcAvatarResolve('equipe'); return e ? [...e.querySelectorAll('h3')].map(h => h.textContent.trim()) : []; }")
+    humans = [c for c in cards if "humain" in c]
+    assert len(humans) == n and human in humans[0], "humans on the team: %r" % humans
+    for a in [x.strip() for x in agents.split(",")]:
+        assert any(a in c and "agent IA" in c for c in cards), "%s is not shown as an AI agent: %r" % (a, cards)
+
+
+@then('the vital skills are "{names}"')
+def step_vital(context, names):
+    cards = context.page.evaluate("() => { const e = window.lcAvatarResolve('vitales'); return e ? [...e.querySelectorAll('h3')].map(h => h.textContent.trim()) : []; }")
+    want = [n.strip() for n in names.split(",")]
+    assert len(cards) == len(want) and all(w in c for w, c in zip(want, cards)), "the cards read %r" % cards
+
+
+@then('the guide\'s studio voices are made with the model "{model}"')
+def step_gen_model(context, model):
+    got = context.page.evaluate("() => window._lcAvatars.guide.genModel")
+    assert got == model, "the guide's voices would be made with %r" % got
+
+
+@then('the guide\'s studio voice is "{voice}"')
+def step_gen_voice(context, voice):
+    got = context.page.evaluate("() => window._lcAvatars.guide.genVoice")
+    assert got == voice, "the guide's studio voice is %r" % got
+
+
+@then("every line Doc can say has its recording in the lab")
+def step_recordings_exist(context):
+    import os
+    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    context.page.wait_for_timeout(2500)   # the file names are computed after the page loads
+    got = context.page.evaluate("""() => { const a = window._lcAvatars.guide; const all = a.script.concat(...Object.values(a.stories || {}));
+        return all.filter(l => l && l.say).map(l => [String(l.say).slice(0, 40), l.audio || '']); }""")
+    missing = [s for s, u in got if not u or not os.path.exists(os.path.join(root, "docs", "assets", "audio", u.split("/")[-1].split("?")[0]))]
+    assert got and not missing, "%d line(s) of %d would be silent on a phone: %r" % (len(missing), len(got), missing[:4])

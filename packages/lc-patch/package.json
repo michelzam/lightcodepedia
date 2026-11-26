@@ -1,6 +1,6 @@
 {
   "name": "@karmicsoft/lc-patch",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": false,
   "description": "Minimal-diff writer for git-backed YAML records — only the edited lines change. A LightCode brick.",
   "type": "module",
@@ -33,7 +33,7 @@
     "directory": "packages/lc-patch"
   },
   "dependencies": {
-    "@karmicsoft/lc-serialize": "^0.1.1"
+    "@karmicsoft/lc-serialize": "^0.2.0"
   },
   "publishConfig": {
     "access": "public"

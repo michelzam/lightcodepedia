@@ -181,7 +181,9 @@ function zUnwrap(schema) {
     if (k === 'ZodOptional' || k === 'ZodNullable') { required = false; s = s._def.innerType; }
     else if (k === 'ZodDefault' || k === 'ZodPrefault') { const dv = s._def.defaultValue; def = typeof dv === 'function' ? dv() : dv; required = false; s = s._def.innerType; }
     else if (k === 'ZodEffects') { s = s._def.schema; }                    // v3 preprocess/refine/transform
-    else if (k === 'ZodPipe' || k === 'ZodPipeline') { s = zPipeTarget(s); } // v4 preprocess/pipe
+    /* v4 preprocess/pipe — by what it is (_def.type 'pipe'), not only by its
+       class name: zod 4.6 gave z.preprocess its own class, ZodPreprocess (0.1.4) */
+    else if (k === 'ZodPipe' || k === 'ZodPipeline' || k === 'ZodPreprocess' || s._def.type === 'pipe') { s = zPipeTarget(s); }
     else break;
   }
   return { base: s, required, def, desc: zDesc(schema) || zDesc(s) };

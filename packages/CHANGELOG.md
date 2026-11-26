@@ -6,6 +6,19 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 
 ## @karmicsoft/lc-serialize
 
+### 0.2.0
+- **Markdown with a YAML header** (Toni, Paris Révolutionnaire: the long texts
+  move after the header). `load` reads the header as the record and the text
+  after the fence as `body`; `dump(rec, { format: 'md' })` writes it back;
+  `roundtrip` / `isLossless` / `isByteIdentical` recognise it by content. A header
+  with its own `body:` key is refused. New `splitFrontMatter`, `formatOf`.
+- `lc-serialize-check` checks `.md` records beside `.yaml` (a `.md` without a
+  header is left out).
+- Plain YAML unchanged: on the partner's 47 752 YAML records, 0.2.0 reads and
+  writes every file exactly as 0.1.1 did (a closed header never loaded before).
+  On their 14 episodes converted by text surgery: same data as the YAML, and
+  the 7 not byte-identical are the 7 whose YAML is not today (quoting style).
+
 ### 0.1.1
 - **Leading comment block preserved** through round-trip: a migration provenance
   header (`# source: …` / blank lines before the first data line) survives
@@ -20,6 +33,21 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 - `isLossless` (the contract) + `isByteIdentical` (advisory) helpers.
 - Corpus checker `bin` (`lc-serialize-check`) — CI gate over a whole tree.
 - TypeScript types; 17-scenario BDD suite.
+
+## @karmicsoft/lc-patch
+
+### 0.2.0
+- **Markdown with a YAML header** (needs lc-serialize ^0.2.0): the header is
+  patched line by line, the text after it keeps its bytes unless `body`
+  changed (then it is rewritten whole and `changed` lists `body`); a record
+  sent without `body` keeps its text. A header with its own `body:` key, or a
+  `body` that is not a string, throws — never re-emitted around.
+- On the partner's 14 converted episodes: every untouched file is written back
+  byte-identical, the 7 with old quoting included.
+
+### 0.1.0
+- Minimal-diff writer: only the edited lines change (quoting, flow lists,
+  comments, CRLF kept), full re-emit fallback with `patchWith().fallback`.
 
 ## @karmicsoft/lc-map
 
@@ -65,6 +93,15 @@ passed CI (both BDD suites + the SSOT drift guard) before release.
 - 35 BDD scenarios, 0 failed.
 
 ## @karmicsoft/lc-schema
+
+### 0.1.4
+- **Zod 4.6 schemas compile.** Zod 4.6 gives `z.preprocess` its own class,
+  `ZodPreprocess` (still a pipe); `fromZod` matched pipes by class name and
+  stopped at the root of every collection wrapped in `z.preprocess(…)` —
+  "expected a z.object at the root, got ZodPreprocess" (Toni, Astro 7 on
+  zod 4.6.7). A pipe is now recognised by `_def.type === 'pipe'` too.
+  Verified on the Paris Révolutionnaire schema: 16 collections, 622 fields,
+  `.prefault({})` defaults kept. The suite now also runs on zod 4.6.7.
 
 ### 0.1.3
 - **Nested display labels — dotted paths on the same flat map.** `opts.labels`
