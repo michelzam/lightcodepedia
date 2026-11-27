@@ -218,7 +218,22 @@ Auto-included by docs/_layouts/default.html.
     if (window._lcMpyP) return window._lcMpyP;
     window._lcMpyP = import("https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython.mjs")
       .then(function (mjs) {
-        return mjs.loadMicroPython({
+        /* THE TRACING BUILD, ONLY WHERE A PROOF ASKS FOR IT (Michel,
+           2026-11-27: "overload … the set trace from Python, depending on
+           the availability on microPython"). The package ships a second
+           wasm with sys.settrace (10% larger, every call observed): a page
+           holding a feature whose tools= names a tracing plug-in (🎄 impact)
+           loads that one; every other
+           page keeps the plain build and pays nothing. */
+        var reg = window.lcFeatureTools || {};
+        var wantTrace = Array.prototype.some.call(document.querySelectorAll("[tools], [data-lc-tools]"), function (el) {
+          return (el.getAttribute("tools") || el.getAttribute("data-lc-tools") || "").split(",")
+            .some(function (t) { t = t.trim(); return reg[t] && reg[t].trace; });
+        });
+        window._lcMpyTraceBuild = wantTrace;
+        var traceUrl = "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@latest/micropython-settrace.wasm";
+        var withBuild = function (o) { if (wantTrace) o.url = traceUrl; return o; };
+        return mjs.loadMicroPython(withBuild({
           /* THE BUILD HANDS US LINES, NOT BYTES: with a function hook,
              MicroPython calls stdout once per line WITHOUT its newline — so
              two prints arrived as "ab", and `expected="0\n1\n2"`, which this
@@ -238,7 +253,7 @@ Auto-included by docs/_layouts/default.html.
             else if (window._lcMpyOut) window._lcMpyOut(line);
             else if (window.console) console.warn("[lc mpy stderr]", t);
           }
-        });
+        }));
       });
     return window._lcMpyP;
   }

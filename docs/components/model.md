@@ -225,6 +225,9 @@ class, a card with its verbs, a diagram of it. What a class can say:
 - **A verb that waits**: a verb that starts something the page cannot see —
   a file being read, an answer on its way — says `self.busy()`; its card
   greys its buttons and turns a small wheel until `self.busy(False)`.
+- **Its objects, from the class itself**: `Pet.all()` is every `Pet` on the
+  page, in the order they were born — over a list, one object per row. A
+  proof starts there: `self.pets = Pet.all()`, no row copied by hand.
 - **Where the rows live**: `class Family(Object, source="calls")` wears a
   list on the page; `{: .model source="shelter" }` puts every class in a
   [database](database), a table each.

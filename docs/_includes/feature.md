@@ -354,6 +354,24 @@ Registers with window.lcScanElement so the editor preview also renders cards.
   }
   window.lcFeatureResults = { all: loadResults, restore: restoreResult };
 
+  /* ── A FEATURE'S TOOLS (Michel, 2026-11-27: "a private plugin, similar to
+     those for mdpad, that would be included in such a pro (paid) licence").
+     tools="impact" names plug-ins, as a pad's tools= does. A plug-in
+     registers itself in window.lcFeatureTools[name] = { trace, after(card) }:
+     `trace` asks the run to record what each step touched (parts through
+     self.page, the functions of the page's own classes with the tracing
+     build — window._lcStepsTrace), `after` is called once the run is back.
+     The engine records and calls; what is drawn is the plug-in's. A page
+     without the plug-in runs its proofs exactly as before. */
+  function featureTools(card) {
+    var reg = window.lcFeatureTools || {};
+    return (card.getAttribute("data-lc-tools") || "").split(",")
+      .map(function (t) { return t.trim(); })
+      .filter(function (t) { return t && reg[t]; })
+      .map(function (t) { return reg[t]; });
+  }
+  window.lcFeatureName = cardName;
+
   /* ── WHICH DATA A PROOF STANDS ON ─────────────────────────────────────────
      Nothing the author declares. The run records every block its steps read
      (Page.__getattr__ → window._lcStepsTouched); from each one we walk
@@ -579,7 +597,10 @@ Registers with window.lcScanElement so the editor preview also renders cards.
     });
 
     var preamble = (document.getElementById("lc-steps-preamble") || {}).textContent || "";
-    var fullCode = preamble + "\n" + scenarioParts.join("\n\n") + "\n_run_all()";
+    var tools = featureTools(card);
+    var tracing = tools.some(function (t) { return t.trace; });
+    var fullCode = preamble + "\n_LC_TRACE_ON = " + (tracing ? "True" : "False") + "\n"
+      + scenarioParts.join("\n\n") + "\n_run_all()";
 
     if (!window._lcMpReady) {
       /* ONE interpreter per page (see pyrun's lcMpy): loading our own here
@@ -598,6 +619,7 @@ Registers with window.lcScanElement so the editor preview also renders cards.
       if (jsonStr == null) jsonStr = window._lcStepsResult;
       var results = [];
       try { results = JSON.parse(jsonStr) || []; } catch(e) {}
+      tools.forEach(function (t) { try { if (t.after) t.after(card); } catch (e) { if (window.console) console.error("[lc feature tool]", e); } });
 
       var builtinResults = results.slice(0, 2);
       var userResults    = results.slice(2);
@@ -1030,6 +1052,8 @@ Registers with window.lcScanElement so the editor preview also renders cards.
        the run records what its steps read; see unsavedBehind. */
     var saves = el.getAttribute("saves");
     if (saves) card.setAttribute("data-saves", saves);
+    /* tools="impact": the plug-ins this card wears, by name (see featureTools) */
+    if (el.getAttribute("tools")) card.setAttribute("data-lc-tools", el.getAttribute("tools"));
     /* flow="<flow-id>": this feature CHECKS that event flow — Given is the
        setup, When the command, Then the event. The x-ray reads data-flow
        and draws the pipe (Michel, 2026-08-23). */

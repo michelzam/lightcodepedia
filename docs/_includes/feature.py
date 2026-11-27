@@ -7,6 +7,7 @@ class Feature(Block):
     celebration = Attr(bool)                # confetti when it turns green
     pace        = Attr(str)                 # how fast its steps paint, one after the other
     saves       = Attr(str)                 # the files it checks were saved first, comma-separated
+    tools       = Attr(str)                 # the plug-ins the card wears, by name — "impact": what each step touched, as a tree
     src         = Attr(str)                 # a .feature file its Gherkin comes from
     flow        = Attr("EventFlow")         # the event flow it checks — Given the setup, When the command, Then the event
     grades      = Attr("Mdpad")             # the work it grades — a pad, or a grid

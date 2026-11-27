@@ -585,9 +585,13 @@ def _lc_ref_label(f, v):
 
 def _lc_field_prop(f):
     def fget(self):
+        if _LC_TRACE_ON and _LC_TRACE_STEP[0]:
+            _lc_trace_attr(self, f.n, "read")
         return self._v.get(f.n, f.d)
 
     def fset(self, val):
+        if _LC_TRACE_ON and _LC_TRACE_STEP[0]:
+            _lc_trace_attr(self, f.n, "write")
         # ro guards the outside world; inside the object's OWN behaviour
         # (@transition methods bracket themselves) plain assignment works.
         if f.ro and not getattr(self, "_lc_active", 0):
@@ -1001,6 +1005,23 @@ class Object:
     # ── born verbs: every object can be made and unmade; a class that wears a
     # dataset adds and removes the row itself (Michel, 2026-10-16: "Delete being
     # a generic implicit method, inherited from Object") ──
+    @classmethod
+    def all(cls):
+        """Every object of this class on the page, in the order they were
+        born — a class hands out its own instances (Michel, 2026-11-27: "a
+        class can deliver its instances, therefore the manual creation of
+        objects based on every row of the grid looks too complicated and not
+        pythonistic"). A class worn over a list: one object per row."""
+        if _LC_TRACE_ON and _LC_TRACE_STEP[0]:
+            at = _LC_TRACE_ATTRS.get("class " + cls.__name__) or ("", 0)
+            _LC_TRACE.append({"step": _LC_TRACE_STEP[0], "kind": "class", "what": cls.__name__, "mode": "",
+                              "where": at[0], "line": at[1], "depth": len(_LC_TRACE_STACK)})
+            src = getattr(cls, "_lc_source", None)
+            if src:
+                _LC_TRACE.append({"step": _LC_TRACE_STEP[0], "kind": "wired", "what": src, "mode": "",
+                                  "where": "via " + cls.__name__, "line": 0, "depth": len(_LC_TRACE_STACK) + 1})
+        return [o for o in _LC_OBJS if isinstance(o, cls)]
+
     @classmethod
     def new(cls):
         """A fresh one, named, on the bus — a sourced class adds a row to its list."""
@@ -2028,6 +2049,55 @@ def lcx_target(cls_name, idv):
 # every block a run reads by name — the data a proof stands on is whatever
 # its steps touched, walked upstream to the block that saves it (feature.md)
 _LC_TOUCHED = []
+# THE PROOF TRACE (Michel, 2026-11-27: "when a proof/feature is executed, it
+# will directly assess, query and interact with specific components — if we
+# could … trace exactly which components are directly or indirectly touched,
+# we would have that kind of web based specifically on the link with the
+# proof"). One row per touch, in the order it happened: the step, a page part
+# reached through self.page, or a function of the page's own classes that
+# ran (the tracing build only), with the block it is written in and its line.
+_LC_TRACE_ON = False
+_LC_TRACE = []
+_LC_TRACE_STEP = [""]
+_LC_TRACE_STACK = []
+_LC_TRACE_ATTRS = {}
+
+
+def _lc_trace_attr(obj, name, mode):
+    """an attribute of one of the page's own classes, read or written while a
+    step runs — a Then that only reads still stands on what it reads (Michel,
+    2026-11-27: "if we rename an attribute, the THEN section could be
+    impacted … if that attribute was read")"""
+    cls = type(obj).__name__
+    at = _LC_TRACE_ATTRS.get(cls + "." + name) or _LC_TRACE_ATTRS.get("." + name) or ("", 0)
+    _LC_TRACE.append({"step": _LC_TRACE_STEP[0], "kind": "attr", "what": cls + "." + name, "mode": mode,
+                      "where": at[0], "line": at[1], "depth": len(_LC_TRACE_STACK)})
+
+
+def _lc_trace_defs():
+    """every def the page's own model blocks write: name → (block, Class.name, line)"""
+    out = {}
+    for mid in _LC_SRC:
+        cls = ""
+        for i, line in enumerate(_LC_SRC[mid].split("\n")):
+            bare = line.lstrip()
+            if line.startswith("class "):
+                cls = bare[6:].split("(")[0].split(":")[0].strip()
+                _LC_TRACE_ATTRS["class " + cls] = (mid, i + 1)
+            elif line and not line[0] in " \t#" and not bare.startswith("def ") and not bare.startswith("@"):
+                cls = ""
+            if bare.startswith("def "):
+                name = bare[4:].split("(")[0].strip()
+                own = cls if line[0] in " \t" else ""
+                out.setdefault(name, []).append((mid, (own + "." if own else "") + name, i + 1))
+            elif cls and line and line[0] in " \t" and "=" in bare:
+                # an attribute's own line: `distance = Attr(int)` — where a rename starts
+                left, right = bare.split("=", 1)
+                kind = right.strip().split("(")[0]
+                if kind in ("Attr", "State", "Owner") and left.strip() and " " not in left.strip() and "." not in left.strip():
+                    _LC_TRACE_ATTRS[cls + "." + left.strip()] = (mid, i + 1)
+                    _LC_TRACE_ATTRS.setdefault("." + left.strip(), (mid, i + 1))
+    return out
 
 
 @component(icon="📄", attrs=[{"n": "id", "t": "str"}], methods=["feature", "features"])
@@ -2044,6 +2114,8 @@ class Page(Object):
         if name.startswith("_"):
             raise AttributeError(name)
         _LC_TOUCHED.append(name)
+        if _LC_TRACE_ON:
+            _LC_TRACE.append({"step": _LC_TRACE_STEP[0], "kind": "part", "what": name, "where": "", "line": 0, "depth": 0})
         # a server or a remote model imported with a link: self.page.demo.traffic, self.page.m.Tally
         if name in _LC_REMOTE:
             return _LC_REMOTE[name]
@@ -3637,16 +3709,49 @@ def _run_all():
         ("component ids are python compatible", _builtin_python_ids),
     ] + _scenarios
     out = []
+    while _LC_TRACE:
+        _LC_TRACE.pop()
+    tracer = None
+    if _LC_TRACE_ON:
+        import sys as _sys
+        _lc_trace_defs()            # where each class, def and attribute of the page is written
+        if hasattr(_sys, "settrace"):
+            defs, stack = _lc_trace_defs(), _LC_TRACE_STACK
+            while stack:
+                stack.pop()
+
+            def tracer(frame, event, arg):
+                name = frame.f_code.co_name
+                if name in defs:
+                    if event == "call":
+                        mid, qual, line = defs[name][0]
+                        _LC_TRACE.append({"step": _LC_TRACE_STEP[0], "kind": "code", "what": qual,
+                                          "where": mid, "line": line, "depth": len(stack)})
+                        stack.append(name)
+                    elif event == "return" and stack:
+                        stack.pop()
+                return tracer
     for lbl, fn in all_s:
+        _LC_TRACE_STEP[0] = lbl
+        if tracer:
+            _sys.settrace(tracer)
         try:
             fn(ctx)
             out.append({"status": "pass", "label": lbl, "error": ""})
         except Exception as e:
             out.append({"status": "fail", "label": lbl,
                         "error": type(e).__name__ + ": " + str(e)})
+        if tracer:
+            _sys.settrace(None)
+    _LC_TRACE_STEP[0] = ""          # outside a step nothing is recorded: a card redrawing reads attributes too
+    if _LC_TRACE_ON and tracer is None:
+        _lc_trace_defs()            # the plain build still knows where each attribute is written
     result = json.dumps(out)
     js.window._lcStepsResult = result
     js.window._lcStepsTouched = json.dumps(_LC_TOUCHED)
+    if _LC_TRACE_ON:
+        js.window._lcStepsTrace = json.dumps({"code": tracer is not None, "rows": _LC_TRACE,
+                                              "steps": [lbl for lbl, fn in _scenarios]})
     return result
 
 

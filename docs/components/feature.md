@@ -377,6 +377,7 @@ missing page or id says so in one line instead of a card.
 | `.feature` | `#<id>` | Python-compatible id | Makes the card reachable as `self.page.<id>` in any step |
 | `.feature` | `src="page.md#proof_id"` | relative path + id | Embeds that page's proof (course pages): its steps, run against this page's blocks |
 | `.feature` | `saves="a, b"` | block ids | Data a step reads *indirectly* that a green still stands on — the direct case needs nothing |
+| `.feature` | `tools="impact"` | plug-in names | The plug-ins the card wears, as a pad's `tools=`. 🎄 **impact** (a Pro plug-in: the lab and licensed courses): after a run, the card shows what each step touched — the page parts it reached with their wiring, the functions of the page's own classes nested as they called each other, with their block and line — and the same rows are the dataset `<id>.impact`. Without the plug-in the setting does nothing |
 
 ## 🧠 Quick check
 

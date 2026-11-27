@@ -128,6 +128,12 @@ def _stub_micropython(page):
         "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@*/micropython.wasm",
         serve("micropython.wasm", "application/wasm"),
     )
+    # the tracing build (a feature with trace="true"): the same package ships it
+    if os.path.isfile(os.path.join(MPY_DIR, "micropython-settrace.wasm")):
+        page.route(
+            "https://cdn.jsdelivr.net/npm/@micropython/micropython-webassembly-pyscript@*/micropython-settrace.wasm",
+            serve("micropython-settrace.wasm", "application/wasm"),
+        )
 
 
 # LOCAL HARNESS ONLY: charts load Chart.js and {: .query } loads alasql, both
