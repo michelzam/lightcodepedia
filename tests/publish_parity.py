@@ -119,6 +119,54 @@ def bot_assets_that_travel():
     return sorted(n for n in written if ("assets/" + n) not in listed)
 
 
+def store_address_that_travels():
+    """The visits store's address stays in the lab until a dedicated
+    microserver stands in front of it (Michel, 2026-11-27: "I don't want to
+    disclose the supabase entry point right away"). It lives in one file,
+    docs/_data/visits_door.yml, listed in docs.txt. This check refuses a
+    publish view in which that file, or any file quoting its address or
+    key, would travel."""
+    door = os.path.join(ROOT, "docs", "_data", "visits_door.yml")
+    if not os.path.isfile(DOCS_EXCLUDES) or not os.path.isfile(door):
+        return []                        # not the lab, or no store named
+    with open(DOCS_EXCLUDES, encoding="utf-8") as fh:
+        listed = [ln.strip() for ln in fh if ln.strip() and not ln.startswith("#")]
+    with open(door, encoding="utf-8") as fh:
+        secrets = [w.strip('"') for ln in fh if not ln.startswith("#")
+                   for w in ln.split()[1:2] if len(w.strip('"')) > 12]
+    out = [] if "_data/visits_door.yml" in listed else ["docs/_data/visits_door.yml (not listed in docs.txt)"]
+
+    def stays(rel):
+        parts = rel.split("/")
+        for pat in listed:
+            if pat.endswith("/"):
+                if pat.rstrip("/") in parts[:-1]:
+                    return True
+            elif "/" in pat:
+                if rel == pat or rel.endswith("/" + pat):
+                    return True
+            elif pat in parts:
+                return True
+        return False
+
+    docs = os.path.join(ROOT, "docs")
+    for folder, names, files in os.walk(docs):
+        names[:] = [n for n in names if n != "_site"]
+        for name in files:
+            path = os.path.join(folder, name)
+            rel = os.path.relpath(path, docs).replace(os.sep, "/")
+            if stays(rel):
+                continue
+            try:
+                with open(path, encoding="utf-8", errors="ignore") as fh:
+                    text = fh.read()
+            except OSError:
+                continue
+            if any(sec in text for sec in secrets):
+                out.append("docs/" + rel)
+    return out
+
+
 def colon_steps_without_twin():
     """A docstring step written "…with this text:" matches on behave 1.3 (the
     rig) and is UNDEFINED on behave 1.2.6 (pedia pins it): 1.2.6 strips the
@@ -180,6 +228,11 @@ def main():
               "docs.txt — this node's verdict would be published onto the "
               "next one's board." % name)
 
+    leaks = store_address_that_travels()
+    for name in leaks:
+        print("%s would carry the visits store's address to pedia — it stays "
+              "in the lab until a microserver stands in front of the store." % name)
+
     if problems:
         print("\n%d published step(s) with no definition in pedia. "
               "Move the step to a module that ships (e.g. common_steps.py)."
@@ -190,7 +243,7 @@ def main():
     if stale:
         print("docs/assets/component-model.json is older than the registry in steps_runtime.md — "
               "run python3 tools/component_model.py and commit it (the pad's completion and the x-ray read it).")
-    if problems or travellers or strays or lonely or stale:
+    if problems or travellers or strays or lonely or stale or leaks:
         return 1
     print("publish parity: every published feature's steps ship with it, "
           "no lab-only page is tested abroad, and no verdict travels")

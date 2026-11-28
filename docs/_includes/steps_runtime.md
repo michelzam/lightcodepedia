@@ -1710,6 +1710,8 @@ class Slides(Block):
 
 {% include qr.py %}
 
+{% include visits.py %}
+
 
 @component(icon="🔤")
 class Text(Block):
@@ -1903,7 +1905,7 @@ _WRAP = [
     ("lc-radio-group", Radio), ("lc-quiz", Quiz), ("lc-tabs", Tabs),
     ("lc-form", Form), ("lc-slides", Slides), ("lc-scrollable", Scrollable),
     ("lc-code", Code), ("lc-agent", Agent), ("lc-recorder", Recorder),
-    ("lc-qr", Qr), ("lc-pyrun", Run), ("lc-pyrepl", Repl),
+    ("lc-qr", Qr), ("lc-visits", Visits), ("lc-pyrun", Run), ("lc-pyrepl", Repl),
     ("lc-pytutor", Pytutor), ("lc-embed-page", EmbedPage),
     ("lc-embed", EmbedPage), ("lc-video", Video), ("lc-accordion", Accordion),
     ("lc-blocks", Blocks),
